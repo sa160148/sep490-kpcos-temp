@@ -1,0 +1,6 @@
+@KPCOS.API_HostAddress = http://localhost:5113
+
+GET {{KPCOS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

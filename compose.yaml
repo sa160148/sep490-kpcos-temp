@@ -1,0 +1,6 @@
+﻿services:
+  kpcos.api:
+    image: kpcos.api
+    build:
+      context: .
+      dockerfile: src/KPCOS.API/Dockerfile
