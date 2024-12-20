@@ -14,6 +14,11 @@ public static class DatabaseAddIn
         {
             options.UseNpgsql(configuration.GetConnectionString("Default"));
         });
+        services.AddStackExchangeRedisCache(options =>
+        {
+            configuration.GetConnectionString("Redis");
+            //options.InstanceName = "cache";
+        });
 
         services.AddScoped<Func<KPCOSDBContext>>((provider) => () => provider.GetService<KPCOSDBContext>()!);
         services.AddScoped<DbFactory>();
