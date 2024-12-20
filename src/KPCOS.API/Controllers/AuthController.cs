@@ -31,15 +31,14 @@ namespace KPCOS.API.Controllers
         }
         
         [HttpPost("signup")]
-        public async Task<BaseResponse<SignupResponse>> SignUpAsync(SignupRequest request)
+        public async Task<IActionResult> SignUpAsync(SignupRequest request)
         {
-            var response = await _authService.SignUpAsync(request);
-            return new BaseResponse<SignupResponse>
+            await _authService.SignUpAsync(request);
+            return StatusCode(200, new BaseResponse
             {
                 ResponseCode = StatusCodes.Status200OK,
                 Message = "Success",
-                Data = response
-            };
+            });
         }
     }
 }
