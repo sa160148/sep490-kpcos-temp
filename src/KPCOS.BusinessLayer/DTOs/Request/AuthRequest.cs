@@ -29,5 +29,7 @@ public class SignupRequest
     
     [Required(ErrorMessage = "can not let password null")]
     public string Password { get; set; }
-    
+
+    [Required(ErrorMessage = "can not let confirm password null")]
+    public string ConfirmPassword { get; set; }
 }

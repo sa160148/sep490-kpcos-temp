@@ -5,21 +5,21 @@ namespace KPCOS.DataAccessLayer.Repositories;
 
 public interface IRepository<T> where T : class
 {
-    DbSet<T> Entities { get; }
+    DbSet<T?> Entities { get; }
     DbContext DbContext { get; }
 
     #region Sync
 
-    public IQueryable<T> Get();
-    public IQueryable<T?> Where(Expression<Func<T, bool>> predic = null);
-    public void Add(T entity);
-    public void Update(T entity);
+    public IQueryable<T?> Get();
+    public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null);
+    public void Add(T? entity);
+    public void Update(T? entity);
     public int Count();
     public T? FirstOrDefault();
     public T? LastOrDefault();
     public int SaveChanges();
-    public T? FirstOrDefault(Expression<Func<T, bool>> predicate);
-    public T? SingleOrDefault(Expression<Func<T, bool>> predicate);
+    public T? FirstOrDefault(Expression<Func<T?, bool>> predicate);
+    public T? SingleOrDefault(Expression<Func<T?, bool>> predicate);
     public T? Find(params object?[]? keyValues);
 
     #endregion
@@ -32,15 +32,15 @@ public interface IRepository<T> where T : class
     /// <returns>Task<IQueryable<T>></returns>
     public Task<IQueryable<T>> GetAsync();
 
-    public Task<IQueryable<T>> WhereAsync(Expression<Func<T, bool>> predic = null);
-    public Task AddAsync(T entity, bool saveChanges = true);
+    public Task<IQueryable<T>> WhereAsync(Expression<Func<T?, bool>> predic = null);
+    public Task AddAsync(T? entity, bool saveChanges = true);
     public Task AddRangeAsync(List<T> entities, bool saveChanges = true);
-    public Task UpdateAsync(T entity, bool saveChanges = true);
-    public Task RemoveAsync(T entity, bool saveChanges = true);
+    public Task UpdateAsync(T? entity, bool saveChanges = true);
+    public Task RemoveAsync(T? entity, bool saveChanges = true);
     public Task<T?> FirstOrDefaultAsync();
-    public Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    public Task<T?> FirstOrDefaultAsync(Expression<Func<T?, bool>> predicate);
     
-    public Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    public Task<T?> SingleOrDefaultAsync(Expression<Func<T?, bool>> predicate);
     
     /// <summary>
     /// use when know primary key

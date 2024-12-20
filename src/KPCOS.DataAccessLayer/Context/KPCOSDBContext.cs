@@ -7,6 +7,9 @@ namespace KPCOS.DataAccessLayer.Context;
 
 public partial class KPCOSDBContext : DbContext
 {
+    private readonly string _hardConn1 = "Host=localhost;Port=5432;Database=kpcos;Username=sa;Password=123@123Bb";
+    private readonly string _hardConn2 = "Host=127.0.0.1;Port=5432;Database=kpcos;Username=postgres;Password=123@123Bb";
+    
     public KPCOSDBContext()
     {
     }
@@ -20,9 +23,12 @@ public partial class KPCOSDBContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https: //go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql(GetConnectionString() /*hardConn*/);
-
-    string hardConn = "Host=localhost;Port=5432;Database=kpcos;Username=sa;Password=123@123Bb";
+        => optionsBuilder.UseNpgsql( 
+            /*GetConnectionString()*/ 
+            /*hardConn1*/  
+            _hardConn2
+            );
+    
     string GetConnectionString()
     {
         IConfiguration builder = new ConfigurationBuilder()
