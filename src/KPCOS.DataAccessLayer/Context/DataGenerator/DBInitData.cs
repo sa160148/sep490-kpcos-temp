@@ -17,7 +17,7 @@ public class DBInitData
         var adRole = new Role
         {
             Id = new Guid(),
-            Name = "Admin",
+            Name = "ADMIN",
             Description = "Admin role",
             CreatedAt = DateTime.UtcNow,
             IsActive = true

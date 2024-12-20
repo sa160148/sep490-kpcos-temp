@@ -11,24 +11,24 @@ public class Repository<T> : IRepository<T> where T : class
     }
 
     public DbContext DbContext { get; }
-    public DbSet<T> Entities => DbContext.Set<T>();
+    public DbSet<T?> Entities => DbContext.Set<T>();
 
-    public IQueryable<T> Get()
+    public IQueryable<T?> Get()
     {
         return Entities.AsQueryable();
     }
 
-    public IQueryable<T?> Where(Expression<Func<T, bool>> predic = null)
+    public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null)
     {
         return Entities.Where(predic).AsQueryable();
     }
 
-    public void Add(T entity)
+    public void Add(T? entity)
     {
         Entities.Add(entity);
     }
 
-    public T? SingleOrDefault(Expression<Func<T, bool>> predicate)
+    public T? SingleOrDefault(Expression<Func<T?, bool>> predicate)
     {
         return Entities.SingleOrDefault(predicate);
     }
@@ -43,12 +43,12 @@ public class Repository<T> : IRepository<T> where T : class
         return await (Task<IQueryable<T>>)Entities.AsQueryable();
     }
 
-    public async Task<IQueryable<T>> WhereAsync(Expression<Func<T, bool>> predic = null)
+    public async Task<IQueryable<T>> WhereAsync(Expression<Func<T?, bool>> predic = null)
     {
         return await (Task<IQueryable<T>>)Entities.Where(predic).AsQueryable();
     }
 
-    public async Task AddAsync(T entity, bool saveChanges = true)
+    public async Task AddAsync(T? entity, bool saveChanges = true)
     {
         await Entities.AddAsync(entity);
         if (saveChanges) await DbContext.SaveChangesAsync();
@@ -60,18 +60,18 @@ public class Repository<T> : IRepository<T> where T : class
         if (saveChanges) await DbContext.SaveChangesAsync();
     }
 
-    public void Update(T entity)
+    public void Update(T? entity)
     {
         Entities.Update(entity);
     }
 
-    public async Task UpdateAsync(T entity, bool saveChanges = true)
+    public async Task UpdateAsync(T? entity, bool saveChanges = true)
     {
         Entities.Update(entity);
         if (saveChanges) await DbContext.SaveChangesAsync();
     }
 
-    public async Task RemoveAsync(T entity, bool saveChanges = true)
+    public async Task RemoveAsync(T? entity, bool saveChanges = true)
     {
         Entities.Remove(entity);
         if (saveChanges) await DbContext.SaveChangesAsync();
@@ -92,7 +92,7 @@ public class Repository<T> : IRepository<T> where T : class
         return Entities.LastOrDefault();
     }
 
-    public T? FirstOrDefault(Expression<Func<T, bool>> predicate)
+    public T? FirstOrDefault(Expression<Func<T?, bool>> predicate)
     {
         return Entities.FirstOrDefault(predicate);
     }
@@ -102,12 +102,12 @@ public class Repository<T> : IRepository<T> where T : class
         return await Entities.FirstOrDefaultAsync();
     }
 
-    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T?, bool>> predicate)
     {
         return await Entities.FirstOrDefaultAsync(predicate);
     }
 
-    public async Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    public async Task<T?> SingleOrDefaultAsync(Expression<Func<T?, bool>> predicate)
     {
         return await Entities.SingleOrDefaultAsync(predicate);
     }
