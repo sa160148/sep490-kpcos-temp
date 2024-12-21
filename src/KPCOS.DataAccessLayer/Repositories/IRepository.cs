@@ -15,11 +15,9 @@ public interface IRepository<T> where T : class
     public void Add(T? entity);
     public void Update(T? entity);
     public int Count();
-    public T? FirstOrDefault();
-    public T? LastOrDefault();
     public int SaveChanges();
-    public T? FirstOrDefault(Expression<Func<T?, bool>> predicate);
-    public T? SingleOrDefault(Expression<Func<T?, bool>> predicate);
+    public T? FirstOrDefault(Expression<Func<T?, bool>> predicate = null);
+    public T? SingleOrDefault(Expression<Func<T?, bool>> predicate = null);
     public T? Find(params object?[]? keyValues);
 
     #endregion
@@ -37,10 +35,9 @@ public interface IRepository<T> where T : class
     public Task AddRangeAsync(List<T> entities, bool saveChanges = true);
     public Task UpdateAsync(T? entity, bool saveChanges = true);
     public Task RemoveAsync(T? entity, bool saveChanges = true);
-    public Task<T?> FirstOrDefaultAsync();
-    public Task<T?> FirstOrDefaultAsync(Expression<Func<T?, bool>> predicate);
+    public Task<T?> FirstOrDefaultAsync(Expression<Func<T?, bool>> predicate = null);
     
-    public Task<T?> SingleOrDefaultAsync(Expression<Func<T?, bool>> predicate);
+    public Task<T?> SingleOrDefaultAsync(Expression<Func<T?, bool>> predicate = null);
     
     /// <summary>
     /// use when know primary key
