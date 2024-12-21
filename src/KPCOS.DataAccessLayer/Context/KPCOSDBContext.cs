@@ -24,9 +24,9 @@ public partial class KPCOSDBContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https: //go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql( 
-            /*GetConnectionString()*/ 
+            GetConnectionString() 
             /*hardConn1*/  
-            _hardConn2
+            /*_hardConn2*/
             );
     
     string GetConnectionString()
@@ -35,8 +35,7 @@ public partial class KPCOSDBContext : DbContext
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", true, true)
             .Build();
-        return builder["ConnectionStrings:Default"];
-        ;
+        return builder["ConnectionStrings:Default"]!;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
