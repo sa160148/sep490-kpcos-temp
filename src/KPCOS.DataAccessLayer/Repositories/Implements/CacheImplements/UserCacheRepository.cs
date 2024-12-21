@@ -49,76 +49,145 @@ public class UserCacheRepository(IUserRepository repository, IDistributedCache c
     
     public int SaveChanges()
     {
-        throw new NotImplementedException();
+        return repository.saveChanges();
     }
 
     public User? FirstOrDefault(Expression<Func<User?, bool>> predicate = null)
     {
-        throw new NotImplementedException();
+        var cacheValue = cache.GetString(predicate?.Body.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var repoValue = repository.FirstOrDefault(predicate?);
+        if (repoValue != null)
+        {
+            cache.SetString(predicate?.Body.ToString(), JsonSerializer.Serialize(repoValue));
+        }
+        return repoValue;
     }
 
     public User? SingleOrDefault(Expression<Func<User?, bool>> predicate = null)
     {
-        throw new NotImplementedException();
+        var cacheValue = cache.GetString(predicate?.Body.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var repoValue = repository.SingleOrDefault(predicate?);
+        if (repoValue != null)
+        {
+            cache.SetString(predicate?.Body.ToString(), JsonSerializer.Serialize(repoValue));
+        }
+        return repoValue;
     }
 
     public User? Find(params object?[]? keyValues)
     {
-        throw new NotImplementedException();
+        var cacheValue = cache.GetString(keyValues?[0]?.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var repoValue = repository.Find(keyValues);
+        if (repoValue != null)
+        {
+            cache.SetString(keyValues?[0]?.ToString(), JsonSerializer.Serialize(repoValue));
+        }
+        return repoValue;
     }
 
-    public Task<IQueryable<User>> GetAsync()
+    public async Task<IQueryable<User>> GetAsync()
     {
-        throw new NotImplementedException();
+        return await repository.GetAsync();
     }
 
-    public Task<IQueryable<User>> WhereAsync(Expression<Func<User?, bool>> predic = null)
+    public async Task<IQueryable<User>> WhereAsync(Expression<Func<User?, bool>> predic = null)
     {
-        throw new NotImplementedException();
+        return await repository.WhereAsync(predic);
     }
 
-    public Task AddAsync(User? entity, bool saveChanges = true)
+    public async Task AddAsync(User? entity, bool saveChanges = true)
     {
-        throw new NotImplementedException();
+        await repository.AddAsync(entity, saveChanges);
+        if (cache.GetStringAsync(entity?.Id.ToString()) != null || entity == null)
+        {
+            cache.RemoveAsync(entity?.Id.ToString());
+        }
+        cache.SetStringAsync(entity?.Id.ToString(), JsonSerializer.Serialize(entity));
     }
 
-    public Task AddRangeAsync(List<User> entities, bool saveChanges = true)
+    public async Task AddRangeAsync(List<User> entities, bool saveChanges = true)
     {
-        throw new NotImplementedException();
+        await repository.AddRangeAsync(entities, saveChanges);
     }
 
-    public Task UpdateAsync(User? entity, bool saveChanges = true)
+    public async Task UpdateAsync(User? entity, bool saveChanges = true)
     {
-        throw new NotImplementedException();
+        await repository.UpdateAsync(entity, saveChanges);
+        if (cache.GetStringAsync(entity?.Id.ToString()) != null || entity == null)
+        {
+            cache.RemoveAsync(entity?.Id.ToString());
+        }
+        cache.SetStringAsync(entity?.Id.ToString(), JsonSerializer.Serialize(entity));
     }
 
-    public Task RemoveAsync(User? entity, bool saveChanges = true)
+    public async Task RemoveAsync(User? entity, bool saveChanges = true)
     {
-        throw new NotImplementedException();
+        await repository.RemoveAsync(entity, saveChanges);
+        if (cache.GetStringAsync(entity?.Id.ToString()) != null || entity == null)
+        {
+            cache.RemoveAsync(entity?.Id.ToString());
+        }
     }
 
-    public Task<User?> FirstOrDefaultAsync()
+    public async Task<User?> FirstOrDefaultAsync(Expression<Func<User?, bool>> predicate)
     {
-        throw new NotImplementedException();
+        var cacheValue = await cache.GetStringAsync(predicate?.Body.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var result = await repository.FirstOrDefaultAsync(predicate);
+        if (result != null)
+        {
+            await cache.SetStringAsync(predicate?.Body.ToString(), JsonSerializer.Serialize(result));
+        }
+        return result;
     }
 
-    public Task<User?> FirstOrDefaultAsync(Expression<Func<User?, bool>> predicate)
+    public async Task<User?> SingleOrDefaultAsync(Expression<Func<User?, bool>> predicate)
     {
-        throw new NotImplementedException();
+        var cacheValue = await cache.GetStringAsync(predicate?.Body.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var result = await repository.SingleOrDefaultAsync(predicate);
+        if (result != null)
+        {
+            await cache.SetStringAsync(predicate?.Body.ToString(), JsonSerializer.Serialize(result));
+        }
+        return result;
     }
 
-    public Task<User?> SingleOrDefaultAsync(Expression<Func<User?, bool>> predicate)
+    public async Task<User?> FindAsync(params object?[]? keyValues)
     {
-        throw new NotImplementedException();
+        var cacheValue = await cache.GetStringAsync(keyValues?[0]?.ToString());
+        if (cacheValue != null)
+        {
+            return JsonSerializer.Deserialize<User>(cacheValue);
+        }
+        var result = await repository.FindAsync(keyValues);
+        if (result != null)
+        {
+            await cache.SetStringAsync(keyValues?[0]?.ToString(), JsonSerializer.Serialize(result));
+        }
+        return result;
     }
 
-    public Task<User?> FindAsync(params object?[]? keyValues)
+    public async Task<int> SaveAsync()
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> SaveAsync()
-    {
-        throw new NotImplementedException();
+        return await repository.SaveAsync();
     }
 }
