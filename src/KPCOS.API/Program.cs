@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using KPCOS.API.Extensions;
+using KPCOS.WebFramework.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCustomExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("Cors");
 app.UseRouting();

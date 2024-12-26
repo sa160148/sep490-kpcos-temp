@@ -1,7 +1,7 @@
 
 using System.Collections;
 
-namespace Common.Utilities;
+namespace KPCOS.Common.Utilities;
 
 public static class Assert
 {

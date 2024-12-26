@@ -4,7 +4,7 @@ using KPCOS.BusinessLayer.DTOs.Response.objects;
 using KPCOS.BusinessLayer.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using KPCOS.WebFramework.Api;
 namespace KPCOS.API.Controllers
 {
     [Route("api/[controller]")]
@@ -19,15 +19,13 @@ namespace KPCOS.API.Controllers
         }
 
         [HttpPost("signin")]
-        public async Task<BaseResponse<SigninResponse>> SignInAsync(SigninRequest request)
+        public async Task<ApiResult<SigninResponse>> SignInAsync(SigninRequest request)
         {
-            var response = await _authService.SignInAsync(request);
-            return new BaseResponse<SigninResponse>
-            {
-                ResponseCode = StatusCodes.Status200OK,
-                Message = "Success",
-                Data = response
-            };
+            var response =  await _authService.SignInAsync(request);
+            if (response == null)
+                return NotFound();
+            return response;
+            
         }
         
         [HttpPost("signup")]

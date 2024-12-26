@@ -1,38 +1,136 @@
 ﻿using System.Net;
+
 using KPCOS.BusinessLayer.Exceptions;
+using KPCOS.Common;
+using KPCOS.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using KPCOS.WebFramework.Api;
+using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace KPCOS.API.Extensions.ExceptionHandlers;
 
-public class ExceptionHandlingMiddleware : IExceptionHandler
+
+public static class CustomExceptionHandlerMiddlewareExtensions
 {
-    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-
-    public ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> logger)
+    public static IApplicationBuilder UseCustomExceptionHandler(this IApplicationBuilder builder)
     {
-        _logger = logger;
+        return builder.UseMiddleware<ExceptionHandlingMiddleware>();
     }
-    
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+}
+public class ExceptionHandlingMiddleware 
+{
+    private readonly RequestDelegate _next;
+        private readonly IHostingEnvironment _env;
+        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
-        await context.Response.WriteAsync(new ErrorDetails()
+        public ExceptionHandlingMiddleware(RequestDelegate next,
+            IHostingEnvironment env,
+            ILogger<ExceptionHandlingMiddleware> logger)
         {
-            /*StatusCode = context.Response.StatusCode,
-            Message = "Internal Server CustomError from the custom middleware."*/
-        }.ToString());
-    }
+            _next = next;
+            _env = env;
+            _logger = logger;
+        }
 
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext, 
-        Exception exception, 
-        CancellationToken cancellationToken)
-    {
-        _logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
-        
-        /*var error*/
-        return true;
-    }
+        public async Task Invoke(HttpContext context)
+        {
+            string message = null;
+            HttpStatusCode httpStatusCode = HttpStatusCode.InternalServerError;
+            ApiResultStatusCode apiStatusCode = ApiResultStatusCode.ServerError;
+
+            try
+            {
+                await _next(context);
+            }
+            catch (AppException exception)
+            {
+                _logger.LogError(exception, exception.Message);
+                httpStatusCode = exception.HttpStatusCode;
+                apiStatusCode = exception.ApiStatusCode;
+
+                if (_env.IsDevelopment())
+                {
+                    var dic = new Dictionary<string, string>
+                    {
+                        ["Exception"] = exception.Message,
+                        ["StackTrace"] = exception.StackTrace,
+                    };
+                    if (exception.InnerException != null)
+                    {
+                        dic.Add("InnerException.Exception", exception.InnerException.Message);
+                        dic.Add("InnerException.StackTrace", exception.InnerException.StackTrace);
+                    }
+                    if (exception.AdditionalData != null)
+                        dic.Add("AdditionalData", JsonConvert.SerializeObject(exception.AdditionalData));
+
+                    message = JsonConvert.SerializeObject(dic);
+                }
+                else
+                {
+                    message = exception.Message;
+                }
+                await WriteToResponseAsync();
+            }
+            catch (SecurityTokenExpiredException exception)
+            {
+                _logger.LogError(exception, exception.Message);
+                SetUnAuthorizeResponse(exception);
+                await WriteToResponseAsync();
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                _logger.LogError(exception, exception.Message);
+                SetUnAuthorizeResponse(exception);
+                await WriteToResponseAsync();
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, exception.Message);
+
+                if (_env.IsDevelopment())
+                {
+                    var dic = new Dictionary<string, string>
+                    {
+                        ["Exception"] = exception.Message,
+                        ["StackTrace"] = exception.StackTrace,
+                    };
+                    message = JsonConvert.SerializeObject(dic);
+                }
+                await WriteToResponseAsync();
+            }
+
+            async Task WriteToResponseAsync()
+            {
+                if (context.Response.HasStarted)
+                    throw new InvalidOperationException("The response has already started, the http status code middleware will not be executed.");
+
+                var result = new ApiResult(false, apiStatusCode, message);
+                var json = JsonConvert.SerializeObject(result);
+
+                context.Response.StatusCode = (int)httpStatusCode;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(json);
+            }
+
+            void SetUnAuthorizeResponse(Exception exception)
+            {
+                httpStatusCode = HttpStatusCode.Unauthorized;
+                apiStatusCode = ApiResultStatusCode.UnAuthorized;
+
+                if (_env.IsDevelopment())
+                {
+                    var dic = new Dictionary<string, string>
+                    {
+                        ["Exception"] = exception.Message,
+                        ["StackTrace"] = exception.StackTrace
+                    };
+                    if (exception is SecurityTokenExpiredException tokenException)
+                        dic.Add("Expires", tokenException.Expires.ToString());
+
+                    message = JsonConvert.SerializeObject(dic);
+                }
+            }
+        }
 }

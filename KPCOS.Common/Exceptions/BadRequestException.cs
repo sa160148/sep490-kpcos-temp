@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Common.Exceptions
+namespace KPCOS.Common.Exceptions
 {
     public class BadRequestException : AppException
     {
