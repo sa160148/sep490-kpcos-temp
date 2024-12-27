@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.BusinessLayer", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.DataAccessLayer", "src\KPCOS.DataAccessLayer\KPCOS.DataAccessLayer.csproj", "{D4839ACC-587D-4E63-AB81-6DABDFAD6F0C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.Common", "KPCOS.Common\KPCOS.Common.csproj", "{7BBB0D41-B44F-4E47-95EB-BC9DD5752451}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.WebFramework", "KPCOS.WebFramework\KPCOS.WebFramework.csproj", "{092F8498-165D-44BA-9497-EB8C5136C9CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,5 +33,13 @@ Global
 		{D4839ACC-587D-4E63-AB81-6DABDFAD6F0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4839ACC-587D-4E63-AB81-6DABDFAD6F0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4839ACC-587D-4E63-AB81-6DABDFAD6F0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BBB0D41-B44F-4E47-95EB-BC9DD5752451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BBB0D41-B44F-4E47-95EB-BC9DD5752451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BBB0D41-B44F-4E47-95EB-BC9DD5752451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BBB0D41-B44F-4E47-95EB-BC9DD5752451}.Release|Any CPU.Build.0 = Release|Any CPU
+		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

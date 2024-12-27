@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Common
+namespace KPCOS.Common
 {
     public enum ApiResultStatusCode
     {

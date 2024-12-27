@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace Common.Exceptions
+namespace KPCOS.Common.Exceptions
 {
     public class AppException : Exception
     {

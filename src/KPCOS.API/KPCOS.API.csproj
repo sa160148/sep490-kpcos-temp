@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\KPCOS.WebFramework\KPCOS.WebFramework.csproj" />
       <ProjectReference Include="..\KPCOS.BusinessLayer\KPCOS.BusinessLayer.csproj" />
     </ItemGroup>
 

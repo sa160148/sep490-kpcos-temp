@@ -12,6 +12,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\..\KPCOS.Common\KPCOS.Common.csproj" />
       <ProjectReference Include="..\KPCOS.DataAccessLayer\KPCOS.DataAccessLayer.csproj" />
     </ItemGroup>
 

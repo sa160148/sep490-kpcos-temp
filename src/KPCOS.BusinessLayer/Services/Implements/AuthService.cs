@@ -9,6 +9,7 @@ using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using KPCOS.Common.Exceptions;
 using Utility = KPCOS.BusinessLayer.Helpers.Utility;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
@@ -31,12 +32,12 @@ public class AuthService : IAuthService
         var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
         if (userRaw == null)
         {
-            throw new Exception("User not found");
+            throw new NotFoundException("user not found");
         }
 
         if (userRaw.Password != request.Password)
         {
-            throw new Exception("Password is incorrect");
+            throw new BadRequestException("password is incorrect");
         }
 
         return new SigninResponse
