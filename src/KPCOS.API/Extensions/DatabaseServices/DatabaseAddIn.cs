@@ -3,6 +3,7 @@ using KPCOS.DataAccessLayer.Context;
 using KPCOS.DataAccessLayer.Repositories;
 using KPCOS.DataAccessLayer.Repositories.Implements;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace KPCOS.API.Extensions.DatabaseServices;
 
@@ -16,14 +17,21 @@ public static class DatabaseAddIn
         });
         services.AddStackExchangeRedisCache(options =>
         {
-            configuration.GetConnectionString("Redis");
+            options.Configuration = configuration.GetConnectionString("Redis");
             //options.InstanceName = "cache";
+        });
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var redisConnectionString = configuration.GetConnectionString("Redis");
+            return ConnectionMultiplexer.Connect(redisConnectionString);
         });
 
         services.AddScoped<Func<KPCOSDBContext>>((provider) => () => provider.GetService<KPCOSDBContext>()!);
         services.AddScoped<DbFactory>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
+        
         
         return services;
     }

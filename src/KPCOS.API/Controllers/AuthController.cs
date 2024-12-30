@@ -22,8 +22,6 @@ namespace KPCOS.API.Controllers
         public async Task<ApiResult<SigninResponse>> SignInAsync(SigninRequest request)
         {
             var response =  await _authService.SignInAsync(request);
-            if (response == null)
-                return NotFound();
             return response;
             
         }

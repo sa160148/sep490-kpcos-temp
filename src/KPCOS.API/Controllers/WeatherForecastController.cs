@@ -1,4 +1,8 @@
+using System.Text.Json;
+using KPCOS.Common;
+
 using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 
 namespace KPCOS.API.Controllers;
 
@@ -11,6 +15,7 @@ public class WeatherForecastController : ControllerBase
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };
 
+    
     private readonly ILogger<WeatherForecastController> _logger;
 
     public WeatherForecastController(ILogger<WeatherForecastController> logger)
@@ -29,4 +34,7 @@ public class WeatherForecastController : ControllerBase
             })
             .ToArray();
     }
+    
+   
+    
 }
