@@ -2,7 +2,6 @@
 using System.Security.Claims;
 using System.Text;
 using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.objects;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
@@ -10,7 +9,6 @@ using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using KPCOS.Common.Exceptions;
-using Utility = KPCOS.BusinessLayer.Helpers.Utility;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -28,8 +26,8 @@ public class AuthService : IAuthService
 
     public async Task<SigninResponse> SignInAsync(SigninRequest request)
     {
-        IRepository<User?> userRepo = _unitOfWork.Repository<User>();
-        var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
+        IRepository<User> userRepo = _unitOfWork.Repository<User>();
+        var userRaw = await userRepo.SingleOrDefaultAsync(user => user!.Email == request.Email);
         if (userRaw == null)
         {
             throw new NotFoundException("user not found");
@@ -49,8 +47,8 @@ public class AuthService : IAuthService
     public async Task SignUpAsync(SignupRequest request)
     {
         var userRepo = _unitOfWork.Repository<User>();
-
-        if (await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email) != null)
+        var isUserExit = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
+        if (isUserExit != null)
         {
             throw new Exception("user exit");
         }
@@ -62,13 +60,14 @@ public class AuthService : IAuthService
             Id = userId,
             Email = request.Email,
             Password = request.Password,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now,
             Username = request.Username,
             IsActive = true,
             RoleId = role.Id
         };
 
-        await userRepo.AddAsync(user);
+        await userRepo.AddAsync(user, false);
         try
         {
             var isSaved = await userRepo.SaveAsync();
