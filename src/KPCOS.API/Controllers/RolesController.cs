@@ -1,6 +1,9 @@
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.objects;
+using KPCOS.BusinessLayer.Services;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Repositories;
+using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -9,37 +12,22 @@ namespace KPCOS.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class RolesController : ControllerBase
+public class RolesController : BaseController
 {
     private readonly ILogger<RolesController> _logger;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IRoleService _roleService;
 
-    public RolesController(ILogger<RolesController> logger, IUnitOfWork unitOfWork)
+    public RolesController(ILogger<RolesController> logger, IRoleService roleService)
     {
         _logger = logger;
-        _unitOfWork = unitOfWork;
+        _roleService = roleService;
     }
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> Get()
+    public async Task<ApiResult<List<RoleResponse>>> Get()
     {
-        var query = _unitOfWork.Repository<Role>().Get();
-        var roles = query.ToList();
-        if (roles.IsNullOrEmpty())
-        {
-            return StatusCode(404, new BaseResponse
-            {
-                Message = "no roles found",
-                ResponseCode = 404
-            });
-        }
-
-        return StatusCode(200, new BaseResponse<List<Role>>
-        {
-            ResponseCode = 200,
-            Message = "",
-            Data = roles
-        });
+        var roles = await _roleService.GetsAsync();
+        return roles;
     }
 }
