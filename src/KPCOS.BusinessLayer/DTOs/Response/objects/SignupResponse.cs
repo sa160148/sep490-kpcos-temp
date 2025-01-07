@@ -1,4 +1,4 @@
-﻿namespace KPCOS.BusinessLayer.DTOs.Response.objects;
+﻿namespace KPCOS.BusinessLayer.DTOs.Response.Objects;
 
 public class SignupResponse
 {

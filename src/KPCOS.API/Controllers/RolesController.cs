@@ -1,5 +1,5 @@
 using KPCOS.BusinessLayer.DTOs.Response;
-using KPCOS.BusinessLayer.DTOs.Response.objects;
+using KPCOS.BusinessLayer.DTOs.Response.Objects.Roles;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Repositories;
