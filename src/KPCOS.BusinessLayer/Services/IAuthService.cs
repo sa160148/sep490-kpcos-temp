@@ -1,6 +1,7 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Auths;
 using KPCOS.BusinessLayer.DTOs.Response;
-using KPCOS.BusinessLayer.DTOs.Response.Objects;
+using KPCOS.BusinessLayer.DTOs.Response.Auths;
 
 namespace KPCOS.BusinessLayer.Services;
 

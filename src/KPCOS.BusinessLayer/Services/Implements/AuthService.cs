@@ -2,7 +2,8 @@
 using System.Security.Claims;
 using System.Text;
 using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response.Objects;
+using KPCOS.BusinessLayer.DTOs.Request.Auths;
+using KPCOS.BusinessLayer.DTOs.Response.Auths;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;

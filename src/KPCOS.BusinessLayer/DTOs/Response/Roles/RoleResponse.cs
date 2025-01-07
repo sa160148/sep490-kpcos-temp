@@ -1,4 +1,4 @@
-namespace KPCOS.BusinessLayer.DTOs.Response.Objects.Roles
+namespace KPCOS.BusinessLayer.DTOs.Response.Roles
 {
     public class RoleResponse
     {

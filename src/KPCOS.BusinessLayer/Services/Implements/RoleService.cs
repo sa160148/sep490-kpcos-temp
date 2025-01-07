@@ -1,4 +1,4 @@
-using KPCOS.BusinessLayer.DTOs.Response.Objects.Roles;
+using KPCOS.BusinessLayer.DTOs.Response.Roles;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;

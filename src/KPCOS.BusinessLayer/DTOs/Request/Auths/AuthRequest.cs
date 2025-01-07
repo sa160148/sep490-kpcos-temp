@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.BusinessLayer.DTOs.Request.Auths;
 
 public class AuthRequest
 {
