@@ -1,9 +1,8 @@
-using System.Text.Json;
 using KPCOS.Common;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace KPCOS.BusinessLayer.Services;
+namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class RedisPublisher : IRedisPublisher
 {
