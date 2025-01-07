@@ -1,4 +1,4 @@
-﻿namespace KPCOS.BusinessLayer.DTOs.Response.objects;
+﻿namespace KPCOS.BusinessLayer.DTOs.Response.Auths;
 
 public class AuthResponse
 {
