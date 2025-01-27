@@ -1,4 +1,5 @@
-﻿using KPCOS.BusinessLayer.Helpers;
+﻿using KPCOS.BusinessLayer;
+using KPCOS.BusinessLayer.Helpers;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.BusinessLayer.Services.Implements;
 using KPCOS.Common;
@@ -14,6 +15,7 @@ public static class AddServiceCollection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRedisPublisher, RedisPublisher>();
         services.AddScoped<SocketIoEmitter>();
+        services.AddScoped<IServiceService, ServiceService>();    
         
         
         /*services.AddScoped<IUserService, UserService>();
