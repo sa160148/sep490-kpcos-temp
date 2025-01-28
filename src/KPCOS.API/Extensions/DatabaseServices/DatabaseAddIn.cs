@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using KPCOS.DataAccessLayer.Context;
+using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using KPCOS.DataAccessLayer.Repositories.Implements;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,8 @@ public static class DatabaseAddIn
     {
         services.AddDbContext<KPCOSDBContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("Default"));
+            options.UseNpgsql(configuration.GetConnectionString("Default"),
+                o => o.MapEnum<EnumService>("enumService"));
         });
         services.AddStackExchangeRedisCache(options =>
         {
