@@ -1,6 +1,8 @@
+using KPCOS.BusinessLayer.DTOs.Request;
+
 namespace KPCOS.BusinessLayer;
 
-public class IServiceService
+public interface IServiceService
 {
-    
+    Task CreateService(ServiceCreateRequest request);
 }

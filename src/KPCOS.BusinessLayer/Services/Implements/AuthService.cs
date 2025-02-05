@@ -61,9 +61,8 @@ public class AuthService : IAuthService
             Id = userId,
             Email = request.Email,
             Password = request.Password,
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now,
-            Username = request.Username,
+            CreatedAt = DateTime.UtcNow,
+            Fullname = request.Fullname,
             IsActive = true,
             RoleId = role.Id
         };

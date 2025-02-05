@@ -6,18 +6,36 @@ namespace KPCOS.DataAccessLayer.Entities;
 [Table("User")]
 public class User : BaseEntity
 {
-    [Required, MaxLength(128), Column("username", TypeName = "character varying(256)")]
-    public string Username { get; set; }
+    [Column("fullname", TypeName = "character varying(255)")]
+    [Required]
+    public string Fullname { get; set; }
 
-    [Required, MaxLength(256), Column("password", TypeName = "character varying(256)")]
+    [Column("birthdate", TypeName = "date")]
+    public DateTime? Birthdate { get; set; }
+
+    [Column("address", TypeName = "text")]
+    public string? Address { get; set; }
+
+    [Column("gender", TypeName = "character varying(10)")]
+    public string? Gender { get; set; }
+
+    [Column("avatar", TypeName = "text")]
+    public string Avatar { get; set; } = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s";
+
+    [Column("password", TypeName = "character varying(255)")]
+    [Required]
     public string Password { get; set; }
 
-    [Required, MaxLength(128), Column("email", TypeName = "character varying(256)")]
+    [Column("email", TypeName = "character varying(255)")]
+    [Required]
+    [EmailAddress]
     public string Email { get; set; }
 
-    [Required, Column("role_id", TypeName = "uuid")]
+    [Column("role_id", TypeName = "uuid")]
     public Guid RoleId { get; set; }
 
-    [ForeignKey(nameof(RoleId))]
-    public virtual Role Role { get; set; } = null!;
+    [ForeignKey("RoleId")]
+    public virtual Role Role { get; set; }
+        
+    public virtual Customer Customer { get; set; }
 }
