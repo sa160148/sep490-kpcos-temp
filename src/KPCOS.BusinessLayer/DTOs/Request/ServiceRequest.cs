@@ -10,19 +10,19 @@ public class ServiceRequest
 public class ServiceCreateRequest
 {
     [DefaultValue("")]
-    public string name { get; set; }
+    public string Name { get; set; }
     
     [DefaultValue("")]
-    public string description { get; set; }
+    public string Description { get; set; }
     
     [Required(ErrorMessage = "can not let price null")]
     [DefaultValue(0)]
-    public int price { get; set; }
+    public int Price { get; set; }
     
     [DefaultValue(0)]
-    public string unit { get; set; }
+    public string Unit { get; set; }
     
     [DefaultValue(EnumService.Unit)]
-    public string type { get; set; }
+    public string Type { get; set; }
 }
 

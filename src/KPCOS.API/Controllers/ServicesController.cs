@@ -1,0 +1,58 @@
+using KPCOS.BusinessLayer;
+using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.Services;
+using KPCOS.Common;
+using KPCOS.WebFramework.Api;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+
+namespace KPCOS.API.Controllers;
+
+
+[Route("api/[controller]")]
+[ApiController]
+public class ServicesController : BaseController
+{
+    private readonly IServiceService _serviceService;
+    
+    public ServicesController(IServiceService serviceService)
+    {
+        _serviceService = serviceService;
+    }
+
+    [HttpPost("")]
+    public async Task<ApiResult> CreateServiceAsync(ServiceCreateRequest request)
+    {
+        await _serviceService.CreateService(request);
+        return new ApiResult(true, ApiResultStatusCode.Success);
+    }
+    
+    [HttpGet("")]
+    public async Task<ApiResult<List<ServiceReponse>>> GetsAsync()
+    {
+        var result = await _serviceService.GetsAsync();
+        return result;
+    }   
+
+    [HttpGet("{id}")]
+    public async Task<ApiResult<ServiceReponse>> GetServiceByIdAsync(Guid id)
+    {
+        var result = await _serviceService.GetServiceByIdAsync(id);
+        return result;
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ApiResult> UpdateServiceAsync(Guid id, ServiceCreateRequest request)
+    {
+        await _serviceService.UpdateServiceAsync(id, request);
+        return new ApiResult(true, ApiResultStatusCode.Success);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ApiResult> DeleteServiceAsync(Guid id)
+    {
+        await _serviceService.DeleteServiceAsync(id);
+        return new ApiResult(true, ApiResultStatusCode.Success);
+    }
+}
