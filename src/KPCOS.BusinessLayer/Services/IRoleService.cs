@@ -1,4 +1,4 @@
-using KPCOS.BusinessLayer.DTOs.Response.Roles;
+using KPCOS.BusinessLayer.DTOs.Response;
 
 namespace KPCOS.BusinessLayer.Services;
 

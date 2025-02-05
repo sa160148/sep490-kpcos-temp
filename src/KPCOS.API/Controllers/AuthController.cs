@@ -1,7 +1,5 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Request.Auths;
 using KPCOS.BusinessLayer.DTOs.Response;
-using KPCOS.BusinessLayer.DTOs.Response.Auths;
 using KPCOS.BusinessLayer.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
