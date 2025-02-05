@@ -26,16 +26,6 @@ public class DBInitData
             adRole
         );
 
-        _modelBuilder.Entity<User>().HasData(
-            new User
-            {
-                Id = new Guid(),
-                Username = "admin",
-                Email = "root@example.com",
-                Password = "1",
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                RoleId = adRole.Id,
-            });
+       
     }
 }

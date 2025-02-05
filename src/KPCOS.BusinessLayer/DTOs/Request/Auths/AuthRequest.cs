@@ -10,10 +10,11 @@ public class AuthRequest
 public class SigninRequest
 {
     [Required(ErrorMessage = "can not let email null")]
-    [DefaultValue("root@gmail.com")]
+    [DefaultValue("admin@mail.com")]
     public string Email { get; set; }
     
     [Required(ErrorMessage = "can not let password null")]
+    [DefaultValue("123456")]
     public string Password { get; set; }
 }
 
@@ -21,7 +22,7 @@ public class SignupRequest
 {
     [Required(ErrorMessage = "can not let username null")]
     [Description("root")]
-    public string Username { get; set; }
+    public string Fullname { get; set; }
     
     [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("root@gmail.com")]
