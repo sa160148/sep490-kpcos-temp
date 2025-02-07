@@ -1,24 +1,27 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace KPCOS.DataAccessLayer.Entities;
+namespace KPCOS.DataAccessLayer;
 
-[Table("package")]
-public class Package : BaseEntity
+public partial class Package
 {
-    [Column("name", TypeName = "character varying(255)")]
-    [Required]
-    public string Name { get; set; }
+    public Guid Id { get; set; }
 
-    [Column("rate", TypeName = "integer")]
-    [Range(0, 10)]
-    public int Rate { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    [Column("description", TypeName = "text")]
+    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public int? Rate { get; set; }
+
     public string? Description { get; set; }
 
-    [Column("price", TypeName = "integer")]
-    public int Price { get; set; }
+    public int? Price { get; set; }
 
     public virtual ICollection<PackageService> PackageServices { get; set; } = new List<PackageService>();
 }

@@ -3,12 +3,12 @@ using System.Security.Claims;
 using System.Text;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
-using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using KPCOS.Common.Exceptions;
+using KPCOS.DataAccessLayer;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -53,8 +53,6 @@ public class AuthService : IAuthService
             throw new Exception("user exit");
         }
         Guid userId = Guid.NewGuid();
-        var role = await _unitOfWork.Repository<Role>()
-            .SingleOrDefaultAsync(role => role.Name == RoleEnum.CUSTOMER.ToString());
         var user = new User()
         {
             Id = userId,
@@ -63,7 +61,7 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow,
             Fullname = request.Fullname,
             IsActive = true,
-            RoleId = role.Id
+            Role = RoleEnum.CUSTOMER.ToString(),
         };
 
         await userRepo.AddAsync(user, false);
@@ -95,7 +93,7 @@ public class AuthService : IAuthService
             claims: [
                 new Claim(ClaimTypes.Name, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.RoleId.ToString())
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             ]
         );
         return new JwtSecurityTokenHandler().WriteToken(tokenDescript);

@@ -1,7 +1,7 @@
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
-using KPCOS.DataAccessLayer.Entities;
+using KPCOS.DataAccessLayer;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;

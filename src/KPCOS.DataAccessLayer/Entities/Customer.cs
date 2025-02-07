@@ -1,17 +1,23 @@
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace KPCOS.DataAccessLayer.Entities;
+namespace KPCOS.DataAccessLayer;
 
-
-[Table("customer")]
-public class Customer : BaseEntity
+public partial class Customer
 {
-    [Column("point", TypeName = "integer")]
-    public int Point { get; set; } = 0;
+    public Guid Id { get; set; }
 
-    [Column("user_id", TypeName = "uuid")]
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public int? Point { get; set; }
+
     public Guid UserId { get; set; }
 
-    [ForeignKey("UserId")]
-    public virtual User User { get; set; }
+    public virtual User User { get; set; } = null!;
 }

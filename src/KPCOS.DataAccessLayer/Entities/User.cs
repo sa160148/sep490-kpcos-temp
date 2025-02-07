@@ -1,41 +1,35 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace KPCOS.DataAccessLayer.Entities;
+namespace KPCOS.DataAccessLayer;
 
-[Table("User")]
-public class User : BaseEntity
+public partial class User
 {
-    [Column("fullname", TypeName = "character varying(255)")]
-    [Required]
-    public string Fullname { get; set; }
+    public Guid Id { get; set; }
 
-    [Column("birthdate", TypeName = "date")]
-    public DateTime? Birthdate { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    [Column("address", TypeName = "text")]
+    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public string Fullname { get; set; } = null!;
+
+    public DateOnly? Birthdate { get; set; }
+
     public string? Address { get; set; }
 
-    [Column("gender", TypeName = "character varying(10)")]
     public string? Gender { get; set; }
 
-    [Column("avatar", TypeName = "text")]
-    public string Avatar { get; set; } = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s";
+    public string? Avatar { get; set; }
 
-    [Column("password", TypeName = "character varying(255)")]
-    [Required]
-    public string Password { get; set; }
+    public string Password { get; set; } = null!;
 
-    [Column("email", TypeName = "character varying(255)")]
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; }
+    public string Email { get; set; } = null!;
 
-    [Column("role_id", TypeName = "uuid")]
-    public Guid RoleId { get; set; }
+    public string Role { get; set; } = null!;
 
-    [ForeignKey("RoleId")]
-    public virtual Role Role { get; set; }
-        
-    public virtual Customer Customer { get; set; }
+    public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 }

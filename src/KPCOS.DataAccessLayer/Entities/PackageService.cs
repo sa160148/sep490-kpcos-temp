@@ -1,33 +1,33 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using KPCOS.DataAccessLayer.Enums;
+﻿using System;
+using System.Collections.Generic;
 
-namespace KPCOS.DataAccessLayer.Entities;
+namespace KPCOS.DataAccessLayer;
 
-
-[Table("package_service")]
-public class PackageService : BaseEntity
+public partial class PackageService
 {
-    [Column("price", TypeName = "integer")]
-    public int Price { get; set; }
+    public Guid Id { get; set; }
 
-    [Column("category", TypeName = "enumCategory")]
-    public EnumCategory Category { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    [Column("quantity", TypeName = "integer")]
-    public int Quantity { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    [Column("amount", TypeName = "integer")]
-    public int Amount { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
-    [Column("package_id", TypeName = "uuid")]
+    public bool? IsActive { get; set; }
+
+    public int? Price { get; set; }
+
+    public int? Category { get; set; }
+
+    public int? Quantity { get; set; }
+
+    public int? Amount { get; set; }
+
     public Guid PackageId { get; set; }
 
-    [ForeignKey("PackageId")]
-    public virtual Package Package { get; set; }
-
-    [Column("service_id", TypeName = "uuid")]
     public Guid ServiceId { get; set; }
 
-    [ForeignKey("ServiceId")]
-    public virtual Service Service { get; set; }
+    public virtual Package Package { get; set; } = null!;
+
+    public virtual Service Service { get; set; } = null!;
 }
