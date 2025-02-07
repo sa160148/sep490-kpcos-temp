@@ -1,26 +1,29 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using KPCOS.DataAccessLayer.Enums;
+﻿using System;
+using System.Collections.Generic;
 
-namespace KPCOS.DataAccessLayer.Entities;
+namespace KPCOS.DataAccessLayer;
 
-
-[Table("service")]
-public class Service : BaseEntity
+public partial class Service
 {
-    [Column("name", TypeName = "character varying(255)")]
-    [Required]
-    public string Name { get; set; }
+    public Guid Id { get; set; }
 
-    [Column("description", TypeName = "text")]
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public string Name { get; set; } = null!;
+
     public string? Description { get; set; }
 
-    [Column("price", TypeName = "integer")]
-    public int Price { get; set; }
+    public int? Price { get; set; }
 
-    [Column("unit", TypeName = "character varying(255)")]
-    public string Unit { get; set; }
+    public string? Unit { get; set; }
 
-    [Column("type", TypeName = "integer")]
-    public int Type { get; set; }
+    public int? Type { get; set; }
+
+    public virtual ICollection<PackageService> PackageServices { get; set; } = new List<PackageService>();
 }

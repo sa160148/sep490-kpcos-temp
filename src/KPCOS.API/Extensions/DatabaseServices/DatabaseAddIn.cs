@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using KPCOS.DataAccessLayer.Context;
+using KPCOS.DataAccessLayer;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using KPCOS.DataAccessLayer.Repositories.Implements;
@@ -12,7 +12,7 @@ public static class DatabaseAddIn
 {
     public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<KPCOSDBContext>(options =>
+        services.AddDbContext<KpcosContext>(options =>
         {
             options.UseNpgsql(configuration.GetConnectionString("Default"),
                 o => o.MapEnum<EnumService>("enumService"));
@@ -28,7 +28,7 @@ public static class DatabaseAddIn
             return ConnectionMultiplexer.Connect(redisConnectionString);
         });
 
-        services.AddScoped<Func<KPCOSDBContext>>((provider) => () => provider.GetService<KPCOSDBContext>()!);
+        services.AddScoped<Func<KpcosContext>>((provider) => () => provider.GetService<KpcosContext>()!);
         services.AddScoped<DbFactory>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();

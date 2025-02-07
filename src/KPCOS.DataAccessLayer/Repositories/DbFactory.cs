@@ -1,5 +1,4 @@
-﻿using KPCOS.DataAccessLayer.Context;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace KPCOS.DataAccessLayer.Repositories;
 
@@ -7,9 +6,9 @@ public class DbFactory
 {
     private DbContext _dbContext;
     private bool _disposed;
-    private readonly Func<KPCOSDBContext> _instanceFunc;
+    private readonly Func<KpcosContext> _instanceFunc;
 
-    public DbFactory(Func<KPCOSDBContext> dbContextFactory)
+    public DbFactory(Func<KpcosContext> dbContextFactory)
     {
         _instanceFunc = dbContextFactory;
     }

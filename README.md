@@ -1,38 +1,41 @@
-# Instruction
+# Instructions
 
-For using this project source that generates the database and its data seeding, follow these steps to ensure smooth execution:
+This project uses Entity Framework Core (EF Core) by scaffolding from an existing database. For any changes, modify the database, then scaffold again and remove the previous scaffold version.
 
-1. **Update the database with the image** (read more here: [Migrations Overview - EF Core | Microsoft Learn](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli)).
-2. Simply update the database, add a new image, or apply migrations **only for changes in the entity or fluent API context files**.  
-   When you perform an update, the system will **auto-generate a default data seed**.
+## Prerequisites
 
----
+Ensure your local environment or computer has the following:
 
-## Changes in Entity and Fluent API Context Files
+1. **Dotnet CLI Tools** from [EF Core tools reference (.NET CLI) - EF Core | Microsoft Learn](https://learn.microsoft.com/en-us/ef/core/cli/dotnet), make sure the version is at least 8.
+2. An **existing database** (this project uses PostgreSQL). Ensure your database is running.
+3. Basic knowledge of [Reverse Engineering - EF Core | Microsoft Learn](https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding).
 
-- If you change something in the **entity** or **fluent API context file**, add a **new version** of the image or migration using the naming convention:  
-  `v + number` (e.g., `v1 => v2`).
+## Local Connection
 
-- Once the image or migration is successfully added:
-   - Update the database.  
-   - **Tip:** For better success rates, drop the current running database before applying updates.
+For local use, you can use the following connection string:
 
----
+```
+Host=localhost;Database=kpcos;Username=postgre;Password=12345;Trust Server Certificate=True;
+```
 
-## Handling Database Connection Errors
+## Scaffolding Instructionss
 
-If you encounter errors when updating or interacting with the database:
+To scaffold the database, use the following command in your terminal, command prompt, or PowerShell. Ensure you are in the `DataAccessLayer` directory:
 
-1. **Fix the connection string** in:
-   - `appsettings.json`, or
-   - the `hardConn` variable in the fluent API context file.
+```
+dotnet ef dbcontext scaffold "Host=localhost;Database=kpcos;Username=postgre;Password=12345;Trust Server Certificate=True;" "Npgsql.EntityFrameworkCore.PostgreSQL" --output-dir ./
+```
 
-2. For startup project errors with `KPCOS.API` (connection string not retrieved):
-   - Comment out the **"get connection string"** section.
-   - Uncomment the `hardConn` and try again.
+> **Note:** You can customize the output directory for scaffolding entities. For more details, refer to [Reverse Engineering - EF Core | Microsoft Learn](https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding).
 
----
+## Post-Scaffolding Modifications
 
-### Helpful Resource
+After scaffolding, you will need to make manual adjustments:
 
-For further details on EF Core migrations, refer to [Migrations Overview - EF Core | Microsoft Learn](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli).
+1. **Delete Old Entities:** Remove the old version of the entity files in the `Entities` folder.
+2. **Move New Entities:** Transfer the newly generated entity files (which are in the `DataAccessLayer` directory but not in `Entities`) to the `Entities` folder.
+3. **Adjust the DbContext:** Perform the same steps for the DbContext file.
+4. **Update Namespaces:** Ensure all namespaces are updated correctly to align with your project structure.
+
+By following these steps, you can keep your project in sync with database changes.
+
