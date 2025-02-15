@@ -1266,6 +1266,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("phone");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
+                .IsRequired(false)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
