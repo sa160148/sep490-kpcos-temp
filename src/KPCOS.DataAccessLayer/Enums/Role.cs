@@ -8,8 +8,8 @@ public enum RoleEnum
     ADMIN,
     [EnumMember(Value = "GUEST")]
     GUEST,
-    [EnumMember(Value = "CONSULTOR")]
-    CONSULTOR,
+    [EnumMember(Value = "CONSULTANT")]
+    CONSULTANT,
     [EnumMember(Value = "DESIGNER")]
     DESIGNER,
     [EnumMember(Value = "MANAGER")]

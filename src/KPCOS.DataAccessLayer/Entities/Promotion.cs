@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Promotion
+public partial class Promotion : BaseEntity
 {
     public Guid Id { get; set; }
 

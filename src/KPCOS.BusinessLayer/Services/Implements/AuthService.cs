@@ -60,7 +60,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             Password = request.Password,
             CreatedAt = DateTime.UtcNow,
-            FullName = request.Fullname,
+            FullName = request.FullName,
             IsActive = true,
             // Role = RoleEnum.CUSTOMER.ToString(),
         };

@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Customer
+public partial class Customer : BaseEntity
 {
     public Guid Id { get; set; }
 

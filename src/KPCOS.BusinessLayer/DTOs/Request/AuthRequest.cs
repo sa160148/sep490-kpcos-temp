@@ -22,7 +22,7 @@ public class SignupRequest
 {
     [Required(ErrorMessage = "can not let username null")]
     [Description("root")]
-    public string Fullname { get; set; }
+    public string FullName { get; set; }
     
     [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("root@gmail.com")]
@@ -33,4 +33,12 @@ public class SignupRequest
 
     [Required(ErrorMessage = "can not let confirm password null")]
     public string ConfirmPassword { get; set; }
+
+    [Required(ErrorMessage = "can not let avatar null")]
+    [DefaultValue("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s")]
+    public string Avatar { get; set; }
+
+    [Required(ErrorMessage = "can not let phone null")]
+    [DefaultValue("")]
+    public string Phone { get; set; }
 }

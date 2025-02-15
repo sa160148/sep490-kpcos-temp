@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Transaction
+public partial class Transaction : BaseEntity
 {
     public Guid Id { get; set; }
 
