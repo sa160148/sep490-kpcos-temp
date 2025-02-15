@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class ConstructionTemplate
+public partial class ConstructionTemplate : BaseEntity
 {
     public Guid Id { get; set; }
 

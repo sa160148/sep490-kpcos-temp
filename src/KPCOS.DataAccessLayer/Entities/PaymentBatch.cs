@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class PaymentBatch
+public partial class PaymentBatch : BaseEntity
 {
     public Guid Id { get; set; }
 

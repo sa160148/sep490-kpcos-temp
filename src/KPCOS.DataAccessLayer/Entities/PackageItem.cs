@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class PackageItem
+public partial class PackageItem : BaseEntity
 {
     public Guid Id { get; set; }
 
