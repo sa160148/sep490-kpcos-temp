@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class ConstructionItem : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class ConstructionItem
 {
     public Guid Id { get; set; }
 
@@ -22,7 +25,7 @@ public partial class ConstructionItem : BaseEntity
 
     public Guid Idproject { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<ConstructionTask> ConstructionTasks { get; set; } = new List<ConstructionTask>();
 

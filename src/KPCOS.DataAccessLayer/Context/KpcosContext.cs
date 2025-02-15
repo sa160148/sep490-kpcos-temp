@@ -1,4 +1,6 @@
-﻿using KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
+using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 

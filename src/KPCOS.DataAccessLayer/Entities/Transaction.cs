@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class Transaction : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class Transaction
 {
     public Guid Id { get; set; }
 
@@ -22,7 +25,7 @@ public partial class Transaction : BaseEntity
 
     public Guid? IdDocs { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
 

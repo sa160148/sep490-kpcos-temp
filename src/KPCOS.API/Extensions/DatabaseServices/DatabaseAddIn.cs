@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using KPCOS.DataAccessLayer;
 using KPCOS.DataAccessLayer.Context;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;

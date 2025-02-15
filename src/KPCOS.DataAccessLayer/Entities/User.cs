@@ -1,10 +1,13 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class User : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class User
 {
     public Guid Id { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
 
@@ -16,11 +19,11 @@ public partial class User : BaseEntity
 
     public string FullName { get; set; } = null!;
 
-    public string Phone { get; set; } = null!;
+    public string Phone { get; set; } = "01234566789";
 
     public string? Avatar { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; } = "YES";
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 

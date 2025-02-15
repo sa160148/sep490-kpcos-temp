@@ -8,7 +8,6 @@ using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using KPCOS.Common.Exceptions;
-using KPCOS.DataAccessLayer;
 using KPCOS.DataAccessLayer.Entities;
 
 namespace KPCOS.BusinessLayer.Services.Implements;

@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class Design : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class Design
 {
     public Guid Id { get; set; }
 
@@ -14,7 +17,7 @@ public partial class Design : BaseEntity
 
     public string? Reason { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public bool? IsPublic { get; set; }
 

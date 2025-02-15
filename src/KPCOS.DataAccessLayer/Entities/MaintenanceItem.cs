@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class MaintenanceItem : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class MaintenanceItem
 {
     public Guid Id { get; set; }
 

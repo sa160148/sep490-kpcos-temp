@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class Promotion : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class Promotion
 {
     public Guid Id { get; set; }
 
@@ -20,7 +23,7 @@ public partial class Promotion : BaseEntity
 
     public DateTime Exptime { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<Quotation> Quotations { get; set; } = new List<Quotation>();
 }

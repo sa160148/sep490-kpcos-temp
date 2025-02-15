@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class MaintenancePackage : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class MaintenancePackage
 {
     public Guid Id { get; set; }
 
@@ -16,7 +19,7 @@ public partial class MaintenancePackage : BaseEntity
 
     public int PricePerUnit { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<MaintenancePackageItem> MaintenancePackageItems { get; set; } = new List<MaintenancePackageItem>();
 
