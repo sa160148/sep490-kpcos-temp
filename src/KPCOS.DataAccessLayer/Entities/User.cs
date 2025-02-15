@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class User
 {
@@ -11,25 +8,21 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
-    public DateTime? DeletedAt { get; set; }
-
     public bool? IsActive { get; set; }
-
-    public string Fullname { get; set; } = null!;
-
-    public DateOnly? Birthdate { get; set; }
-
-    public string? Address { get; set; }
-
-    public string? Gender { get; set; }
-
-    public string? Avatar { get; set; }
-
-    public string Password { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
-    public string Role { get; set; } = null!;
+    public string Password { get; set; } = null!;
+
+    public string FullName { get; set; } = null!;
+
+    public string Phone { get; set; } = null!;
+
+    public string? Avatar { get; set; }
+
+    public string Status { get; set; } = null!;
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
+
+    public virtual ICollection<Staff> Staff { get; set; } = new List<Staff>();
 }
