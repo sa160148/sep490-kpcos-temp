@@ -34,11 +34,7 @@ public class SignupRequest
     [Required(ErrorMessage = "can not let confirm password null")]
     public string ConfirmPassword { get; set; }
 
-    [Required(ErrorMessage = "can not let avatar null")]
-    [DefaultValue("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s")]
-    public string Avatar { get; set; }
-
     [Required(ErrorMessage = "can not let phone null")]
-    [DefaultValue("")]
+    [DefaultValue("0123456789")]
     public string Phone { get; set; }
 }
