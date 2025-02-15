@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class MaintenanceRequestTask : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class MaintenanceRequestTask
 {
     public Guid Id { get; set; }
 
@@ -16,7 +19,7 @@ public partial class MaintenanceRequestTask : BaseEntity
 
     public Guid StaffId { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public string? ImageUrl { get; set; }
 

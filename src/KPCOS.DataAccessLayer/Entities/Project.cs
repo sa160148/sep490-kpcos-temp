@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class Project : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class Project
 {
     public Guid Id { get; set; }
 
@@ -28,7 +31,7 @@ public partial class Project : BaseEntity
 
     public string? Note { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public Guid CustomerId { get; set; }
 

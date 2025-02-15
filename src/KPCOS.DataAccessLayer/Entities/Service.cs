@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class Service : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class Service
 {
     public Guid Id { get; set; }
 
@@ -20,7 +23,7 @@ public partial class Service : BaseEntity
 
     public int Price { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<QuotationDetail> QuotationDetails { get; set; } = new List<QuotationDetail>();
 }
