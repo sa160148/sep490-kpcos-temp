@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Package
+public partial class MaintenancePackage
 {
     public Guid Id { get; set; }
 
@@ -14,11 +14,11 @@ public partial class Package
 
     public string Description { get; set; } = null!;
 
-    public int Price { get; set; }
+    public int PricePerUnit { get; set; }
 
     public string Status { get; set; } = null!;
 
-    public virtual ICollection<PackageDetail> PackageDetails { get; set; } = new List<PackageDetail>();
+    public virtual ICollection<MaintenancePackageItem> MaintenancePackageItems { get; set; } = new List<MaintenancePackageItem>();
 
-    public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
+    public virtual ICollection<MaintenanceRequest> MaintenanceRequests { get; set; } = new List<MaintenanceRequest>();
 }

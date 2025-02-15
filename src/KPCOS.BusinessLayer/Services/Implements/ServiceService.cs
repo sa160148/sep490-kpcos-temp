@@ -3,6 +3,7 @@ using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer;
+using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,7 @@ public class ServiceService : IServiceService
             Description = request.Description,
             Price = request.Price,
             Unit = request.Unit,
-            Type = typeDetails.Value
+            //Type = 
         };
 
         // Lưu vào database
@@ -78,7 +79,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
         };
     }
 
@@ -108,7 +109,7 @@ public class ServiceService : IServiceService
         service.Description = request.Description;
         service.Price = request.Price;
         service.Unit = request.Unit;
-        service.Type = typeDetails.Value;
+        // service.Type = typeDetails.Value;
 
         await serviceRepo.UpdateAsync(service);
         await _unitOfWork.SaveChangesAsync();
@@ -139,7 +140,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
         }).ToList();
         return new PaginationResult<ServiceReponse>(pagedData, validFilter.PageNumber, validFilter.PageSize, services.Count);
     }
