@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class MaintenanceRequestTask
+public partial class MaintenanceRequestTask : BaseEntity
 {
     public Guid Id { get; set; }
 

@@ -29,6 +29,7 @@ public class PackageService : IPackageService
         }
         IRepository<Package> packageRepo = _unitOfWork.Repository<Package>();
         IRepository<PackageDetail> packageDetailRepo = _unitOfWork.Repository<PackageDetail>();
+        
         var packageRaw = await packageRepo.SingleOrDefaultAsync(service => service!.Name == request.Name);
         if (packageRaw != null)
         {
@@ -36,13 +37,39 @@ public class PackageService : IPackageService
         }
         _logger.LogInformation("Gói không tồn tại");
         
-        
+        // check if package detail is valid
+        foreach (var packageDetail in request.Items)
+        {
+            var service = await _unitOfWork.Repository<PackageItem>().SingleOrDefaultAsync(s => s.Id == packageDetail.IdPackageItem);
+            if (service == null)
+            {
+                throw new BadRequestException("có dịch vụ không tồn tại");
+            }
+        }
         
         var package = new Package
         {
             Name = request.Name,
+            Description = request.Description,
+            Price = request.Price,
         };
         await packageRepo.AddAsync(package);
+        
+        foreach (var packageDetail in request.Items)
+        {
+            var detail = new PackageDetail
+            {
+                PackageId = package.Id,
+                PackageItemId = packageDetail.IdPackageItem,
+                Quantity = packageDetail.Quantity,
+                Description = packageDetail.Description,
+            };
+            await packageDetailRepo.AddAsync(detail);
+        }
+
+        // Lưu thay đổi
         await _unitOfWork.SaveChangesAsync();
+       
+       
     }
 }

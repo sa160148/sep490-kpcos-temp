@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class DesignImage
+public partial class DesignImage : BaseEntity
 {
     public Guid Id { get; set; }
 

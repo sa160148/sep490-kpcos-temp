@@ -22,7 +22,7 @@ public class SignupRequest
 {
     [Required(ErrorMessage = "can not let username null")]
     [Description("root")]
-    public string Fullname { get; set; }
+    public string FullName { get; set; }
     
     [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("root@gmail.com")]
@@ -33,4 +33,8 @@ public class SignupRequest
 
     [Required(ErrorMessage = "can not let confirm password null")]
     public string ConfirmPassword { get; set; }
+
+    [Required(ErrorMessage = "can not let phone null")]
+    [DefaultValue("0123456789")]
+    public string Phone { get; set; }
 }

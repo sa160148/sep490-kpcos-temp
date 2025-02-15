@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class User
+public partial class User : BaseEntity
 {
     public Guid Id { get; set; }
 
@@ -20,7 +20,7 @@ public partial class User
 
     public string? Avatar { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 

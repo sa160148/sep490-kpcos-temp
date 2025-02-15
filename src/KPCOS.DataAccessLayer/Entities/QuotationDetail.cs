@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class QuotationDetail
+public partial class QuotationDetail : BaseEntity
 {
     public Guid Id { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Package
+public partial class Package : BaseEntity
 {
     public Guid Id { get; set; }
 
@@ -16,7 +16,7 @@ public partial class Package
 
     public int Price { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string Status { get; set; } = "";
 
     public virtual ICollection<PackageDetail> PackageDetails { get; set; } = new List<PackageDetail>();
 

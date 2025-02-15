@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class ProjectStaff
+public partial class ProjectStaff : BaseEntity
 {
     public Guid Id { get; set; }
 
