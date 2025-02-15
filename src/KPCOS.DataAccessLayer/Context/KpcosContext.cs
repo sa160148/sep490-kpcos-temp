@@ -1,6 +1,7 @@
 ﻿using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Quartz.Logging;
 
 namespace KPCOS.DataAccessLayer.Context;
 

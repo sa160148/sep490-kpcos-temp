@@ -161,7 +161,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
         });
         return (pagedDataResponse, _unitOfWork.Repository<Service>().Get().Count());
     }

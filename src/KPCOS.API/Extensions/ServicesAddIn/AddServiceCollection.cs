@@ -16,6 +16,8 @@ public static class AddServiceCollection
         services.AddScoped<IRedisPublisher, RedisPublisher>();
         services.AddScoped<SocketIoEmitter>();
         services.AddScoped<IServiceService, ServiceService>();    
+        services.AddScoped<IPackageItemService, PackageItemService>();
+        services.AddScoped<IPackageService, PackageService>();
         
         
         /*services.AddScoped<IUserService, UserService>();
