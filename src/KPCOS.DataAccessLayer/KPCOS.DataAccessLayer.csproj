@@ -26,4 +26,7 @@
         <PackageReference Include="Scrutor" Version="5.0.2" />
 
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\KPCOS.Common\KPCOS.Common.csproj" />
+    </ItemGroup>
 </Project>

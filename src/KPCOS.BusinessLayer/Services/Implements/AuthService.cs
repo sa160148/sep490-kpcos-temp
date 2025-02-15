@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer;
+using KPCOS.DataAccessLayer.Entities;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -59,9 +60,9 @@ public class AuthService : IAuthService
             Email = request.Email,
             Password = request.Password,
             CreatedAt = DateTime.UtcNow,
-            Fullname = request.Fullname,
+            FullName = request.Fullname,
             IsActive = true,
-            Role = RoleEnum.CUSTOMER.ToString(),
+            // Role = RoleEnum.CUSTOMER.ToString(),
         };
 
         await userRepo.AddAsync(user, false);
@@ -93,7 +94,7 @@ public class AuthService : IAuthService
             claims: [
                 new Claim(ClaimTypes.Name, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
+                // new Claim(ClaimTypes.Role, user.Role.ToString())
             ]
         );
         return new JwtSecurityTokenHandler().WriteToken(tokenDescript);

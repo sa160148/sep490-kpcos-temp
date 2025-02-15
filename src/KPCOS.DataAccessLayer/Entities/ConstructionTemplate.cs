@@ -1,6 +1,6 @@
 ﻿namespace KPCOS.DataAccessLayer.Entities;
 
-public partial class Package
+public partial class ConstructionTemplate
 {
     public Guid Id { get; set; }
 
@@ -14,11 +14,9 @@ public partial class Package
 
     public string Description { get; set; } = null!;
 
-    public int Price { get; set; }
-
     public string Status { get; set; } = null!;
 
-    public virtual ICollection<PackageDetail> PackageDetails { get; set; } = new List<PackageDetail>();
+    public virtual ICollection<ConstructionTemplateItem> ConstructionTemplateItems { get; set; } = new List<ConstructionTemplateItem>();
 
-    public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
+    public virtual ICollection<Quotation> Quotations { get; set; } = new List<Quotation>();
 }
