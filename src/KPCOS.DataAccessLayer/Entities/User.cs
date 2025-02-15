@@ -20,7 +20,7 @@ public partial class User : BaseEntity
 
     public string? Avatar { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 
