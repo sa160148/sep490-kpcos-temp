@@ -9,11 +9,11 @@ public enum EnumService
 
 public class EnumServiceDetails
 {
-    public int Value;
+    public string Value;
     public string Name;
     public string Description;
 
-    public EnumServiceDetails(string name, string description, int value)
+    public EnumServiceDetails(string name, string description, string value)
     {
         Name = name;
         Description = description;
@@ -22,8 +22,8 @@ public class EnumServiceDetails
 
     public static readonly Dictionary<EnumService, EnumServiceDetails> EnumServiceMapping = new()
     {   
-        { EnumService.M2, new EnumServiceDetails("M2", "Square meter", 1) },
-        { EnumService.M3, new EnumServiceDetails("M3", "Cubic meter", 2) },
-        { EnumService.Unit, new EnumServiceDetails("Unit", "Unit", 3) }
+        { EnumService.M2, new EnumServiceDetails("M2", "Square meter", "1") },
+        { EnumService.M3, new EnumServiceDetails("M3", "Cubic meter", "2") },
+        { EnumService.Unit, new EnumServiceDetails("Unit", "Unit", "3") }
     };
 }

@@ -20,7 +20,7 @@ public class ServiceCreateRequest
     public int Price { get; set; }
     
     [DefaultValue(0)]
-    public string Unit { get; set; }
+    public string? Unit { get; set; }
     
     [DefaultValue(EnumService.Unit)]
     public string Type { get; set; }

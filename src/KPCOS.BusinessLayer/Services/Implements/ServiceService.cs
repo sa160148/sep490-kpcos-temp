@@ -26,27 +26,35 @@ public class ServiceService : IServiceService
     }
     public async Task CreateService(ServiceCreateRequest request)
     {
-        
+       
         IRepository<Service> serviceRepo = _unitOfWork.Repository<Service>();
         var serviceRaw = await serviceRepo.SingleOrDefaultAsync(service => service!.Name == request.Name);
         if (serviceRaw != null)
         {
-            throw new BadRequestException("Service already exists");
+            throw new BadRequestException("Dịch vụ đã tồn tại");
         }
-        _logger.LogInformation("Service does not exist");
         
         if (!Enum.TryParse<EnumService>(request.Type, true, out var enumType))
         {
-            throw new BadRequestException($"Service type '{request.Type}' is not valid");
+            throw new BadRequestException($"Dịch vụ '{request.Type}' không hợp lệ");
         }
 
         if (!EnumServiceDetails.EnumServiceMapping.ContainsKey(enumType))
         {
-            throw new BadRequestException("Service type is not valid");
+            throw new BadRequestException("Loại dịch vụ không hợp lệ");
         }
-
+        
        
         var typeDetails = EnumServiceDetails.EnumServiceMapping[enumType];
+        
+        
+        
+        request.Unit = typeDetails switch
+        {
+            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M3] => "m3",
+            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M2] => "m2",
+            _ => request.Unit
+        };
 
      
         var service = new Service
@@ -55,11 +63,11 @@ public class ServiceService : IServiceService
             Description = request.Description,
             Price = request.Price,
             Unit = request.Unit,
-            //Type = 
+            Type = typeDetails.Value
         };
 
         // Lưu vào database
-        await serviceRepo.AddAsync(service);
+        await serviceRepo.AddAsync(service, false);
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -69,7 +77,7 @@ public class ServiceService : IServiceService
         
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException("Dịch vụ không tồn tại");
         }
 
         return new ServiceReponse
@@ -79,7 +87,9 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            Type = EnumServiceDetails.EnumServiceMapping.
+                FirstOrDefault(x => x.Value.Value == service.Type).
+                Key.ToString()
         };
     }
 
@@ -90,26 +100,33 @@ public class ServiceService : IServiceService
         
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException("Dịch vụ không tồn tại");
         }
 
         if (!Enum.TryParse<EnumService>(request.Type, true, out var enumType))
         {
-            throw new BadRequestException($"Service type '{request.Type}' is not valid");
+            throw new BadRequestException($"Loại dịch vụ '{request.Type}' không hợp lệ");
         }
 
         if (!EnumServiceDetails.EnumServiceMapping.ContainsKey(enumType))
         {
-            throw new BadRequestException("Service type is not valid");
+            throw new BadRequestException("Loại dịch vụ không hợp lệ");
         }
 
         var typeDetails = EnumServiceDetails.EnumServiceMapping[enumType];
+        
+        request.Unit = typeDetails switch
+        {
+            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M3] => "m3",
+            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M2] => "m2",
+            _ => request.Unit
+        };
 
         service.Name = request.Name;
         service.Description = request.Description;
         service.Price = request.Price;
         service.Unit = request.Unit;
-        // service.Type = typeDetails.Value;
+        service.Type = typeDetails.Value;
 
         await serviceRepo.UpdateAsync(service);
         await _unitOfWork.SaveChangesAsync();
@@ -122,7 +139,7 @@ public class ServiceService : IServiceService
         
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException("Dịch vụ không tồn tại");
         }
 
         await serviceRepo.RemoveAsync(service);
@@ -140,7 +157,9 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            Type = EnumServiceDetails.EnumServiceMapping.
+                FirstOrDefault(x => x.Value.Value == service.Type).
+                Key.ToString()
         }).ToList();
         return new PaginationResult<ServiceReponse>(pagedData, validFilter.PageNumber, validFilter.PageSize, services.Count);
     }
@@ -161,7 +180,9 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            // Type = EnumServiceDetails.EnumServiceMapping.FirstOrDefault(x => x.Value.Value == service.Type).Key.ToString()
+            Type = EnumServiceDetails.EnumServiceMapping.
+                FirstOrDefault(x => x.Value.Value == service.Type).
+                Key.ToString()
         });
         return (pagedDataResponse, _unitOfWork.Repository<Service>().Get().Count());
     }
