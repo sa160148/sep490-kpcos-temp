@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class MaintenanceRequest : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class MaintenanceRequest
 {
     public Guid Id { get; set; }
 
@@ -14,7 +17,7 @@ public partial class MaintenanceRequest : BaseEntity
 
     public Guid MaintenancePackageId { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
 

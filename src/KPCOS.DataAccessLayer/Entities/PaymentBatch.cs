@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class PaymentBatch : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class PaymentBatch
 {
     public Guid Id { get; set; }
 
@@ -18,7 +21,7 @@ public partial class PaymentBatch : BaseEntity
 
     public Guid ContractId { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual Contract Contract { get; set; } = null!;
 }

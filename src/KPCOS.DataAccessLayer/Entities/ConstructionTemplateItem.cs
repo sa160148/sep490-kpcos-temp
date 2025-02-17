@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class ConstructionTemplateItem : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class ConstructionTemplateItem
 {
     public Guid Id { get; set; }
 
@@ -18,7 +21,7 @@ public partial class ConstructionTemplateItem : BaseEntity
 
     public Guid Idtemplate { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ICollection<ConstructionTemplateTask> ConstructionTemplateTasks { get; set; } = new List<ConstructionTemplateTask>();
 

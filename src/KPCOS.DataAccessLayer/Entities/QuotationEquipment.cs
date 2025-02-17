@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class QuotationEquipment : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class QuotationEquipment
 {
     public Guid Id { get; set; }
 

@@ -1,6 +1,9 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public partial class ConstructionTask : BaseEntity
+namespace KPCOS.DataAccessLayer.Entities;
+
+public partial class ConstructionTask
 {
     public Guid Id { get; set; }
 
@@ -20,7 +23,7 @@ public partial class ConstructionTask : BaseEntity
 
     public Guid? Idstaff { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; }
 
     public virtual ConstructionItem IdconstructionitemNavigation { get; set; } = null!;
 
