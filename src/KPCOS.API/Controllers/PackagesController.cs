@@ -1,6 +1,8 @@
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
+using KPCOS.Common.Pagination;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,6 +25,12 @@ public class PackagesController : ControllerBase
         await _packageService.CreatePackageAsync(request);
         return new ApiResult(true, ApiResultStatusCode.Success);
     }
-
     
+    [HttpGet("")]
+    public async Task<PagedApiResponse<PackageResponse>> GetsAsyncPaging([FromQuery] PaginationFilter filter)
+    {
+        
+        var result = await _packageService.GetsAsyncPaging(filter);
+        return new PagedApiResponse<PackageResponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
+    }
 }

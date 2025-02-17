@@ -1,7 +1,10 @@
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
+using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -25,7 +28,7 @@ public class PackageService : IPackageService
     {
         if (request.Price <= 0)
         {
-            throw new BadRequestException("Giá không hợp lệ");
+            throw new BadRequestException("Giá tiền không hợp lệ");
         }
         IRepository<Package> packageRepo = _unitOfWork.Repository<Package>();
         IRepository<PackageDetail> packageDetailRepo = _unitOfWork.Repository<PackageDetail>();
@@ -71,5 +74,36 @@ public class PackageService : IPackageService
         await _unitOfWork.SaveChangesAsync();
        
        
+    }
+
+    public async Task<(IEnumerable<PackageResponse> Data, int TotalRecords)> GetsAsyncPaging(PaginationFilter filter)
+    {
+        IRepository<Package> packgeRepo = _unitOfWork.Repository<Package>();
+        var pageData = await _unitOfWork.Repository<Package>()
+            .Get()
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+        var totalRecords = await packgeRepo.Get().CountAsync();
+        
+        var data = pageData.Select(package => new PackageResponse
+        {
+            Id = package.Id,
+            Name = package.Name,
+            Description = package.Description ?? "",
+            IsActive = package.IsActive,
+            // generate price list 5 number with  package.price * 0.95 and descrease 5% each time
+            Price = Enumerable.Range(0, 5).Select(i => (int)(package.Price * Math.Pow(0.95, i))).ToList(),
+            Items = _unitOfWork.Repository<PackageDetail>()
+                .Get()
+                .Where(detail => detail.PackageId == package.Id)
+                .Select(detail => new PackageResponse.PackageItem
+                {
+                    IdPackageItem = detail.PackageItemId,
+                    Quantity = detail.Quantity,
+                    Description = detail.Description,
+                }).ToList()
+        });
+        return (data, totalRecords);
     }
 }
