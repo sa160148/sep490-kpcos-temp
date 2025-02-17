@@ -36,23 +36,17 @@ public class ServiceService : IServiceService
         
         if (!Enum.TryParse<EnumService>(request.Type, true, out var enumType))
         {
-            throw new BadRequestException($"Dịch vụ '{request.Type}' không hợp lệ");
-        }
-
-        if (!EnumServiceDetails.EnumServiceMapping.ContainsKey(enumType))
-        {
-            throw new BadRequestException("Loại dịch vụ không hợp lệ");
+            throw new BadRequestException($"Loại dịch vụ '{request.Type}' không hợp lệ");
         }
         
-       
-        var typeDetails = EnumServiceDetails.EnumServiceMapping[enumType];
         
         
         
-        request.Unit = typeDetails switch
+        
+        request.Unit = request.Type switch
         {
-            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M3] => "m3",
-            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M2] => "m2",
+            _ when request.Type == EnumService.M3.ToString() => "m3",
+            _ when request.Type == EnumService.M2.ToString() => "m2",
             _ => request.Unit
         };
 
@@ -63,7 +57,7 @@ public class ServiceService : IServiceService
             Description = request.Description,
             Price = request.Price,
             Unit = request.Unit,
-            Type = typeDetails.Value
+            Type = request.Type
         };
 
         // Lưu vào database
@@ -87,9 +81,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.
-                FirstOrDefault(x => x.Value.Value == service.Type).
-                Key.ToString()
+            Type = service.Type
         };
     }
 
@@ -107,18 +99,12 @@ public class ServiceService : IServiceService
         {
             throw new BadRequestException($"Loại dịch vụ '{request.Type}' không hợp lệ");
         }
-
-        if (!EnumServiceDetails.EnumServiceMapping.ContainsKey(enumType))
-        {
-            throw new BadRequestException("Loại dịch vụ không hợp lệ");
-        }
-
-        var typeDetails = EnumServiceDetails.EnumServiceMapping[enumType];
         
-        request.Unit = typeDetails switch
+
+        request.Unit = request.Type switch
         {
-            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M3] => "m3",
-            _ when typeDetails == EnumServiceDetails.EnumServiceMapping[EnumService.M2] => "m2",
+            _ when request.Type == EnumService.M3.ToString() => "m3",
+            _ when request.Type == EnumService.M2.ToString() => "m2",
             _ => request.Unit
         };
 
@@ -126,7 +112,7 @@ public class ServiceService : IServiceService
         service.Description = request.Description;
         service.Price = request.Price;
         service.Unit = request.Unit;
-        service.Type = typeDetails.Value;
+        service.Type = request.Type;
 
         await serviceRepo.UpdateAsync(service);
         await _unitOfWork.SaveChangesAsync();
@@ -157,9 +143,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.
-                FirstOrDefault(x => x.Value.Value == service.Type).
-                Key.ToString()
+            Type = service.Type
         }).ToList();
         return new PaginationResult<ServiceReponse>(pagedData, validFilter.PageNumber, validFilter.PageSize, services.Count);
     }
@@ -180,9 +164,7 @@ public class ServiceService : IServiceService
             Description = service.Description ?? "",
             Price = service.Price,
             Unit = service.Unit,
-            Type = EnumServiceDetails.EnumServiceMapping.
-                FirstOrDefault(x => x.Value.Value == service.Type).
-                Key.ToString()
+            Type = service.Type
         });
         return (pagedDataResponse, _unitOfWork.Repository<Service>().Get().Count());
     }
