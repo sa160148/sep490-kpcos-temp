@@ -38,8 +38,6 @@ public class PackageService : IPackageService
         {
             throw new BadRequestException("Gói đã tồn tại");
         }
-        _logger.LogInformation("Gói không tồn tại");
-        
         // check if package detail is valid
         foreach (var packageDetail in request.Items)
         {
@@ -56,7 +54,7 @@ public class PackageService : IPackageService
             Description = request.Description,
             Price = request.Price,
         };
-        await packageRepo.AddAsync(package);
+        await packageRepo.AddAsync(package, false);
         
         foreach (var packageDetail in request.Items)
         {
@@ -67,7 +65,7 @@ public class PackageService : IPackageService
                 Quantity = packageDetail.Quantity,
                 Description = packageDetail.Description,
             };
-            await packageDetailRepo.AddAsync(detail);
+            await packageDetailRepo.AddAsync(detail, false);
         }
 
         // Lưu thay đổi
@@ -102,6 +100,10 @@ public class PackageService : IPackageService
                     IdPackageItem = detail.PackageItemId,
                     Quantity = detail.Quantity,
                     Description = detail.Description,
+                    Name = _unitOfWork.Repository<PackageItem>().Get()
+                        .Where(item => item.Id == detail.PackageItemId)
+                        .Select(item => item.Name)
+                        .FirstOrDefault() ?? "Unknown"
                 }).ToList()
         });
         return (data, totalRecords);
@@ -178,7 +180,7 @@ public class PackageService : IPackageService
         package.Name = request.Name;
         package.Description = request.Description;
         package.Price = request.Price;
-        await packageRepo.UpdateAsync(package);
+        await packageRepo.UpdateAsync(package, false);
         
         // Remove all existing package details
         var existingDetails = await packageDetailRepo.Get()
@@ -186,7 +188,7 @@ public class PackageService : IPackageService
             .ToListAsync();
         foreach (var detail in existingDetails)
         {
-            await packageDetailRepo.RemoveAsync(detail);
+            await packageDetailRepo.RemoveAsync(detail, false);
         }
         
         // Add new package details
@@ -199,7 +201,7 @@ public class PackageService : IPackageService
                 Quantity = packageDetail.Quantity,
                 Description = packageDetail.Description,
             };
-            await packageDetailRepo.AddAsync(detail);
+            await packageDetailRepo.AddAsync(detail, false);
         }
         await _unitOfWork.SaveChangesAsync();
     }
@@ -221,10 +223,10 @@ public class PackageService : IPackageService
             .ToListAsync();
         foreach (var detail in existingDetails)
         {
-            await packageDetailRepo.RemoveAsync(detail);
+            await packageDetailRepo.RemoveAsync(detail, false);
         }
         
-        await packageRepo.RemoveAsync(package);
+        await packageRepo.RemoveAsync(package, false);
         await _unitOfWork.SaveChangesAsync();
     }
 }
