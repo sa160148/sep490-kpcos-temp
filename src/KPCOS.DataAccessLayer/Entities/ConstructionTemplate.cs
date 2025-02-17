@@ -14,7 +14,7 @@ public partial class ConstructionTemplate : BaseEntity
 
     public string Description { get; set; } = null!;
 
-    public string Status { get; set; } = null!;
+    public string? Status { get; set; } = "";
 
     public virtual ICollection<ConstructionTemplateItem> ConstructionTemplateItems { get; set; } = new List<ConstructionTemplateItem>();
 

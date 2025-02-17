@@ -108,7 +108,10 @@ namespace KPCOS.WebFramework.Middlewares
                     throw new InvalidOperationException("The response has already started, the http status code middleware will not be executed.");
 
                 var result = new ApiResult(false, apiStatusCode, message);
-                var json = JsonConvert.SerializeObject(result);
+                var json = JsonConvert.SerializeObject(result, new JsonSerializerSettings
+                {
+                    ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+                });
 
                 context.Response.StatusCode = (int)httpStatusCode;
                 context.Response.ContentType = "application/json";

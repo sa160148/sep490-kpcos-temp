@@ -106,4 +106,125 @@ public class PackageService : IPackageService
         });
         return (data, totalRecords);
     }
+
+    public async Task<PackageResponse> GetPackageByIdAsync(Guid id)
+    {
+        var packageRepo = _unitOfWork.Repository<Package>();
+        var packageDetailRepo = _unitOfWork.Repository<PackageDetail>();
+        var packageItemRepo = _unitOfWork.Repository<PackageItem>();
+
+        // Fetch the package
+        var package = await packageRepo.FindAsync(id);
+        if (package == null)
+        {
+            throw new NotFoundException("Gói không tồn tại");
+        }
+
+        // Fetch package details and associated items in a single query
+        var packageDetails = await packageDetailRepo.Get()
+            .Where(detail => detail.PackageId == package.Id)
+            .ToListAsync();
+
+        // Fetch item names in bulk
+        var itemIds = packageDetails.Select(detail => detail.PackageItemId).Distinct().ToList();
+        var items = await packageItemRepo.Get()
+            .Where(item => itemIds.Contains(item.Id))
+            .ToDictionaryAsync(item => item.Id, item => item.Name);
+
+        // Build the response
+        var response = new PackageResponse
+        {
+            Id = package.Id,
+            Name = package.Name,
+            Description = package.Description ?? "",
+            IsActive = package.IsActive,
+            Price = Enumerable.Range(0, 5).Select(i => (int)(package.Price * Math.Pow(0.95, i))).ToList(),
+            Items = packageDetails.Select(detail => new PackageResponse.PackageItem
+            {
+                IdPackageItem = detail.PackageItemId,
+                Quantity = detail.Quantity,
+                Description = detail.Description,
+                Name = items.TryGetValue(detail.PackageItemId, out var name) ? name : "Unknown"
+            }).ToList()
+        };
+        return response;
+    }
+
+    public async Task UpdatePackageAsync(Guid id, PackageCreateRequest request)
+    {
+        if (request.Price <= 0)
+        {
+            throw new BadRequestException("Giá tiền không hợp lệ");
+        }
+        IRepository<Package> packageRepo = _unitOfWork.Repository<Package>();
+        IRepository<PackageDetail> packageDetailRepo = _unitOfWork.Repository<PackageDetail>();
+        
+        var package = await packageRepo.SingleOrDefaultAsync(service => service!.Id == id);
+        if (package == null)
+        {
+            throw new NotFoundException("Gói không tồn tại");
+        }
+        
+        // check if package detail is valid
+        foreach (var packageDetail in request.Items)
+        {
+            var service = await _unitOfWork.Repository<PackageItem>().SingleOrDefaultAsync(s => s.Id == packageDetail.IdPackageItem);
+            if (service == null)
+            {
+                throw new BadRequestException("có dịch vụ không tồn tại");
+            }
+        }
+        
+        package.Name = request.Name;
+        package.Description = request.Description;
+        package.Price = request.Price;
+        await packageRepo.UpdateAsync(package);
+        
+        // Remove all existing package details
+        var existingDetails = await packageDetailRepo.Get()
+            .Where(detail => detail.PackageId == package.Id)
+            .ToListAsync();
+        foreach (var detail in existingDetails)
+        {
+            await packageDetailRepo.RemoveAsync(detail);
+        }
+        
+        // Add new package details
+        foreach (var packageDetail in request.Items)
+        {
+            var detail = new PackageDetail
+            {
+                PackageId = package.Id,
+                PackageItemId = packageDetail.IdPackageItem,
+                Quantity = packageDetail.Quantity,
+                Description = packageDetail.Description,
+            };
+            await packageDetailRepo.AddAsync(detail);
+        }
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task DeletePackageAsync(Guid id)
+    {
+        IRepository<Package> packageRepo = _unitOfWork.Repository<Package>();
+        IRepository<PackageDetail> packageDetailRepo = _unitOfWork.Repository<PackageDetail>();
+        
+        var package = await packageRepo.SingleOrDefaultAsync(service => service!.Id == id);
+        if (package == null)
+        {
+            throw new NotFoundException("Gói không tồn tại");
+        }
+        
+        // Remove all existing package details
+        var existingDetails = await packageDetailRepo.Get()
+            .Where(detail => detail.PackageId == package.Id)
+            .ToListAsync();
+        foreach (var detail in existingDetails)
+        {
+            await packageDetailRepo.RemoveAsync(detail);
+        }
+        
+        await packageRepo.RemoveAsync(package);
+        await _unitOfWork.SaveChangesAsync();
+    }
 }

@@ -33,4 +33,23 @@ public class PackagesController : ControllerBase
         var result = await _packageService.GetsAsyncPaging(filter);
         return new PagedApiResponse<PackageResponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
     }
+    
+    [HttpGet("{id}")]
+    public async Task<ApiResult<PackageResponse>> GetPackageByIdAsync(Guid id)
+    {
+        var result = await _packageService.GetPackageByIdAsync(id);
+        return result;
+    }
+    [HttpPut("{id}")]
+    public async Task<ApiResult> UpdatePackageAsync(Guid id, PackageCreateRequest request)
+    {
+        await _packageService.UpdatePackageAsync(id, request);
+        return new ApiResult(true, ApiResultStatusCode.Success);
+    }
+    [HttpDelete("{id}")]
+    public async Task<ApiResult> DeletePackageAsync(Guid id)
+    {
+        await _packageService.DeletePackageAsync(id);
+        return new ApiResult(true, ApiResultStatusCode.Success);
+    }
 }

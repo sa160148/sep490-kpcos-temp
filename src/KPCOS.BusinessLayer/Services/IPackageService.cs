@@ -9,4 +9,9 @@ public interface IPackageService
     Task CreatePackageAsync(PackageCreateRequest request);
     
     Task<(IEnumerable<PackageResponse> Data, int TotalRecords)> GetsAsyncPaging(PaginationFilter filter);
+    
+    Task<PackageResponse> GetPackageByIdAsync(Guid id);
+    
+    Task UpdatePackageAsync(Guid id, PackageCreateRequest request);
+    Task DeletePackageAsync(Guid id);
 }
