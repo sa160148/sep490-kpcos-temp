@@ -1,9 +1,9 @@
 ﻿using KPCOS.Common;
-using KPCOS.WebFramework.Api;
+using KPCOS.DataAccessLayer.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace KPCOS.WebFramework.Filters
+namespace KPCOS.API.Filters
 {
     public class ApiResultFilterAttribute : ActionFilterAttribute
     {
@@ -50,7 +50,7 @@ namespace KPCOS.WebFramework.Filters
                 var apiResult = new ApiResult<object>(false, ApiResultStatusCode.NotFound, notFoundObjectResult.Value);
                 context.Result = new JsonResult(apiResult) { StatusCode = notFoundObjectResult.StatusCode };
             }
-            else if (context.Result is ObjectResult objectResult && objectResult.StatusCode == null 
+            else if (context.Result is ObjectResult objectResult && objectResult.StatusCode == null
                 && !(objectResult.Value is ApiResult))
             {
                 var apiResult = new ApiResult<object>(true, ApiResultStatusCode.Success, objectResult.Value);

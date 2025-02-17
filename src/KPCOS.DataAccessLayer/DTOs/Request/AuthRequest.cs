@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.DataAccessLayer.DTOs.Request;
 
 public class AuthRequest
 {
@@ -12,7 +12,7 @@ public class SigninRequest
     [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("admin@mail.com")]
     public string Email { get; set; }
-    
+
     [Required(ErrorMessage = "can not let password null")]
     [DefaultValue("123456")]
     public string Password { get; set; }
@@ -23,11 +23,11 @@ public class SignupRequest
     [Required(ErrorMessage = "can not let username null")]
     [Description("root")]
     public string FullName { get; set; }
-    
+
     [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("root@gmail.com")]
     public string Email { get; set; }
-    
+
     [Required(ErrorMessage = "can not let password null")]
     public string Password { get; set; }
 

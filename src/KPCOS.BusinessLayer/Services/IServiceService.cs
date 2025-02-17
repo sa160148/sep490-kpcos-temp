@@ -1,5 +1,5 @@
-using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.DataAccessLayer.DTOs.Request;
+using KPCOS.DataAccessLayer.DTOs.Response;
 
 namespace KPCOS.BusinessLayer.Services;
 

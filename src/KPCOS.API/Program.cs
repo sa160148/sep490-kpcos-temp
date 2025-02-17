@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
+using Hangfire;
 using KPCOS.API.Extensions;
-using KPCOS.WebFramework.Middlewares;
+using KPCOS.API.Extensions.ExceptionHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,8 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHangfireDashboard();
 
 app.MapControllers();
 

@@ -1,9 +1,9 @@
 using KPCOS.BusinessLayer;
-using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
-using KPCOS.WebFramework.Api;
+using KPCOS.DataAccessLayer.DTOs;
+using KPCOS.DataAccessLayer.DTOs.Request;
+using KPCOS.DataAccessLayer.DTOs.Response;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

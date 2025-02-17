@@ -1,9 +1,9 @@
-﻿using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response;
-using KPCOS.BusinessLayer.Services;
+﻿using KPCOS.BusinessLayer.Services;
+using KPCOS.DataAccessLayer.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using KPCOS.WebFramework.Api;
+using KPCOS.DataAccessLayer.DTOs.Request;
+using KPCOS.DataAccessLayer.DTOs.Response;
 namespace KPCOS.API.Controllers
 {
     [Route("api/[controller]")]

@@ -3,10 +3,10 @@
 using KPCOS.BusinessLayer.Exceptions;
 using KPCOS.Common;
 using KPCOS.Common.Exceptions;
+using KPCOS.DataAccessLayer.DTOs;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using KPCOS.WebFramework.Api;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace KPCOS.API.Extensions.ExceptionHandlers;
