@@ -1,22 +1,20 @@
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.BusinessLayer.DTOs.Response;
 
-
-
-public class PackageRequest
+public class PackageResponse
 {
-}
-
-public class PackageCreateRequest
-{
+    public Guid Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public int Price { get; set; }
+    public bool? IsActive { get; set; }
+    public List<int> Price { get; set; }
     public List<PackageItem> Items { get; set; }
+    
     
     public class PackageItem
     {
         public Guid IdPackageItem { get; set; }
         public int? Quantity { get; set; }
         public string? Description { get; set; }
+        public string ? Name { get; set; }
     }
 }

@@ -16,10 +16,10 @@ public partial class Package
     public string Name { get; set; } = null!;
 
     public string Description { get; set; } = null!;
-
+    
     public int Price { get; set; }
 
-    public string? Status { get; set; }
+    public string Status { get; set; } = "";
 
     public virtual ICollection<PackageDetail> PackageDetails { get; set; } = new List<PackageDetail>();
 

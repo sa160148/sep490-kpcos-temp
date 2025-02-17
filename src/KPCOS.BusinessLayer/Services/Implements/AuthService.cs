@@ -28,10 +28,9 @@ public class AuthService : IAuthService
 
     public async Task<SigninResponse> SignInAsync(SigninRequest request)
     {
-        try
-        {
+   
             IRepository<User> userRepo = _unitOfWork.Repository<User>();
-            var userRaw = await userRepo.SingleOrDefaultAsync(user => user!.Email == request.Email);
+            var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
             if (userRaw == null)
             {
                 throw new NotFoundException("user not found");
@@ -46,12 +45,7 @@ public class AuthService : IAuthService
             {
                 Token = GenerateToken(userRaw)
             };
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+       
     }
 
     public async Task SignUpAsync(SignupRequest request)

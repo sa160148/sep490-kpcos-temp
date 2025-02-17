@@ -3,6 +3,7 @@ using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
+using KPCOS.Common.Pagination;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -28,11 +29,20 @@ public class ServicesController : BaseController
         return new ApiResult(true, ApiResultStatusCode.Success);
     }
     
+    // [HttpGet("")]
+    // public async Task<ApiResult<PaginationResult<ServiceReponse>>> GetsAsync([FromQuery] PaginationFilter filter)
+    // {
+    //     
+    //     var result = await _serviceService.GetsAsync(filter);
+    //     return result;
+    // }   
     [HttpGet("")]
-    public async Task<ApiResult<List<ServiceReponse>>> GetsAsync()
+    public async Task<PagedApiResponse<ServiceReponse>> GetsAsyncPaging([FromQuery] PaginationFilter filter)
     {
-        var result = await _serviceService.GetsAsync();
-        return result;
+        
+        var result = await _serviceService.GetsAsyncPaging(filter);
+        return new PagedApiResponse<ServiceReponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
+        
     }   
 
     [HttpGet("{id}")]
@@ -41,6 +51,7 @@ public class ServicesController : BaseController
         var result = await _serviceService.GetServiceByIdAsync(id);
         return result;
     }
+    
 
     [HttpPut("{id}")]
     public async Task<ApiResult> UpdateServiceAsync(Guid id, ServiceCreateRequest request)
