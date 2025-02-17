@@ -39,7 +39,7 @@ public class TemplateContructionService : ITemplateContructionService
             Description = request.Description,
         };
         
-        await templateContructionRepo.AddAsync(templateContruction);
+        await templateContructionRepo.AddAsync(templateContruction, false);
         await _unitOfWork.SaveChangesAsync();
         
     }
@@ -62,7 +62,7 @@ public class TemplateContructionService : ITemplateContructionService
             Idparent = request.IdParent,
             Idtemplate = request.IdTemplateContruction,
         };
-        await templateContructionItemRepo.AddAsync(templateContructionItem);
+        await templateContructionItemRepo.AddAsync(templateContructionItem, false);
         await _unitOfWork.SaveChangesAsync();
     }
 
