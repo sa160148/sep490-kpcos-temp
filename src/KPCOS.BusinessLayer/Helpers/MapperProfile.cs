@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.DataAccessLayer.DTOs.Request;
 using KPCOS.DataAccessLayer.Entities;
 
 namespace KPCOS.BusinessLayer.Helpers;

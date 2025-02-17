@@ -1,6 +1,6 @@
-using KPCOS.BusinessLayer.DTOs.Request;
-using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
+using KPCOS.DataAccessLayer.DTOs.Request;
+using KPCOS.DataAccessLayer.DTOs.Response;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
@@ -110,9 +110,9 @@ public class ServiceService : IServiceService
         // service.Type = typeDetails.Value;
 
         await serviceRepo.UpdateAsync(service);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(); 
     }
-
+    
     public async Task DeleteServiceAsync(Guid id)
     {
         var serviceRepo = _unitOfWork.Repository<Service>();
@@ -125,6 +125,11 @@ public class ServiceService : IServiceService
 
         await serviceRepo.RemoveAsync(service);
         await _unitOfWork.SaveChangesAsync();
+        // query
+        // va
+        // check business logic
+        // // check 1
+        
     }
 
     public async Task<List<ServiceReponse>> GetsAsync()

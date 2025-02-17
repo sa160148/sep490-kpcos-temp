@@ -1,4 +1,4 @@
-namespace KPCOS.BusinessLayer.DTOs.Response;
+namespace KPCOS.DataAccessLayer.DTOs.Response;
 
 public class ServiceReponse
 {

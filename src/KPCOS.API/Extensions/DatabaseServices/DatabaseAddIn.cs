@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Hangfire;
+using Hangfire.PostgreSql;
 using KPCOS.DataAccessLayer.Context;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
@@ -14,8 +16,8 @@ public static class DatabaseAddIn
     {
         services.AddDbContext<KpcosContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("Default"),
-                o => o.MapEnum<EnumService>("enumService"));
+            /*options.UseNpgsql(configuration.GetConnectionString("Default"),
+                o => o.MapEnum<EnumService>("enumService"));*/
         });
         services.AddStackExchangeRedisCache(options =>
         {
@@ -27,6 +29,17 @@ public static class DatabaseAddIn
             var redisConnectionString = configuration.GetConnectionString("Redis");
             return ConnectionMultiplexer.Connect(redisConnectionString);
         });
+
+        services.AddHangfire(option =>
+        {
+            option.UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(action =>
+                {
+                    action.UseNpgsqlConnection(configuration.GetConnectionString("Default"));
+                });
+        });
+        services.AddHangfireServer();
 
         services.AddScoped<Func<KpcosContext>>((provider) => () => provider.GetService<KpcosContext>()!);
         services.AddScoped<DbFactory>();

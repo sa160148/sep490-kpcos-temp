@@ -1,12 +1,7 @@
-﻿using KPCOS.DataAccessLayer.Repositories;
-using Microsoft.AspNetCore.Authorization;
+﻿using KPCOS.API.Filters;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using KPCOS.WebFramework.Filters;
 
-namespace KPCOS.WebFramework.Api
+namespace KPCOS.API.Controllers
 {
     [ApiController]
     //[AllowAnonymous]
