@@ -18,6 +18,12 @@ public class Repository<T> : IRepository<T> where T : class
         return Entities.AsQueryable();
     }
 
+    public IQueryable<T> GetPagingQueryable(int pageNumber, int pageSize)
+    {
+        var query = Entities.AsQueryable();
+        return query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+    }
+
     public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null)
     {
         return Entities.Where(predic).AsQueryable();
