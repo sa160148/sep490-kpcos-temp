@@ -54,7 +54,7 @@ public class PackageService : IPackageService
             Description = request.Description,
             Price = request.Price,
         };
-        await packageRepo.AddAsync(package, false);
+        await packageRepo.AddAsync(package);
         
         foreach (var packageDetail in request.Items)
         {
@@ -223,7 +223,7 @@ public class PackageService : IPackageService
             .ToListAsync();
         foreach (var detail in existingDetails)
         {
-            await packageDetailRepo.RemoveAsync(detail, false);
+            await packageDetailRepo.RemoveAsync(detail);
         }
         
         await packageRepo.RemoveAsync(package, false);
