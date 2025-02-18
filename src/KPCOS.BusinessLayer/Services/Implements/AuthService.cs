@@ -43,7 +43,12 @@ public class AuthService : IAuthService
 
             return new SigninResponse
             {
-                Token = GenerateToken(userRaw)
+                Token = GenerateToken(userRaw),
+                User = new UserResponse
+                {
+                    Avatar = userRaw.Avatar,
+                    FullName = userRaw.FullName
+                }
             };
        
     }
@@ -59,9 +64,7 @@ public class AuthService : IAuthService
                 throw new Exception("user exit");
             }
 
-            Guid userId = Guid.NewGuid();
             var user = _mapper.Map<User>(request);
-            user.Id = userId;
             user.Status = "";
 
 
@@ -91,9 +94,8 @@ public class AuthService : IAuthService
             expires: DateTime.Now.AddHours(1),
             signingCredentials: credentials,
             claims: [
-                new Claim(ClaimTypes.Name, user.Email),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                // new Claim(ClaimTypes.Role, user.Role.ToString())
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
             ]
         );
         return new JwtSecurityTokenHandler().WriteToken(tokenDescript);

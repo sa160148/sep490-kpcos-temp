@@ -1,6 +1,7 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.Services;
+using KPCOS.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KPCOS.WebFramework.Api;
@@ -22,15 +23,15 @@ namespace KPCOS.API.Controllers
         {
             
             var response =  await _authService.SignInAsync(request);
-            return response;
+            return new ApiResult<SigninResponse>(true, ApiResultStatusCode.Success, response, String.Empty);
             
         }
         
         [HttpPost("signup")]
-        public async Task<ActionResult<ApiResult>> SignUpAsync(SignupRequest request)
+        public async Task<ApiResult> SignUpAsync(SignupRequest request)
         {
             await _authService.SignUpAsync(request);
-            return Ok();
+            return new ApiResult(true, ApiResultStatusCode.Success, String.Empty);
         }
     }
 }
