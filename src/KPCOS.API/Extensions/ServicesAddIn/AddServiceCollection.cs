@@ -20,6 +20,7 @@ public static class AddServiceCollection
         services.AddScoped<IPackageService, PackageService>();
         services.AddScoped<IEquipmentService, EquipmentService>();
         services.AddScoped<ITemplateContructionService, TemplateContructionService>();
+        services.AddScoped<IProjectService, ProjectService>();
         
         
         /*services.AddScoped<IUserService, UserService>();

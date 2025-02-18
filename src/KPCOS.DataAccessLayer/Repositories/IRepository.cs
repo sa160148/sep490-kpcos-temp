@@ -11,6 +11,7 @@ public interface IRepository<T> where T : class
     #region Sync
 
     public IQueryable<T?> Get();
+    public IQueryable<T> GetPagingQueryable(int pageNumber, int pageSize);
     public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null);
     public void Add(T? entity);
     public void Update(T? entity);
