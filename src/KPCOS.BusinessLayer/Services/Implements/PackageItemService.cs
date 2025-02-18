@@ -32,13 +32,13 @@ public class PackageItemService : IPackageItemService
         {
             throw new BadRequestException("Mục đã tồn tại");
         }
-        _logger.LogInformation("Mục không tồn tại");
+       
         
         var packageItem = new PackageItem
         {
             Name = request.Name,
         };
-        await packgeItemRepo.AddAsync(packageItem);
+        await packgeItemRepo.AddAsync(packageItem, false);
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -83,7 +83,7 @@ public class PackageItemService : IPackageItemService
         {
             throw new BadRequestException("Mục không tồn tại");
         }
-        await packgeItemRepo.RemoveAsync(packageItem);
+        await packgeItemRepo.RemoveAsync(packageItem, false);
         await _unitOfWork.SaveChangesAsync();
         
     }
