@@ -2,6 +2,8 @@
 -- Guid id
 -- created_at, updated_at, id, isActive
 
+--create database kpcos;
+
 -- database
 
 -- Trigger function to update updated_at column when row is updated
