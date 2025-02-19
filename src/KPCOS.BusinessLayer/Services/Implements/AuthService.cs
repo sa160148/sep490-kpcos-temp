@@ -10,26 +10,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class AuthService : IAuthService
+public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, IMapper mapper) : IAuthService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IConfiguration _configuration;
-    private readonly IMapper _mapper;
-
-    public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, IMapper mapper)
-    {
-        _unitOfWork = unitOfWork;
-        _configuration = configuration;
-        _mapper = mapper;
-    }
 
     public async Task<SigninResponse> SignInAsync(SigninRequest request)
     {
-   
-            IRepository<User> userRepo = _unitOfWork.Repository<User>();
+            IRepository<User> userRepo = unitOfWork.Repository<User>();
             var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
             if (userRaw == null)
             {
@@ -43,7 +33,7 @@ public class AuthService : IAuthService
 
             return new SigninResponse
             {
-                Token = GenerateToken(userRaw),
+                Token = await GenerateToken(userRaw),
                 User = new UserResponse
                 {
                     Avatar = userRaw.Avatar,
@@ -57,16 +47,35 @@ public class AuthService : IAuthService
     {
         try
         {
-            var userRepo = _unitOfWork.Repository<User>();
-            var isUserExit = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email) != null;
-            if (isUserExit)
+            var userRepo = unitOfWork.Repository<User>();
+            if (await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email) != null)
             {
                 throw new Exception("user exit");
             }
-
-            var user = _mapper.Map<User>(request);
+            var userId  = Guid.NewGuid();
+            var user = mapper.Map<User>(request);
             user.Status = "";
+            user.Id = userId;
 
+            /*var customer = new Customer
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Address = request.Address,
+                Dob = request.Dob,
+                Gender = request.Gender,
+                IsActive = true
+            };*/
+
+            user.Customers.Add(new Customer
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Address = request.Address,
+                Dob = request.Dob,
+                Gender = request.Gender,
+                IsActive = true
+            });
 
             await userRepo.AddAsync(user, false);
 
@@ -83,21 +92,45 @@ public class AuthService : IAuthService
         }
     }
 
-    private string GenerateToken(User user)
+    private async Task<string> GenerateToken(User user)
     {
-        var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]!));
+        var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!));
         var credentials = new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
-
+        var role = await CheckRole(user.Id);
+        if (role == null)
+        {
+            throw new NotFoundException();
+        }
         var tokenDescript = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
             expires: DateTime.Now.AddHours(1),
             signingCredentials: credentials,
             claims: [
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, role)
             ]
         );
         return new JwtSecurityTokenHandler().WriteToken(tokenDescript);
+    }
+
+    private async Task<string?> CheckRole(Guid userId)
+    {
+        var isCustomer = await unitOfWork.Repository<Customer>()
+            .SingleOrDefaultAsync(customer => customer.UserId == userId);
+
+        if (isCustomer != null)
+        {
+            return RoleEnum.CUSTOMER.ToString();
+        }
+
+        var isStaff = await unitOfWork.Repository<Staff>()
+            .SingleOrDefaultAsync(staff => staff.UserId == userId);
+        if (isStaff != null)
+        {
+            return isStaff.Position.ToUpperInvariant();
+        }
+        return null;
     }
 }
