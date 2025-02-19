@@ -24,6 +24,49 @@ public class Repository<T> : IRepository<T> where T : class
         return query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
     }
 
+    public virtual IEnumerable<T> Get(
+        Expression<Func<T, bool>> filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        string includeProperties = "",
+        int? pageIndex = null,
+        int? pageSize = null)
+    {
+        IQueryable<T> query = Entities;
+
+        if (filter != null)
+        {
+            query = query.Where(filter);
+        }
+
+        foreach (var includeProperty in includeProperties.Split
+                     (new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            query = query.Include(includeProperty);
+        }
+
+        if (orderBy != null)
+        {
+            query = orderBy(query);
+        }
+
+        // Implementing pagination
+        if (pageIndex.HasValue && pageSize.HasValue)
+        {
+            // Ensure the pageIndex and pageSize are valid
+            int validPageIndex = pageIndex.Value > 0 ? pageIndex.Value - 1 : 0;
+            int validPageSize =
+                pageSize.Value > 0
+                    ? pageSize.Value
+                    : 10; // Assuming a default pageSize of 10 if an invalid value is passed
+            if (pageSize.Value > 0)
+            {
+                query = query.Skip(validPageIndex * validPageSize).Take(validPageSize);
+            }
+        }
+
+        return query.ToList();
+    }
+
     public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null)
     {
         return Entities.Where(predic).AsQueryable();
