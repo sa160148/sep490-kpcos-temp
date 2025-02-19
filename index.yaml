@@ -1,0 +1,1169 @@
+openapi: 3.0.3
+info:
+  title: "KPCOS API"
+  version: "1.0.0"
+  description: "API for KPCOS"
+servers:
+  - url: "http://localhost:5113/api"
+    description: "Local server"
+  - url: "https://deploy/api"
+    description: "Production server"
+
+
+security:
+  - bearerAuth: []
+tags:
+  - name: "Auth"
+    description: "Authentication"
+  - name: "Equipment"
+    description: "Equipment Management"
+  - name: "Package Item"
+    description: "Package Item Management"
+  - name: "Package"
+    description: "Package Management"
+  - name: "Service"
+    description: "Service Management"
+  - name: "Template Construction"
+    description: "Template Construction Management"
+
+
+
+
+paths:
+  /auth/signin:
+    post:
+      
+      
+      tags:
+        - "Auth"
+      summary: "Login"
+      description: "Login to the system"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigninPayload"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/SigninResponse"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /equipments:
+    post:
+      
+      
+      tags:
+        - "Equipment"
+      summary: "Create equipment"
+      description: "Create a new equipment"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquimentCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    get:
+      
+      
+      tags:
+        - "Equipment"
+      summary: "Get all equipment"
+      description: "Retrieve a paginated list of equipment"
+      parameters:
+        - in: "query"
+          name: "PageNumber"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page number"
+        - in: "query"
+          name: "PageSize"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page size"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        type: "array"
+                        items:
+                          $ref: "#/components/schemas/Equipment"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /equiments/{id}:
+    get:
+      
+      
+      tags:
+        - "Equipment"
+      summary: "Get equipment by id"
+      description: "Retrieve a equipment by id"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "integer"
+          required: true
+          description: "Equipment id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Equipment"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    put:
+      tags:
+        - "Equipment"
+      summary: "Update equipment"
+      description: "Update a equipment"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Equipment id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquimentCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    delete:
+      tags:
+        - "Equipment"
+      summary: "Delete equipment"
+      description: "Delete a equipment"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Equipment id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  /packageitems:
+    post:
+      tags:
+        - "Package Item"
+      summary: "Create package item"
+      description: "Create a new package item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageItemCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    get:
+      
+      
+      tags:
+        - "Package Item"
+      summary: "Get all package item"
+      description: "Retrieve a paginated list of package item"
+      parameters:
+        - in: "query"
+          name: "PageNumber"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page number"
+        - in: "query"
+          name: "PageSize"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page size"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        type: "array"
+                        items:
+                          $ref: "#/components/schemas/PackageItem"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /packageitems/{id}:
+    get:
+      
+      
+      tags:
+        - "Package Item"
+      summary: "Get package item by id"
+      description: "Retrieve a package item by id"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package item id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PackageItem"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    put:
+      tags:
+        - "Package Item"
+      summary: "Update package item"
+      description: "Update a package item"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package item id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageItemCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    delete:
+      
+      tags:
+        - "Package Item"
+      summary: "Delete package item"
+      description: "Delete a package item"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package item id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /packages:
+    post:
+      
+      
+      tags:
+        - "Package"
+      summary: "Create package"
+      description: "Create a new package"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    get:
+      tags:
+        - "Package"
+      summary: "Get all package"
+      description: "Retrieve a paginated list of package"
+      parameters:
+        - in: "query"
+          name: "PageNumber"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page number"
+        - in: "query"
+          name: "PageSize"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page size"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        type: "array"
+                        items:
+                          $ref: "#/components/schemas/Package"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /packages/{id}:
+    get:
+      tags:
+        - "Package"
+      summary: "Get package by id"
+      description: "Retrieve a package by id"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Package"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    
+    put:
+      tags:
+        - "Package"
+      summary: "Update package"
+      description: "Update a package"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    delete:
+      
+      tags:
+        - "Package"
+      summary: "Delete package"
+      description: "Delete a package"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Package id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /services:
+    post:
+      tags:
+        - "Service"
+      summary: "Create service"
+      description: "Create a new service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    get:
+      tags:
+        - "Service"
+      summary: "Get all service"
+      description: "Retrieve a paginated list of service"
+      parameters:
+        - in: "query"
+          name: "PageNumber"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page number"
+        - in: "query"
+          name: "PageSize"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page size"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        type: "array"
+                        items:
+                          $ref: "#/components/schemas/Service"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  /services/{id}:
+    get:
+      tags:
+        - "Service"
+      summary: "Get service by id"
+      description: "Retrieve a service by id"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Service id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Service"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    put:
+      tags:
+        - "Service"
+      summary: "Update service"
+      description: "Update a service"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Service id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    delete:
+      tags:
+        - "Service"
+      summary: "Delete service"
+      description: "Delete a service"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Service id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  
+  /templatecontructions:
+    get:
+      tags:
+        - "Template Construction"
+      summary: "Get all template construction"
+      description: "Retrieve a paginated list of template construction"
+      parameters:
+        - in: "query"
+          name: "PageNumber"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page number"
+        - in: "query"
+          name: "PageSize"
+          schema:
+            type: "integer"
+          required: false
+          description: "Page size"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        type: "array"
+                        items:
+                          $ref: "#/components/schemas/TemlateConstruction"
+        
+        
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+    post:
+      tags:
+        - "Template Construction"
+      summary: "Create template construction"
+      description: "Create a new template construction"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateConstructionCreate"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  /templatecontructions/{id}:
+    get:
+      tags:
+        - "Template Construction"
+      summary: "Get template construction by id"
+      description: "Retrieve a template construction by id"
+      parameters:
+        - in: "path"
+          name: "id"
+          schema:
+            type: "string"
+          required: true
+          description: "Template construction id"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/TemplateConstructionDetail"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+  /templatecontructions/items:
+    post:
+      tags:
+        - "Template Construction"
+      summary: "Add template construction item"
+      description: "Add a new template construction item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTemplateConstructionItem"
+      responses:
+        '200':
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: "object"
+        '500':
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorApi"
+
+
+components:
+  securitySchemes: 
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+  schemas:
+    ApiResponse:
+      type: "object"
+      properties:
+        isSuccess:
+          type: "boolean"
+          example: true
+        statusCode:
+          type: "integer"
+          example: 1
+        message:
+          type: "string"
+          example: "Success"
+        data:
+          type: "object"
+      required:
+        - isSuccess
+        - statusCode
+        - message
+    PaginatedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: "object"
+          properties:
+            pageNumber:
+              type: "integer"
+              example: 1
+            pageSize:
+              type: "integer"
+              example: 10
+            totalPages:
+              type: "integer"
+              example: 1
+            totalRecords:
+              type: "integer"
+              example: 3
+          required:
+            - pageNumber
+            - pageSize
+            - totalPages
+            - totalRecords
+    ErrorApi:
+      type: "object"
+      properties:
+        isSuccess:
+          type: "boolean"
+          example: false
+        statusCode:
+          type: "integer"
+          example: 0
+        message:
+          type: "string"
+          example: "Fail"
+      required:
+        - isSuccess
+        - statusCode
+        - message
+    SigninPayload:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          example: "guest1@example.com"
+        password:
+          type: "string"
+          format: "password"
+          example: "guest123"
+      required:
+        - email
+        - password
+    SigninResponse:
+      type: "object"
+      properties:
+        token:
+          type: "string"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          type: "object"
+          properties:
+            fullName:
+              type: "string"
+              example: "Guest One"
+            avatar:
+              type: "string"
+              format: "uri"
+              example: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s"
+    Equipment:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Equipment 1"
+        description:
+          type: "string"
+          example: "Description 1"
+      required:
+        - id
+        - name
+        - description
+    EquimentCreate:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Equipment 1"
+        description:
+          type: "string"
+          example: "Description 1"
+      required:
+        - name
+        - description
+    PackageItem:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Package Item 1"
+      required:
+        - id
+        - name
+    PackageItemCreate:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Package Item 1"
+      required:
+        - name
+    Package:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Package 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        isActive:
+          type: "boolean"
+          example: true
+        # array number
+        price:
+          type: "array"
+          items:
+            type: "integer"
+          example: [100, 200, 300]
+        items:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              idPackageItem:
+                type: "string"
+                example: 1
+              quantity:
+                type: "number"
+                example: 1
+              description:
+                type: "string"
+                example: "Description 1"
+              name:
+                type: "string"
+                example: "Package Item 1"
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    PackageCreate:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Package 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        price:
+          type: "number"
+          example: 100
+        items:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              idPackageItem:
+                type: "string"
+                example: 1
+              quantity:
+                type: "number"
+                example: 1
+              description:
+                type: "string"
+                example: "Description 1"
+    
+    Service:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Service 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        price:
+          type: "number"
+          example: 100
+        unit:
+          type: "string"
+          example: "cm"
+        type:
+          type: "string"
+          example: "Type 1"
+    ServiceCreate:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Service 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        price:
+          type: "number"
+          example: 100
+        unit:
+          type: "string"
+          example: "cm"
+        type:
+          type: "string"
+          example: "Unit"
+      required:
+        - name
+        - description
+        - price
+        - unit
+        - type
+    TemlateConstruction:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Template Construction 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        isActive:
+          type: "boolean"
+          example: true
+    
+    TemplateConstructionCreate:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Template Construction 1"
+        description:
+          type: "string"
+          example: "Description 1"
+      required:
+        - name
+        - description
+    TemplateConstructionDetail:
+      allOf:
+        - $ref: "#/components/schemas/TemlateConstruction"
+        - type: "object"
+          properties:
+            templateContructionItems:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  id:
+                    type: "string"
+                    example: 1
+                  name:
+                    type: "string"
+                    example: "Template Construction Item 1"
+                  description:
+                    type: "string"
+                    example: "Description 1"
+                  isActive:
+                    type: "boolean"
+                    example: true
+    
+    
+    
+    
+    AddTemplateConstructionItem:
+      type: "object"
+      properties:
+        idTemplateContruction:
+          type: "string"
+          example: 1
+        name:
+          type: "string"
+          example: "Template Construction Item 1"
+        description:
+          type: "string"
+          example: "Description 1"
+        idParent:
+          type: "string"
+          nullable: true
+          example: 1
+  
