@@ -2,6 +2,7 @@ using System.Runtime.Serialization;
 
 namespace KPCOS.DataAccessLayer.Enums;
 
+[DataContract]
 public enum RoleEnum
 {
     [EnumMember(Value = "ADMINISTRATOR")]

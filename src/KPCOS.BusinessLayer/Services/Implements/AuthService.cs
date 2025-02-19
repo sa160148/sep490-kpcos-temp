@@ -19,28 +19,30 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
 
     public async Task<SigninResponse> SignInAsync(SigninRequest request)
     {
-            IRepository<User> userRepo = unitOfWork.Repository<User>();
-            var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
-            if (userRaw == null)
-            {
-                throw new NotFoundException("user not found");
-            }
+        IRepository<User> userRepo = unitOfWork.Repository<User>();
+        var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
 
-            if (userRaw.Password != request.Password)
-            {
-                throw new BadRequestException("password is incorrect");
-            }
+        if (userRaw == null)
+        {
+            throw new NotFoundException("user not found");
+        }
 
-            return new SigninResponse
+        if (userRaw.Password != request.Password)
+        {
+            throw new BadRequestException("password is incorrect");
+        }
+        var role = await CheckRole(userRaw.Id);
+        return new SigninResponse
+        {
+            Token = await GenerateToken(userRaw, role!),
+            Role = role!,
+            User = new UserResponse
             {
-                Token = await GenerateToken(userRaw),
-                User = new UserResponse
-                {
-                    Avatar = userRaw.Avatar,
-                    FullName = userRaw.FullName
-                }
-            };
-       
+                Avatar = userRaw.Avatar,
+                FullName = userRaw.FullName
+            }
+        };
+
     }
 
     public async Task SignUpAsync(SignupRequest request)
@@ -50,9 +52,9 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
             var userRepo = unitOfWork.Repository<User>();
             if (await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email) != null)
             {
-                throw new Exception("user exit");
+                throw new BadRequestException("user đã tồn tại");
             }
-            var userId  = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var user = mapper.Map<User>(request);
             user.Status = "";
             user.Id = userId;
@@ -92,11 +94,10 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
         }
     }
 
-    private async Task<string> GenerateToken(User user)
+    private async Task<string> GenerateToken(User user, string role)
     {
         var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!));
         var credentials = new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
-        var role = await CheckRole(user.Id);
         if (role == null)
         {
             throw new NotFoundException();
