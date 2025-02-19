@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -80,15 +81,15 @@ public partial class KpcosContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql(GetConnectionString()!);
+        => optionsBuilder.UseNpgsql(GlobalUtility.GetConnectionString());
 
-    private string? GetConnectionString()
+    /*private string? GetConnectionString()
     {
         IConfiguration configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", true, true).Build();
         return configuration["ConnectionStrings:Default"];
-    }
+    }*/
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

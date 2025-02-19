@@ -2,7 +2,6 @@ using System.Text.Json;
 using KPCOS.Common;
 
 using Microsoft.AspNetCore.Mvc;
-using StackExchange.Redis;
 
 namespace KPCOS.API.Controllers;
 

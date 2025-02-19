@@ -13,8 +13,8 @@ public static class AddServiceCollection
         services.AddAutoMapper(typeof(MapperProfile).Assembly);
 
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IRedisPublisher, RedisPublisher>();
-        services.AddScoped<SocketIoEmitter>();
+        /*services.AddScoped<IRedisPublisher, RedisPublisher>();*/
+        /*services.AddScoped<SocketIoEmitter>();*/
         services.AddScoped<IServiceService, ServiceService>();    
         services.AddScoped<IPackageItemService, PackageItemService>();
         services.AddScoped<IPackageService, PackageService>();

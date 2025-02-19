@@ -1,10 +1,9 @@
-﻿using AutoMapper;
+﻿using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Context;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using KPCOS.DataAccessLayer.Repositories.Implements;
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
 
 namespace KPCOS.API.Extensions.DatabaseServices;
 
@@ -14,19 +13,14 @@ public static class DatabaseAddIn
     {
         services.AddDbContext<KpcosContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("Default"),
+            options.UseNpgsql(GlobalUtility.GetConnectionString(),
                 o => o.MapEnum<EnumService>("enumService"));
         });
-        services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = configuration.GetConnectionString("Redis");
-            //options.InstanceName = "cache";
-        });
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        /*services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
             var redisConnectionString = configuration.GetConnectionString("Redis");
             return ConnectionMultiplexer.Connect(redisConnectionString);
-        });
+        });*/
 
         services.AddScoped<Func<KpcosContext>>((provider) => () => provider.GetService<KpcosContext>()!);
         services.AddScoped<DbFactory>();
