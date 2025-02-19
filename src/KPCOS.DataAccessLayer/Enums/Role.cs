@@ -4,10 +4,8 @@ namespace KPCOS.DataAccessLayer.Enums;
 
 public enum RoleEnum
 {
-    [EnumMember(Value = "ADMIN")]
-    ADMIN,
-    [EnumMember(Value = "GUEST")]
-    GUEST,
+    [EnumMember(Value = "ADMINISTRATOR")]
+    ADMINISTRATOR,
     [EnumMember(Value = "CONSULTANT")]
     CONSULTANT,
     [EnumMember(Value = "DESIGNER")]
