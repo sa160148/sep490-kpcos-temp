@@ -1,4 +1,4 @@
-using System.Text.Json;
+/*using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -38,4 +38,4 @@ public class SocketIoEmitter
         await subscriber.PublishAsync(channel, message);
         Console.WriteLine($"Published message: '{message}' to channel: '{channel}'");
     }
-}
+}*/

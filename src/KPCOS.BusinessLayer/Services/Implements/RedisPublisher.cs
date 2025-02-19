@@ -1,4 +1,4 @@
-using KPCOS.Common;
+/*using KPCOS.Common;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -25,4 +25,4 @@ public class RedisPublisher : IRedisPublisher
     }
 
 
-}
+}*/
