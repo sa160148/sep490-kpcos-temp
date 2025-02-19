@@ -13,8 +13,8 @@ public static class DatabaseAddIn
     {
         services.AddDbContext<KpcosContext>(options =>
         {
-            options.UseNpgsql(GlobalUtility.GetConnectionString(),
-                o => o.MapEnum<EnumService>("enumService"));
+            options.UseNpgsql(GlobalUtility.GetConnectionString()
+                /*, o => o.MapEnum<EnumService>("enumService")*/);
         });
         /*services.AddSingleton<IConnectionMultiplexer>(sp =>
         {

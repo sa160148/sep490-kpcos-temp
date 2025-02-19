@@ -11,6 +11,12 @@ public interface IRepository<T> where T : class
     #region Sync
 
     public IQueryable<T?> Get();
+    public IEnumerable<T> Get(
+        Expression<Func<T, bool>> filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        string includeProperties = "",
+        int? pageIndex = null,
+        int? pageSize = null);
     public IQueryable<T> GetPagingQueryable(int pageNumber, int pageSize);
     public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null);
     public void Add(T? entity);

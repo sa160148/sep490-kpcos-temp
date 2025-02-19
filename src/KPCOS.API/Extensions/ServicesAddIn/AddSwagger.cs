@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using System.Reflection;
+using Microsoft.OpenApi.Models;
 
 namespace KPCOS.API.Extensions.ServicesAddIn;
 
@@ -33,6 +34,9 @@ public static class AddSwagger
                     Array.Empty<string>()
                 }
             });
+
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
         });
 
         return services;
