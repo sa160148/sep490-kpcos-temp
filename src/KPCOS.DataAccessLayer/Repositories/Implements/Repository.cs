@@ -67,6 +67,45 @@ public class Repository<T> : IRepository<T> where T : class
         return query.ToList();
     }
 
+    public virtual (IEnumerable<T> Data, int Count) GetWithCount(
+        Expression<Func<T, bool>> filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        string includeProperties = "",
+        int? pageIndex = null,
+        int? pageSize = null)
+    {
+        IQueryable<T> query = Entities;
+
+        if (filter != null)
+        {
+            query = query.Where(filter);
+        }
+
+        foreach (var includeProperty in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            query = query.Include(includeProperty);
+        }
+
+        if (orderBy != null)
+        {
+            query = orderBy(query);
+        }
+
+        // Get the total count before pagination
+        int count = query.Count();
+
+        // Implementing pagination
+        if (pageIndex.HasValue && pageSize.HasValue)
+        {
+            int validPageIndex = pageIndex.Value > 0 ? pageIndex.Value - 1 : 0;
+            int validPageSize = pageSize.Value > 0 ? pageSize.Value : 10; // Default pageSize of 10 if invalid
+            query = query.Skip(validPageIndex * validPageSize).Take(validPageSize);
+        }
+
+        // Returning data with count
+        return (Data: query.ToList(), Count: count);
+    }
+
     public IQueryable<T?> Where(Expression<Func<T?, bool>> predic = null)
     {
         return Entities.Where(predic).AsQueryable();
