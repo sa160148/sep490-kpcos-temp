@@ -21,8 +21,8 @@ public static class AddServiceCollection
         services.AddScoped<IEquipmentService, EquipmentService>();
         services.AddScoped<ITemplateContructionService, TemplateContructionService>();
         services.AddScoped<IProjectService, ProjectService>();
-        
-        
+        services.AddScoped<IUserService, UserService>();
+
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
 
