@@ -1,9 +1,5 @@
--- table creation
--- Guid id
--- created_at, updated_at, id, isActive
-
+--drop database kpcos;
 --create database kpcos;
-
 -- database
 
 -- Trigger function to update updated_at column when row is updated
@@ -14,8 +10,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
-
-
 
 -- create construction template table
 CREATE table construction_template(
@@ -46,6 +40,7 @@ CREATE table construction_template_item(
     description TEXT NOT NULL,
     idParent UUID,
     idTemplate UUID NOT NULL,
+    estTime INT NOT NULL,
     status VARCHAR(255),
     FOREIGN KEY (idParent) REFERENCES construction_template_item(id),
     FOREIGN KEY (idTemplate) REFERENCES construction_template(id)
@@ -93,15 +88,11 @@ CREATE TABLE IF NOT EXISTS users (
     status VARCHAR(255)
 );
 
-
-
 -- Trigger to update updated_at column when row is updated in users table
 CREATE TRIGGER update_users_updated_at
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- Create customer table
 CREATE table customer(
@@ -169,7 +160,9 @@ CREATE table package(
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    price int NOT NULL
+    price int NOT NULL,
+    rate int not null,
+    status VARCHAR(255)
 );
 
 -- Trigger to update updated_at column when row is updated in package table
@@ -179,6 +172,7 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 -- Indexes
+
 -- Create package detail table
 CREATE table package_detail(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -200,7 +194,6 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 -- Indexes
-
 
 -- Create project table
 CREATE table project(
@@ -230,8 +223,6 @@ BEFORE UPDATE ON project
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- Create project staff table
 CREATE table project_staff(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -249,8 +240,6 @@ BEFORE UPDATE ON project_staff
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- Create equipment table
 CREATE table equipment(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -266,8 +255,6 @@ CREATE TRIGGER update_equipment_updated_at
 BEFORE UPDATE ON equipment
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- Create service table
 CREATE table service(
@@ -289,8 +276,6 @@ BEFORE UPDATE ON service
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- Create promotion table
 CREATE table promotion(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -310,9 +295,6 @@ CREATE TRIGGER update_promotion_updated_at
 BEFORE UPDATE ON promotion
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
-
 
 -- Create quotation table
 CREATE table quotation(
@@ -338,8 +320,6 @@ BEFORE UPDATE ON quotation
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- Create quotation detail table
 CREATE table quotation_detail(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -348,6 +328,7 @@ CREATE table quotation_detail(
     is_active BOOLEAN DEFAULT TRUE,
     quantity INT NOT NULL,
     price INT NOT NULL,
+    category VARCHAR(255) NOT NULL,
     note TEXT,
     quotation_id UUID NOT NULL,
     service_id UUID NOT NULL,
@@ -361,7 +342,6 @@ BEFORE UPDATE ON quotation_detail
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
 -- Create quotation equipment table
 CREATE table quotation_equipment(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -371,6 +351,7 @@ CREATE table quotation_equipment(
     quantity INT NOT NULL,
     price INT NOT NULL,
     note TEXT,
+    category VARCHAR(255) NOT NULL,
     quotation_id UUID NOT NULL,
     equipment_id UUID NOT NULL,
     FOREIGN KEY (quotation_id) REFERENCES quotation(id),
@@ -383,7 +364,6 @@ BEFORE UPDATE ON quotation_equipment
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
 -- Create design table
 CREATE table design(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -407,7 +387,6 @@ BEFORE UPDATE ON design
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
 -- Create design image
 CREATE table design_image(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -424,8 +403,6 @@ CREATE TRIGGER update_design_image_updated_at
 BEFORE UPDATE ON design_image
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- create docs table
 CREATE table docs(
@@ -445,8 +422,6 @@ CREATE TRIGGER update_docs_updated_at
 BEFORE UPDATE ON docs
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- create contract table
 CREATE table contract(
@@ -471,8 +446,6 @@ BEFORE UPDATE ON contract
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- create payment batch table
 CREATE table payment_batch(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -492,9 +465,6 @@ CREATE TRIGGER update_payment_batch_updated_at
 BEFORE UPDATE ON payment_batch
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
-
 
 -- create transaction table
 CREATE table transaction(
@@ -519,8 +489,6 @@ BEFORE UPDATE ON transaction
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- create construction item table
 CREATE table construction_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -542,8 +510,6 @@ CREATE TRIGGER update_construction_item_updated_at
 BEFORE UPDATE ON construction_item
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- create construction task table
 CREATE table construction_task(
@@ -567,9 +533,6 @@ BEFORE UPDATE ON construction_task
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
-
 -- create maintenance package table
 CREATE table maintenance_package(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -588,8 +551,6 @@ BEFORE UPDATE ON maintenance_package
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- Indexes
-
 -- create maintenance item table
 CREATE table maintenance_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -605,8 +566,6 @@ CREATE TRIGGER update_maintenance_item_updated_at
 BEFORE UPDATE ON maintenance_item
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- create maintenance package item table
 CREATE table maintenance_package_item(
@@ -626,7 +585,6 @@ BEFORE UPDATE ON maintenance_package_item
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-
 -- create maintenance request table
 CREATE table maintenance_request(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -645,8 +603,6 @@ CREATE TRIGGER update_maintenance_request_updated_at
 BEFORE UPDATE ON maintenance_request
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
 
 -- create maintenance request task table
 CREATE table maintenance_request_task(
@@ -668,5 +624,3 @@ CREATE TRIGGER update_maintenance_request_task_updated_at
 BEFORE UPDATE ON maintenance_request_task
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
--- Indexes
