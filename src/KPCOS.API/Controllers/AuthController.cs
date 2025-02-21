@@ -23,7 +23,7 @@ namespace KPCOS.API.Controllers
         {
             
             var response =  await _authService.SignInAsync(request);
-            return new ApiResult<SigninResponse>(true, ApiResultStatusCode.Success, response, String.Empty);
+            return response;
             
         }
         
