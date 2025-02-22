@@ -7,7 +7,7 @@ namespace KPCOS.BusinessLayer.Services;
 
 public interface IUserService
 {
-    Task<bool> RegiterStaffAsync(UserRequest request);
+    Task RegiterStaffAsync(UserRequest request);
 
     /// <summary>
     /// 
