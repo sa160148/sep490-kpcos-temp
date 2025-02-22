@@ -1,5 +1,6 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
@@ -14,7 +15,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
     {
         if (await UserExitByEmail(request.Email) != null)
         {
-            throw new Exception("Email đã tồn tại");
+            throw new BadRequestException("Email đã tồn tại");
         }
 
         /*if ()

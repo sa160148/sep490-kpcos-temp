@@ -14,9 +14,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KPCOS.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/staff")]
     /*[ApiController]*/
-    public class StaffController(IUserService userService, IAuthService authService) : BaseController
+    public class StaffsController(IUserService userService, IAuthService authService) : BaseController
     {
         /// <summary>
         /// Create staff

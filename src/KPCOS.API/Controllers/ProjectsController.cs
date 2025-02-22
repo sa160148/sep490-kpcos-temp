@@ -16,18 +16,18 @@ namespace KPCOS.API.Controllers
     public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
     {
         [HttpGet("")]
-        public async Task<PagedApiResponse<ProjectResponse>> GetsAsync([FromQuery] PaginationFilter filter)
+        public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] PaginationFilter filter)
         {
             var count = await service.CountAsync();
             if (count == 0)
             {
-                return new PagedApiResponse<ProjectResponse>(new List<ProjectResponse>(),
+                return new PagedApiResponse<ProjectForListResponse>(new List<ProjectForListResponse>(),
                     pageNumber: filter.PageNumber,
                     pageSize: filter.PageSize,
                     totalRecords: count);
             }
-            var projects = await service.GetsAsync();
-            return new PagedApiResponse<ProjectResponse>(projects,
+            var projects = await service.GetsAsync(filter);
+            return new PagedApiResponse<ProjectForListResponse>(projects,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
                 totalRecords: count);
@@ -87,25 +87,58 @@ namespace KPCOS.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                throw new Exception("Vui lòng đăng nhập lại");
+                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
             }
             var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
             if (isValidPosition != RoleEnum.CUSTOMER)
             {
-                throw new Exception("Không có khả năng truy cập");
+                throw new UnauthorizedAccessException("Không có khả năng truy cập");
             }
 
-            bool isCreated = await service.CreateAsync(request);
-            return new ApiResult(isCreated, 
-                isCreated ? ApiResultStatusCode.Success : ApiResultStatusCode.ServerError);
+            await service.CreateAsync(request, Guid.Parse(userId));
+            return Ok();
         }
 
-        [HttpDelete("{id}")]
-        public async Task<ApiResult> DeleteAsync(Guid id)
+        /// <summary>
+        /// Assign consultant to project by admin
+        /// </summary>
+        /// <param name="id">
+        /// <para><see cref="StaffAssignRequest"/> request object contains: </para>
+        ///
+        /// staffId: guid.
+        ///</param>
+        /// <returns>
+        /// An Object with a JSON format.  <see cref="ApiResult"/>
+        /// </returns>
+        /// <remarks>
+        /// <para>Assign a consultant to project, only administrator can assign consultant.</para>  
+        /// Sample request:
+        /// 
+        ///     POST /api/projects/{id}/assignconsultant
+        ///     {
+        ///         "staffId": "5ca78687-26db-40ed-99d0-685dff2b7e3e"
+        ///     }
+        /// </remarks>
+        /// <response code="200">Success</response>
+        /// <response code="500">Error</response>
+        [HttpPost("{id}/assignconsultant")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResult> AssignConsultantAsync(Guid id, StaffAssignRequest request)
         {
-            bool isDeleted = await service.DeleteAsync(id);
-            return new ApiResult(isDeleted, 
-                isDeleted ? ApiResultStatusCode.Success : ApiResultStatusCode.ServerError);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
+            }
+            var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
+            if (isValidPosition != RoleEnum.ADMINISTRATOR)
+            {
+                throw new UnauthorizedAccessException("Không có khả năng truy cập");
+            }
+
+            await service.AssignConsultantAsync(id, request);
+            return Ok();
         }
     }
 }

@@ -19,6 +19,8 @@ public partial class QuotationEquipment
 
     public string? Note { get; set; }
 
+    public string Category { get; set; } = null!;
+
     public Guid QuotationId { get; set; }
 
     public Guid EquipmentId { get; set; }

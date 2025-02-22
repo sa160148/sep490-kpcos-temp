@@ -26,3 +26,5 @@ public class UserRequest
     public RoleEnum Position{ get; set; }
 
 }
+
+public record StaffAssignRequest(Guid StaffId);

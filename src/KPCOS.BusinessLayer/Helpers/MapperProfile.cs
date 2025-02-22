@@ -17,5 +17,8 @@ public class MapperProfile : Profile
                 opt => 
                     opt.MapFrom(cust => cust.CustomerName + " project"));
         CreateMap<Project, ProjectResponse>();
+        CreateMap<Project, ProjectForListResponse>()
+            .ForMember(dest => dest.PackageName,
+                opt => opt.MapFrom(project => project.Package.Name));
     }
 }

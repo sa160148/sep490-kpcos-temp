@@ -19,7 +19,7 @@ namespace KPCOS.API.Controllers
         }
 
         /// <summary>
-        /// FEATURE : Login, signin by customer
+        /// FEATURE : Login, signin
         /// </summary>
         /// <param name="request">
         /// request object contains email property and password property. 
