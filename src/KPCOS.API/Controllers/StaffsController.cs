@@ -64,13 +64,9 @@ namespace KPCOS.API.Controllers
             {
                 throw new Exception("Không có khả năng truy cập");
             }
-
-            var response = await userService.RegiterStaffAsync(request);
-            if (response)
-            {
-                return new ApiResult(true, ApiResultStatusCode.Success);
-            }
-            return new ApiResult(false, ApiResultStatusCode.ServerError);
+            
+            await userService.RegiterStaffAsync(request);
+            return Ok();
         }
 
 

@@ -11,7 +11,7 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class UserService(IUnitOfWork unitOfWork) : IUserService
 {
-    public async Task<bool> RegiterStaffAsync(UserRequest request)
+    public async Task RegiterStaffAsync(UserRequest request)
     {
         if (await UserExitByEmail(request.Email) != null)
         {
@@ -40,9 +40,7 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
             User = user
         });
 
-        await unitOfWork.Repository<User>().AddAsync(user, false);
-
-        return await unitOfWork.SaveManualChangesAsync() > 0;
+        await unitOfWork.Repository<User>().AddAsync(user);
     }
 
     public async Task<IEnumerable<StaffResponse>> GetsStaffAsync(PaginationFilter filter)
