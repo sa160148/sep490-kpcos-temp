@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KPCOS.API.Controllers
-{
+{   
     [Route("api/staff")]
     /*[ApiController]*/
     public class StaffsController(IUserService userService, IAuthService authService) : BaseController
