@@ -50,11 +50,12 @@ public class PackageService : IPackageService
         
         var package = new Package
         {
+            Id = Guid.NewGuid(),
             Name = request.Name,
             Description = request.Description,
             Price = request.Price,
         };
-        await packageRepo.AddAsync(package);
+        await packageRepo.AddAsync(package, false);
         
         foreach (var packageDetail in request.Items)
         {

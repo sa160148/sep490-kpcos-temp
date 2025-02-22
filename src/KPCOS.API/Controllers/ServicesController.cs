@@ -57,13 +57,13 @@ public class ServicesController : BaseController
     public async Task<ApiResult> UpdateServiceAsync(Guid id, ServiceCreateRequest request)
     {
         await _serviceService.UpdateServiceAsync(id, request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
 
     [HttpDelete("{id}")]
     public async Task<ApiResult> DeleteServiceAsync(Guid id)
     {
         await _serviceService.DeleteServiceAsync(id);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
 }
