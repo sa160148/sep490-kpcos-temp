@@ -81,7 +81,7 @@ namespace KPCOS.API.Controllers
         public async Task<ApiResult> SignUpAsync(SignupRequest request)
         {
             await _authService.SignUpAsync(request);
-            return new ApiResult(true, ApiResultStatusCode.Success, String.Empty);
+            return Ok();
         }
     }
 }
