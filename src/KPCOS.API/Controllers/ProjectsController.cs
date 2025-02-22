@@ -102,11 +102,16 @@ namespace KPCOS.API.Controllers
         /// <summary>
         /// Assign consultant to project by admin
         /// </summary>
-        /// <param name="id">
+        /// <param name="request">
         /// <para><see cref="StaffAssignRequest"/> request object contains: </para>
         ///
         /// staffId: guid.
         ///</param>
+        /// <param name="id">
+        /// <para> request param: </para>
+        ///
+        /// id: guid.
+        /// </param>
         /// <returns>
         /// An Object with a JSON format.  <see cref="ApiResult"/>
         /// </returns>
