@@ -7,7 +7,7 @@ public partial class User
 {
     public Guid Id { get; set; }
 
-    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
@@ -19,11 +19,11 @@ public partial class User
 
     public string FullName { get; set; } = null!;
 
-    public string Phone { get; set; } = "01234566789";
+    public string Phone { get; set; } = null!;
 
     public string? Avatar { get; set; }
 
-    public string? Status { get; set; } = "YES";
+    public string? Status { get; set; }
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
 

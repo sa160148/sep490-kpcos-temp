@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Quartz.Logging;
 
 namespace KPCOS.DataAccessLayer.Context;
 
@@ -81,33 +78,15 @@ public partial class KpcosContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql(GlobalUtility.GetConnectionString());
-
-    /*private string? GetConnectionString()
-    {
-        IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", true, true).Build();
-        return configuration["ConnectionStrings:Default"];
-    }*/
+        => optionsBuilder.UseNpgsql("Host=localhost;Database=kpcos;Username=postgre;Password=12345;Trust Server Certificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasPostgresExtension("pgcrypto");
-
         modelBuilder.Entity<ConstructionItem>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("construction_item_pkey");
 
             entity.ToTable("construction_item");
-
-            entity.HasIndex(e => e.Idparent, "construction_item_idparent_index");
-
-            entity.HasIndex(e => e.Idproject, "construction_item_idproject_index");
-
-            entity.HasIndex(e => e.Name, "construction_item_name_index");
-
-            entity.HasIndex(e => e.Status, "construction_item_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -144,14 +123,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("construction_task_pkey");
 
             entity.ToTable("construction_task");
-
-            entity.HasIndex(e => e.Idconstructionitem, "construction_task_idconstructionitem_index");
-
-            entity.HasIndex(e => e.Idstaff, "construction_task_idstaff_index");
-
-            entity.HasIndex(e => e.Name, "construction_task_name_index");
-
-            entity.HasIndex(e => e.Status, "construction_task_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -194,10 +165,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("construction_template");
 
-            entity.HasIndex(e => e.Name, "construction_template_name_index");
-
-            entity.HasIndex(e => e.Status, "construction_template_status_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -225,12 +192,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("construction_template_item");
 
-            entity.HasIndex(e => e.Idparent, "construction_template_item_idparent_index");
-
-            entity.HasIndex(e => e.Name, "construction_template_item_name_index");
-
-            entity.HasIndex(e => e.Status, "construction_template_item_status_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -238,6 +199,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Esttime).HasColumnName("esttime");
             entity.Property(e => e.Idparent).HasColumnName("idparent");
             entity.Property(e => e.Idtemplate).HasColumnName("idtemplate");
             entity.Property(e => e.IsActive)
@@ -268,12 +230,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("construction_template_task_pkey");
 
             entity.ToTable("construction_template_task");
-
-            entity.HasIndex(e => e.Idtemplateitem, "construction_template_task_idtemplateitem_index");
-
-            entity.HasIndex(e => e.Name, "construction_template_task_name_index");
-
-            entity.HasIndex(e => e.Status, "construction_template_task_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -306,12 +262,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("contract_pkey");
 
             entity.ToTable("contract");
-
-            entity.HasIndex(e => e.ProjectId, "contract_project_id_index");
-
-            entity.HasIndex(e => e.QuotationId, "contract_quotation_id_index");
-
-            entity.HasIndex(e => e.Status, "contract_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -354,8 +304,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("customer");
 
-            entity.HasIndex(e => e.UserId, "customer_user_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -393,14 +341,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("design_pkey");
 
             entity.ToTable("design");
-
-            entity.HasIndex(e => e.ProjectId, "design_project_id_index");
-
-            entity.HasIndex(e => e.StaffId, "design_staff_id_index");
-
-            entity.HasIndex(e => e.Status, "design_status_index");
-
-            entity.HasIndex(e => e.Version, "design_version_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -445,8 +385,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("design_image");
 
-            entity.HasIndex(e => e.DesignId, "design_image_design_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -475,12 +413,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("docs_pkey");
 
             entity.ToTable("docs");
-
-            entity.HasIndex(e => e.Name, "docs_name_index");
-
-            entity.HasIndex(e => e.ProjectId, "docs_project_id_index");
-
-            entity.HasIndex(e => e.Type, "docs_type_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -517,8 +449,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("equipment");
 
-            entity.HasIndex(e => e.Name, "equipment_name_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -543,8 +473,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("maintenance_item");
 
-            entity.HasIndex(e => e.Name, "maintenance_item_name_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -568,10 +496,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("maintenance_package_pkey");
 
             entity.ToTable("maintenance_package");
-
-            entity.HasIndex(e => e.Name, "maintenance_package_name_index");
-
-            entity.HasIndex(e => e.Status, "maintenance_package_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -633,12 +557,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("maintenance_request");
 
-            entity.HasIndex(e => e.CustomerId, "maintenance_request_customer_id_index");
-
-            entity.HasIndex(e => e.MaintenancePackageId, "maintenance_request_maintenance_package_id_index");
-
-            entity.HasIndex(e => e.Status, "maintenance_request_status_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -673,14 +591,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("maintenance_request_task_pkey");
 
             entity.ToTable("maintenance_request_task");
-
-            entity.HasIndex(e => e.MaintenanceRequestId, "maintenance_request_task_maintenance_request_id_index");
-
-            entity.HasIndex(e => e.Name, "maintenance_request_task_name_index");
-
-            entity.HasIndex(e => e.StaffId, "maintenance_request_task_staff_id_index");
-
-            entity.HasIndex(e => e.Status, "maintenance_request_task_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -721,10 +631,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("package");
 
-            entity.HasIndex(e => e.Name, "package_name_index");
-
-            entity.HasIndex(e => e.Status, "package_status_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -739,6 +645,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.Price).HasColumnName("price");
+            entity.Property(e => e.Rate).HasColumnName("rate");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
@@ -752,10 +659,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("package_detail_pkey");
 
             entity.ToTable("package_detail");
-
-            entity.HasIndex(e => e.PackageId, "package_detail_package_id_index");
-
-            entity.HasIndex(e => e.PackageItemId, "package_detail_package_item_id_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -791,8 +694,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("package_item");
 
-            entity.HasIndex(e => e.Name, "package_item_name_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -815,10 +716,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("payment_batch_pkey");
 
             entity.ToTable("payment_batch");
-
-            entity.HasIndex(e => e.ContractId, "payment_batch_contract_id_index");
-
-            entity.HasIndex(e => e.Status, "payment_batch_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -855,20 +752,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("project_pkey");
 
             entity.ToTable("project");
-
-            entity.HasIndex(e => e.Address, "project_address_index");
-
-            entity.HasIndex(e => e.CustomerId, "project_customer_id_index");
-
-            entity.HasIndex(e => e.CustomerName, "project_customer_name_index");
-
-            entity.HasIndex(e => e.Email, "project_email_index");
-
-            entity.HasIndex(e => e.Name, "project_name_index");
-
-            entity.HasIndex(e => e.Phone, "project_phone_index");
-
-            entity.HasIndex(e => e.Status, "project_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -924,10 +807,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("project_staff");
 
-            entity.HasIndex(e => e.ProjectId, "project_staff_project_id_index");
-
-            entity.HasIndex(e => e.StaffId, "project_staff_staff_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -956,12 +835,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("promotion_pkey");
 
             entity.ToTable("promotion");
-
-            entity.HasIndex(e => e.Code, "promotion_code_index");
-
-            entity.HasIndex(e => e.Name, "promotion_name_index");
-
-            entity.HasIndex(e => e.Status, "promotion_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -992,12 +865,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("quotation_pkey");
 
             entity.ToTable("quotation");
-
-            entity.HasIndex(e => e.ProjectId, "quotation_project_id_index");
-
-            entity.HasIndex(e => e.Status, "quotation_status_index");
-
-            entity.HasIndex(e => e.Version, "quotation_version_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -1042,13 +909,12 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("quotation_detail");
 
-            entity.HasIndex(e => e.QuotationId, "quotation_detail_quotation_id_index");
-
-            entity.HasIndex(e => e.ServiceId, "quotation_detail_service_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
+            entity.Property(e => e.Category)
+                .HasMaxLength(255)
+                .HasColumnName("category");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
@@ -1081,13 +947,12 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("quotation_equipment");
 
-            entity.HasIndex(e => e.EquipmentId, "quotation_equipment_equipment_id_index");
-
-            entity.HasIndex(e => e.QuotationId, "quotation_equipment_quotation_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
+            entity.Property(e => e.Category)
+                .HasMaxLength(255)
+                .HasColumnName("category");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
@@ -1119,10 +984,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("service_pkey");
 
             entity.ToTable("service");
-
-            entity.HasIndex(e => e.Name, "service_name_index");
-
-            entity.HasIndex(e => e.Status, "service_status_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -1158,8 +1019,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("staff");
 
-            entity.HasIndex(e => e.UserId, "staff_user_id_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -1188,14 +1047,6 @@ public partial class KpcosContext : DbContext
             entity.HasKey(e => e.Id).HasName("transaction_pkey");
 
             entity.ToTable("transaction");
-
-            entity.HasIndex(e => e.CustomerId, "transaction_customer_id_index");
-
-            entity.HasIndex(e => e.No, "transaction_no_index");
-
-            entity.HasIndex(e => e.Status, "transaction_status_index");
-
-            entity.HasIndex(e => e.Type, "transaction_type_index");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
@@ -1237,12 +1088,6 @@ public partial class KpcosContext : DbContext
 
             entity.ToTable("users");
 
-            entity.HasIndex(e => e.Email, "users_email_index");
-
-            entity.HasIndex(e => e.Phone, "users_phone_index");
-
-            entity.HasIndex(e => e.Status, "users_status_index");
-
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
@@ -1270,7 +1115,6 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("phone");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
-                .IsRequired(false)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

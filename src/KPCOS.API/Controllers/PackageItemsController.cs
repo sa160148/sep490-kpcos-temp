@@ -24,7 +24,7 @@ public class PackageItemsController : ControllerBase
     public async Task<ApiResult> CreatePackageItemAsync(PackageItemCreateRequest request)
     {
         await _packageItemService.CreatePackageItemAsync(request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpGet("")]
@@ -40,21 +40,21 @@ public class PackageItemsController : ControllerBase
     public async Task<ApiResult<PackageItemResponse>> GetPackageItemByIdAsync(Guid id)
     {
         var packageItem = await _packageItemService.GetPackageItemByIdAsync(id);
-        return new ApiResult<PackageItemResponse>(true, ApiResultStatusCode.Success, packageItem);
+        return packageItem;
     }
     
     [HttpPut("{id}")]
     public async Task<ApiResult> UpdatePackageItemAsync(Guid id, PackageItemCreateRequest request)
     {
         await _packageItemService.UpdatePackageItemAsync(id, request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpDelete("{id}")]
     public async Task<ApiResult> DeletePackageItemAsync(Guid id)
     {
         await _packageItemService.DeletePackageItemAsync(id);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     

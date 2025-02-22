@@ -17,6 +17,8 @@ public partial class QuotationDetail
 
     public int Price { get; set; }
 
+    public string Category { get; set; } = null!;
+
     public string? Note { get; set; }
 
     public Guid QuotationId { get; set; }

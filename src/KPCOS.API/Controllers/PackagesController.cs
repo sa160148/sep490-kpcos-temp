@@ -44,7 +44,7 @@ public class PackagesController : ControllerBase
     public async Task<ApiResult> UpdatePackageAsync(Guid id, PackageCreateRequest request)
     {
         await _packageService.UpdatePackageAsync(id, request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     [HttpDelete("{id}")]
     public async Task<ApiResult> DeletePackageAsync(Guid id)

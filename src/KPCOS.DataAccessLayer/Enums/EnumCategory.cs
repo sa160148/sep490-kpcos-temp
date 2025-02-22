@@ -7,13 +7,13 @@ public enum EnumCategory
 {
     [EnumMember(Value = "PRELIMINARIES")]
     Preliminaries,
-    [EnumMember(Value = "POND LAYOUT")]
+    [EnumMember(Value = "POND_LAYOUT")]
     PondLayou,
-    [EnumMember(Value = "PLUMBING WORKS")]
+    [EnumMember(Value = "PLUMBING_WORKS")]
     PlumbingWorks,
-    [EnumMember(Value = "POWER HOUSE")]
+    [EnumMember(Value = "POWER_HOUSE")]
     PowerHouse,
-    [EnumMember(Value = "WATER STORAGE TANK PLATFORM")]
+    [EnumMember(Value = "WATER_STORAGE_TANK_PLATFORM")]
     WaterStorageTankPlatform,
     [EnumMember(Value = "LANDSCAPING")]
     Landscaping,

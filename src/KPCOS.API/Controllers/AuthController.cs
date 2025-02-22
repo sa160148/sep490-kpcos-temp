@@ -19,7 +19,7 @@ namespace KPCOS.API.Controllers
         }
 
         /// <summary>
-        /// FEATURE : Login, signin by customer
+        /// FEATURE : Login, signin
         /// </summary>
         /// <param name="request">
         /// request object contains email property and password property. 
@@ -45,7 +45,7 @@ namespace KPCOS.API.Controllers
         {
             
             var response =  await _authService.SignInAsync(request);
-            return new ApiResult<SigninResponse>(true, ApiResultStatusCode.Success, response, String.Empty);
+            return response;
             
         }
 
@@ -81,7 +81,7 @@ namespace KPCOS.API.Controllers
         public async Task<ApiResult> SignUpAsync(SignupRequest request)
         {
             await _authService.SignUpAsync(request);
-            return new ApiResult(true, ApiResultStatusCode.Success, String.Empty);
+            return Ok();
         }
     }
 }

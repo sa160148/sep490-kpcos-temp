@@ -4,6 +4,7 @@ using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
+using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,81 +13,25 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
 {
-
-    #region Feat: Base Funtion
-
-    public async Task<IEnumerable<ProjectResponse>> GetsAsync()
-    {
-        /*
-        var projectRepo = unitOfWork.Repository<Project>();
-        var projects = projectRepo.Get()
-            .Include(prokect => prokect.Package)
-            .ThenInclude(package => package.PackageDetails)
-            .Include(project => project.Customer)
-            .ThenInclude(customer => customer.User)
-            .Include(project => project.ProjectStaffs)
-            .ThenInclude(projectStaff => projectStaff.Staff)
-            .ThenInclude(projectStaff => projectStaff.User)
-            .Include(project => project.Quotations)
-            .ThenInclude(quotation => quotation.QuotationDetails)
-            .ThenInclude(quotationDetail => quotationDetail.Service)
-            .Include(project => project.Quotations)
-            .ThenInclude(quotation => quotation.QuotationEquipments)
-            .ThenInclude(quotationEquipment => quotationEquipment.Equipment)
-            .Include(project => project.Designs)
-            .ThenInclude(design => design.DesignImages)
-            .Include(project => project.Contracts)
-            .ThenInclude(contract => contract.PaymentBatches)
-            .Include(project => project.ConstructionItems)
-            .ThenInclude(constructionItem => constructionItem.ConstructionTasks)
-            .ToList();
-
-        return projects.Select(project => mapper.Map<ProjectResponse>(project));
-        */
-        return new List<ProjectResponse>();
-    }
-
-    public async Task<IEnumerable<ProjectResponse>> GetsAsync(PaginationFilter filter)
+    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter)
     {
         var repo = unitOfWork.Repository<Project>();
-        var query = repo.Get();
+        var query = repo.Get(
+            /*includeProperties: "Package",*/
+            pageIndex: filter.PageSize,
+            pageSize: filter.PageNumber
+        );
 
-        query = repo.GetPagingQueryable(filter.PageNumber, filter.PageSize);
+        var projectResponses = query.Select(project => mapper.Map<ProjectForListResponse>(project)).ToList();
 
-        /*query = query.Include();*/
-
-        var projects = await query.ToListAsync();
-
-        var projectResponse = (IEnumerable<ProjectResponse>) mapper.Map<ProjectResponse>(projects);
-
-        return projectResponse;
+        return projectResponses;
     }
 
     public async Task<ProjectResponse> GetAsync(Guid id)
     {
         var projectRepo = unitOfWork.Repository<Project>();
-        var project = projectRepo.Get()
-                .Include(prokect => prokect.Package)
-                .ThenInclude(package => package.PackageDetails)
-                .Include(project => project.Customer)
-                .ThenInclude(customer => customer.User)
-                .Include(project => project.ProjectStaffs)
-                .ThenInclude(projectStaff => projectStaff.Staff)
-                .ThenInclude(projectStaff => projectStaff.User)
-                .Include(project => project.Quotations)
-                .ThenInclude(quotation => quotation.QuotationDetails)
-                .ThenInclude(quotationDetail => quotationDetail.Service)
-                .Include(project => project.Quotations)
-                .ThenInclude(quotation => quotation.QuotationEquipments)
-                .ThenInclude(quotationEquipment => quotationEquipment.Equipment)
-                .Include(project => project.Designs)
-                .ThenInclude(design => design.DesignImages)
-                .Include(project => project.Contracts)
-                .ThenInclude(contract => contract.PaymentBatches)
-                .Include(project => project.ConstructionItems)
-                .ThenInclude(constructionItem => constructionItem.ConstructionTasks)
-            ;
-        return mapper.Map<ProjectResponse>(project);
+        
+        return new ProjectResponse();
     }
 
     public async Task<int> CountAsync()
@@ -94,21 +39,41 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return await unitOfWork.Repository<Project>().Get().CountAsync();
     }
 
-    public async Task<bool> CreateAsync(ProjectRequest request)
+    public async Task CreateAsync(ProjectRequest request, Guid userId)
     {
         var projectRepo = unitOfWork.Repository<Project>();
         Project? project = mapper.Map<Project>(request);
-        await projectRepo.AddAsync(project, false);
+        var customer = await unitOfWork.Repository<Customer>()
+            .SingleOrDefaultAsync(customer => customer.UserId == userId);
 
-        return await projectRepo.SaveAsync() > 0;
+        project.CustomerId = customer.Id;
+        project.IsActive = true;
+        project.Status = EnumProjectStatus.REQUESTING.ToString();
+        await projectRepo.AddAsync(project);
     }
 
-    public async Task<bool> UpdateAsync(Guid id, ProjectRequest request)
+    public Task<IEnumerable<StaffResponse>> GetsConsultantAsync(PaginationFilter filter, Guid projectId)
     {
-        var projectRepo = unitOfWork.Repository<Project>();
-        var project = await IsExistById(id);
+        throw new NotImplementedException();
+    }
 
-        return false;
+    public async Task AssignConsultantAsync(Guid id, StaffAssignRequest request)
+    {
+        if (!(await IsNotInAnyProject(request.StaffId)))
+        {
+            throw new BadRequestException("Staff đang ở poject khác chưa hoàn thành");
+        }
+        var projectStaff = new ProjectStaff
+        {
+            ProjectId = id,
+            StaffId = request.StaffId
+        };
+
+        var project = await unitOfWork.Repository<Project>().FindAsync(id);
+        project.Status = EnumProjectStatus.PROCESSING.ToString();
+
+        await unitOfWork.Repository<ProjectStaff>().AddAsync(projectStaff, false); 
+        await unitOfWork.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -131,5 +96,23 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         }
         return project;
     }
-    #endregion
+
+    private async Task<bool> IsNotInAnyProject(Guid staffId)
+    {
+        var projectStaff = unitOfWork.Repository<ProjectStaff>()
+            .Get(
+                filter: ps => ps.StaffId == staffId &&
+                              (ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString() ||
+                               ps.Project.Status == EnumProjectStatus.REQUESTING.ToString() ||
+                               ps.Project.Status == EnumProjectStatus.DESIGNING.ToString() ||
+                               ps.Project.Status == EnumProjectStatus.PROCESSING.ToString()),
+                includeProperties: "Project"
+            ).FirstOrDefault();
+
+        if (projectStaff != null)
+        {
+            throw new NotFoundException();
+        }
+        return true;
+    }
 }

@@ -6,13 +6,12 @@ namespace KPCOS.BusinessLayer.Services;
 
 public interface IProjectService
 {
-    Task<IEnumerable<ProjectResponse>> GetsAsync();
-    Task<IEnumerable<ProjectResponse>> GetsAsync(PaginationFilter filter);
+    Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter);
 
     Task<ProjectResponse> GetAsync(Guid id);
     Task<int> CountAsync();
 
-    Task<bool> CreateAsync(ProjectRequest request);
-    Task<bool> UpdateAsync(Guid id, ProjectRequest request);
-    Task<bool> DeleteAsync(Guid id);
+    Task CreateAsync(ProjectRequest request, Guid userId);
+    Task<IEnumerable<StaffResponse>> GetsConsultantAsync(PaginationFilter filter, Guid projectId);
+    Task AssignConsultantAsync(Guid id, StaffAssignRequest request);
 }
