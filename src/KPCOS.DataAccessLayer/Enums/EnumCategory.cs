@@ -1,14 +1,24 @@
+using System.Runtime.Serialization;
+
 namespace KPCOS.DataAccessLayer.Enums;
 
+[DataContract]
 public enum EnumCategory
 {
-    Preliminaries = 1,
-    PondLayou = 2,
-    PlumbingWorks = 3,
-    PowerHouse = 4,
-    WaterStorageTankPlatform = 5,
-    Landscaping = 6,
-    Contingency = 7
+    [EnumMember(Value = "PRELIMINARIES")]
+    Preliminaries,
+    [EnumMember(Value = "POND_LAYOUT")]
+    PondLayou,
+    [EnumMember(Value = "PLUMBING_WORKS")]
+    PlumbingWorks,
+    [EnumMember(Value = "POWER_HOUSE")]
+    PowerHouse,
+    [EnumMember(Value = "WATER_STORAGE_TANK_PLATFORM")]
+    WaterStorageTankPlatform,
+    [EnumMember(Value = "LANDSCAPING")]
+    Landscaping,
+    [EnumMember(Value = "CONTINGENCY")]
+    Contingency
 }
 
 public class EnumCategoryDetails
@@ -27,7 +37,7 @@ public class EnumCategoryDetails
     public static readonly Dictionary<EnumCategory, EnumCategoryDetails> EnumCategoryMapping = new()
     {   
         { EnumCategory.Preliminaries, new EnumCategoryDetails("Preliminaries", "Preliminaries", 1) },
-        { EnumCategory.PondLayou, new EnumCategoryDetails("PondLayou", "Pond Layou", 2) },
+        { EnumCategory.PondLayou, new EnumCategoryDetails("PondLayout", "Pond Layout", 2) },
         { EnumCategory.PlumbingWorks, new EnumCategoryDetails("PlumbingWorks", "Plumbing Works", 3) },
         { EnumCategory.PowerHouse, new EnumCategoryDetails("PowerHouse", "Power House", 4) },
         { EnumCategory.WaterStorageTankPlatform, new EnumCategoryDetails("WaterStorageTankPlatform", "Water Storage Tank Platform", 5) },

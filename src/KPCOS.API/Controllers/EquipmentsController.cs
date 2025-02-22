@@ -23,7 +23,7 @@ public class EquipmentsController : BaseController
     public async Task<ApiResult> CreateEquipmentAsync(EquipmentCreateRequest request)
     {
         await _equipmentService.CreateEquipmentAsync(request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpGet("")]
@@ -44,14 +44,14 @@ public class EquipmentsController : BaseController
     public async Task<ApiResult> UpdateEquipmentAsync(Guid id, EquipmentCreateRequest request)
     {
         await _equipmentService.UpdateEquipmentAsync(id, request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpDelete("{id}")]
     public async Task<ApiResult> DeleteEquipmentAsync(Guid id)
     {
         await _equipmentService.DeleteEquipmentAsync(id);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
    
 }

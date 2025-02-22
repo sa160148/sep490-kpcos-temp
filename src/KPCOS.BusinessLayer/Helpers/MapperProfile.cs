@@ -12,7 +12,13 @@ public class MapperProfile : Profile
         CreateMap<AuthRequest, User>();
         CreateMap<SignupRequest, User>();
 
-        CreateMap<ProjectRequest, Project>();
+        CreateMap<ProjectRequest, Project>()
+            .ForMember(dest => dest.Name,
+                opt => 
+                    opt.MapFrom(cust => cust.CustomerName + " project"));
         CreateMap<Project, ProjectResponse>();
+        CreateMap<Project, ProjectForListResponse>()
+            .ForMember(dest => dest.PackageName,
+                opt => opt.MapFrom(project => project.Package.Name));
     }
 }

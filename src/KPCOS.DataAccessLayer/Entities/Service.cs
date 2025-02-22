@@ -23,7 +23,7 @@ public partial class Service
 
     public int Price { get; set; }
 
-    public string? Status { get; set; } = "";
+    public string? Status { get; set; }
 
     public virtual ICollection<QuotationDetail> QuotationDetails { get; set; } = new List<QuotationDetail>();
 }

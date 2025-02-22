@@ -24,14 +24,14 @@ public class TemplateContructionsController : BaseController
     public async Task<ApiResult> CreateTemplateContructionAsync(TemplateContructionCreateRequest request)
     {
         await _templateContructionService.CreateTemplateContructionAsync(request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpPost("items")]
     public async Task<ApiResult> CreateTemplateContructionItemAsync(TemplateContructionItemCreateRequest request)
     {
         await _templateContructionService.CreateTemplateContructionItemAsync(request);
-        return new ApiResult(true, ApiResultStatusCode.Success);
+        return Ok();
     }
     
     [HttpGet("")]
@@ -45,7 +45,7 @@ public class TemplateContructionsController : BaseController
     public async Task<ApiResult<TemplateContructionDetailResponse>> GetTemplateContructionByIdAsync(Guid id)
     {
         var templateContruction = await _templateContructionService.GetTemplateContructionByIdAsync(id);
-        return new ApiResult<TemplateContructionDetailResponse>(true, ApiResultStatusCode.Success, templateContruction);
+        return templateContruction;
     }
     
     

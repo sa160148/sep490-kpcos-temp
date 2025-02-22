@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Security.Claims;
+using System.Text;
+using KPCOS.DataAccessLayer.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,7 +21,7 @@ public static class AddAuth
             {
                 ValidateIssuer = false,
                 ValidateAudience = false,
-                ValidateLifetime = true,
+                ValidateLifetime = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!))
             };
@@ -35,6 +37,12 @@ public static class AddAuth
                     return Task.CompletedTask;
                 }
             };
+        });
+
+        services.AddAuthorization(option =>
+        {
+            option.AddPolicy(RoleEnum.ADMINISTRATOR.ToString(), policy => policy.RequireClaim(ClaimTypes.Role, RoleEnum.ADMINISTRATOR.ToString(), "true"));
+            option.AddPolicy(RoleEnum.MANAGER.ToString(), policy => policy.RequireClaim(ClaimTypes.Role, RoleEnum.MANAGER.ToString(), "true"));
         });
 
         // CORS

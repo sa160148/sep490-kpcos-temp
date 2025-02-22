@@ -5,10 +5,6 @@ namespace KPCOS.BusinessLayer.DTOs.Request;
 
 public class ProjectRequest
 {
-    [Required(ErrorMessage = "can not let name null")]
-    [DefaultValue("project")]
-    public string Name { get; set; }
-
     [Required(ErrorMessage = "can not let customer name null")]
     [DefaultValue("customer")]
     public string CustomerName { get; set; }
@@ -30,16 +26,16 @@ public class ProjectRequest
     public string Email { get; set; }
 
     [Required(ErrorMessage = "can not let area null")]
-    [DefaultValue(0)]
+    [DefaultValue(100)]
     public float Area { get; set; }
 
     [Required(ErrorMessage = "can not let depth null")]
-    [DefaultValue(0)]
+    [DefaultValue(100)]
     public float Depth { get; set; }
 
-    public Guid? CustomerId { get; set; }
-
+    [DefaultValue("5ca78687-26db-40ed-99d0-685dff2b7e3e")]
     public Guid? PackageId { get; set; }
 
+    [DefaultValue("5ca78687-26db-40ed-99d0-685dff2b7e3e")]
     public Guid? Templatedesignid{ get; set; }
 }

@@ -36,9 +36,9 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
         {
             Token = await GenerateToken(userRaw, role!),
             Role = role!,
-            User = new UserResponse
+            User = new CustomerResponse()
             {
-                Avatar = userRaw.Avatar,
+                Avatar = userRaw.Avatar ?? "",
                 FullName = userRaw.FullName
             }
         };
@@ -58,16 +58,6 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
             var user = mapper.Map<User>(request);
             user.Status = "";
             user.Id = userId;
-
-            /*var customer = new Customer
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Address = request.Address,
-                Dob = request.Dob,
-                Gender = request.Gender,
-                IsActive = true
-            };*/
 
             user.Customers.Add(new Customer
             {
@@ -94,6 +84,34 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
         }
     }
 
+    public async Task<bool> IsCustomerAsync(Guid userId)
+    {
+        var isStaff = await unitOfWork.Repository<Staff>()
+            .SingleOrDefaultAsync(staff => staff.UserId == userId) != null;
+        if (isStaff)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    public async Task<RoleEnum> GetPositionAsync(Guid userId)
+    {
+        var staff = await unitOfWork.Repository<Staff>()
+            .SingleOrDefaultAsync(staff => staff.UserId == userId);
+        if (staff != null)
+        {
+            return Enum.Parse<RoleEnum>(staff.Position);
+        }
+        var customer = await unitOfWork.Repository<Customer>()
+            .SingleOrDefaultAsync(customer => customer.UserId == userId);
+        if (customer != null)
+        {
+            return RoleEnum.CUSTOMER;
+        }
+        throw new Exception("User không có customer hay staff");
+    }
+
     private async Task<string> GenerateToken(User user, string role)
     {
         var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!));
@@ -105,7 +123,7 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
         var tokenDescript = new JwtSecurityToken(
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],
-            expires: DateTime.Now.AddHours(1),
+            /*expires: DateTime.Now.AddHours(1),*/
             signingCredentials: credentials,
             claims: [
                 new Claim(ClaimTypes.Email, user.Email),
