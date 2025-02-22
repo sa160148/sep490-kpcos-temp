@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,7 +79,7 @@ public partial class KpcosContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=localhost;Database=kpcos;Username=postgre;Password=12345;Trust Server Certificate=True;");
+        => optionsBuilder.UseNpgsql(GlobalUtility.GetConnectionString());
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
