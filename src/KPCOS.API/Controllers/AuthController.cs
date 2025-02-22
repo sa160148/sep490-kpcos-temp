@@ -9,15 +9,8 @@ namespace KPCOS.API.Controllers
 {
     [Route("api/[controller]")]
     /*[ApiController]*/
-    public class AuthController : BaseController
+    public class AuthController(IAuthService authService) : BaseController
     {
-        private readonly IAuthService _authService;
-
-        public AuthController(IAuthService authService)
-        {
-            _authService = authService;
-        }
-
         /// <summary>
         /// FEATURE : Login, signin
         /// </summary>
@@ -44,7 +37,7 @@ namespace KPCOS.API.Controllers
         public async Task<ApiResult<SigninResponse>> SignInAsync(SigninRequest request)
         {
             
-            var response =  await _authService.SignInAsync(request);
+            var response =  await authService.SignInAsync(request);
             return response;
             
         }
@@ -80,7 +73,7 @@ namespace KPCOS.API.Controllers
         [HttpPost("signup")]
         public async Task<ApiResult> SignUpAsync(SignupRequest request)
         {
-            await _authService.SignUpAsync(request);
+            await authService.SignUpAsync(request);
             return Ok();
         }
     }

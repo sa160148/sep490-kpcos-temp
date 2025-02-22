@@ -57,12 +57,12 @@ namespace KPCOS.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                throw new Exception("Vui lòng đăng nhập lại");
+                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
             }
             var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
             if (isValidPosition != RoleEnum.ADMINISTRATOR)
             {
-                throw new Exception("Không có khả năng truy cập");
+                throw new UnauthorizedAccessException("Không có khả năng truy cập");
             }
             
             await userService.RegiterStaffAsync(request);
@@ -92,12 +92,12 @@ namespace KPCOS.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                throw new Exception("Vui lòng đăng nhập lại");
+                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
             }
             var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
             if (isValidPosition != RoleEnum.ADMINISTRATOR)
             {
-                throw new Exception("Không có khả năng truy cập");
+                throw new UnauthorizedAccessException("Không có khả năng truy cập");
             }
             
             var count = await userService.CountStaffAsync();
