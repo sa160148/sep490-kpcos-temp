@@ -15,7 +15,10 @@ public class MapperProfile : Profile
         CreateMap<ProjectRequest, Project>()
             .ForMember(dest => dest.Name,
                 opt => 
-                    opt.MapFrom(cust => cust.CustomerName + " project"));
+                    opt.MapFrom(cust => cust.CustomerName + " project"))
+            .ForMember(dest => dest.Note,
+                opt => opt.MapFrom(cust => cust.Note ?? ""))
+                ;
         CreateMap<Project, ProjectResponse>();
         CreateMap<Project, ProjectForListResponse>()
             .ForMember(dest => dest.PackageName,

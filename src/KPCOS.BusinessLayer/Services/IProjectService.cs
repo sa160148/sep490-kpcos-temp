@@ -6,7 +6,7 @@ namespace KPCOS.BusinessLayer.Services;
 
 public interface IProjectService
 {
-    Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter);
+    Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role);
 
     Task<ProjectResponse> GetAsync(Guid id);
     Task<int> CountAsync();

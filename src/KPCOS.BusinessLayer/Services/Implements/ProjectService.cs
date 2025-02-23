@@ -13,13 +13,16 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
 {
-    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter)
+    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role)
     {
+        var filterOption = new GetAllProjectByRoleRequest();
         var repo = unitOfWork.Repository<Project>();
         var query = repo.Get(
-            /*includeProperties: "Package",*/
-            pageIndex: filter.PageSize,
-            pageSize: filter.PageNumber
+            filter: filterOption.GetExpressionsV2(Guid.Parse(userId), role),
+            orderBy: null,
+            includeProperties: "Package",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
         );
 
         var projectResponses = query.Select(project => mapper.Map<ProjectForListResponse>(project)).ToList();
