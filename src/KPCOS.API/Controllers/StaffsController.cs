@@ -52,19 +52,9 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [HttpPost]
+        [CustomAuthorize("ADMINISTRATOR")]
         public async Task<ApiResult> RegiterStaffAsync(UserRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
-            }
-            var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
-            if (isValidPosition != RoleEnum.ADMINISTRATOR)
-            {
-                throw new UnauthorizedAccessException("Không có khả năng truy cập");
-            }
-            
             await userService.RegiterStaffAsync(request);
             return Ok();
         }
@@ -85,21 +75,9 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(PagedApiResponse<StaffResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [HttpGet]
-        /*[Authorize/*(Roles = "ADMINISTRATOR")#1#]*/
-        /*[RequiresClaim("ADMINISTRATOR", "true")]*/
+        [CustomAuthorize("ADMINISTRATOR")]
         public async Task<PagedApiResponse<StaffResponse>> GetsStaffAsync([FromQuery]PaginationFilter filter)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
-            }
-            var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
-            if (isValidPosition != RoleEnum.ADMINISTRATOR)
-            {
-                throw new UnauthorizedAccessException("Không có khả năng truy cập");
-            }
-            
             var count = await userService.CountStaffAsync();
             if (count == 0)
             {
