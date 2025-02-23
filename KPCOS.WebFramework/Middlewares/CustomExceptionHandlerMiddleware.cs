@@ -33,109 +33,71 @@ namespace KPCOS.WebFramework.Middlewares
             _env = env;
             _logger = logger;
         }
+        private async Task HandleAppExceptionAsync(HttpContext context, AppException exception)
+        {
+            _logger.LogError(exception, exception.Message);
+            context.Response.StatusCode = (int)exception.HttpStatusCode;
+            var result = new ApiResult(false, exception.ApiStatusCode, exception.Message);
+            await WriteToResponseAsync(context, result);
+        }
+
+        private async Task HandleSecurityTokenExpiredExceptionAsync(HttpContext context, SecurityTokenExpiredException exception)
+        {
+            _logger.LogError(exception, exception.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            var result = new ApiResult(false, ApiResultStatusCode.UnAuthorized, "Token has expired.");
+            await WriteToResponseAsync(context, result);
+        }
+
+        private async Task HandleUnauthorizedAccessExceptionAsync(HttpContext context, UnauthorizedAccessException exception)
+        {
+            _logger.LogError(exception, exception.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            var result = new ApiResult(false, ApiResultStatusCode.UnAuthorized, "Access denied. You are not authorized to access this resource.");
+            await WriteToResponseAsync(context, result);
+        }
+
+        private async Task HandleGenericExceptionAsync(HttpContext context, Exception exception)
+        {
+            _logger.LogError(exception, exception.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            var result = new ApiResult(false, ApiResultStatusCode.ServerError, "An error occurred while processing your request.");
+            await WriteToResponseAsync(context, result);
+        }
 
         public async Task Invoke(HttpContext context)
         {
-            string message = null;
-            HttpStatusCode httpStatusCode = HttpStatusCode.InternalServerError;
-            ApiResultStatusCode apiStatusCode = ApiResultStatusCode.ServerError;
-
             try
             {
                 await _next(context);
             }
             catch (AppException exception)
             {
-                _logger.LogError(exception, exception.Message);
-                httpStatusCode = exception.HttpStatusCode;
-                apiStatusCode = exception.ApiStatusCode;
-
-                // if (_env.IsDevelopment())
-                // {
-                //     var dic = new Dictionary<string, string>
-                //     {
-                //         ["Exception"] = exception.Message,
-                //         ["StackTrace"] = exception.StackTrace,
-                //     };
-                //     if (exception.InnerException != null)
-                //     {
-                //         dic.Add("InnerException.Exception", exception.InnerException.Message);
-                //         dic.Add("InnerException.StackTrace", exception.InnerException.StackTrace);
-                //     }
-                //     if (exception.AdditionalData != null)
-                //         dic.Add("AdditionalData", JsonConvert.SerializeObject(exception.AdditionalData));
-                //
-                //     message = JsonConvert.SerializeObject(dic);
-                // }
-                // else
-                // {
-                //     message = exception.Message;
-                // }
-                message = exception.Message;
-                await WriteToResponseAsync();
+                await HandleAppExceptionAsync(context, exception);
             }
             catch (SecurityTokenExpiredException exception)
             {
-                _logger.LogError(exception, exception.Message);
-                SetUnAuthorizeResponse(exception);
-                await WriteToResponseAsync();
+                await HandleSecurityTokenExpiredExceptionAsync(context, exception);
             }
             catch (UnauthorizedAccessException exception)
             {
-                _logger.LogError(exception, exception.Message);
-                SetUnAuthorizeResponse(exception);
-                await WriteToResponseAsync();
+                await HandleUnauthorizedAccessExceptionAsync(context, exception);
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, exception.Message);
-
-                if (_env.IsDevelopment())
-                {
-                    var dic = new Dictionary<string, string>
-                    {
-                        ["Exception"] = exception.Message,
-                        ["StackTrace"] = exception.StackTrace,
-                    };
-                    message = JsonConvert.SerializeObject(dic);
-                }
-                await WriteToResponseAsync();
+                await HandleGenericExceptionAsync(context, exception);
             }
-
-            async Task WriteToResponseAsync()
+        }
+        
+        private async Task WriteToResponseAsync(HttpContext context, ApiResult result)
+        {
+            context.Response.ContentType = "application/json";
+            var json = JsonConvert.SerializeObject(result, new JsonSerializerSettings
             {
-                if (context.Response.HasStarted)
-                    throw new InvalidOperationException("The response has already started, the http status code middleware will not be executed.");
-
-                var result = new ApiResult(false, apiStatusCode, message);
-                var json = JsonConvert.SerializeObject(result, new JsonSerializerSettings
-                {
-                    ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
-                });
-
-                context.Response.StatusCode = (int)httpStatusCode;
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(json);
-            }
-
-            void SetUnAuthorizeResponse(Exception exception)
-            {
-                httpStatusCode = HttpStatusCode.Unauthorized;
-                apiStatusCode = ApiResultStatusCode.UnAuthorized;
-
-                if (_env.IsDevelopment())
-                {
-                    var dic = new Dictionary<string, string>
-                    {
-                        ["Exception"] = exception.Message,
-                        ["StackTrace"] = exception.StackTrace
-                    };
-                    if (exception is SecurityTokenExpiredException tokenException)
-                        dic.Add("Expires", tokenException.Expires.ToString());
-
-                    message = JsonConvert.SerializeObject(dic);
-                }
-            }
+                ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+            });
+            
+            await context.Response.WriteAsync(json);
         }
     }
 }
