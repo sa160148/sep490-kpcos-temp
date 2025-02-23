@@ -16,7 +16,29 @@ namespace KPCOS.API.Controllers
     [Route("api/[controller]")]
     public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
     {
+        /// <summary>
+        /// Get all project for each role of user
+        /// </summary>
+        /// <param name="filter">
+        /// <para><see cref="PaginationFilter"/> request object contains: </para>
+        ///
+        /// pageNumber: int.
+        /// pageSize: int.
+        /// </param>
+        /// <remarks>
+        /// <para>Retrieve a paginate list of project for each role user.
+        /// ADMINISTRATOR can get all project, CUSTOMER can get all project that they created, staff* can get all project that they assigned.</para>
+        /// <para>staff* is CONSULTANT, DESIGNER, CONSTRUCTOR.</para>
+        /// Sample request:
+        /// 
+        ///     Get /api/projects
+        /// </remarks>
+        /// <response code="200">Success</response>
+        /// <response code="500">Error</response>
+        /// <response code="401">Unauthorized</response>
         [HttpGet("")]
+        [ProducesResponseType(typeof(PagedApiResponse<ProjectForListResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [CustomAuthorize]
         public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] PaginationFilter filter)
         {
@@ -37,7 +59,27 @@ namespace KPCOS.API.Controllers
                 totalRecords: count);
         }
 
+        /// <summary>
+        /// Retrieve a project by id
+        /// </summary>
+        /// <param name="id">
+        /// <para><see cref="Guid"/> request contains: </para>
+        ///
+        /// id: guid.
+        /// </param>
+        /// <remarks>
+        /// <para>Retrieve a project by id.</para>
+        /// Sample request:
+        /// 
+        ///     Get /api/projects{id}
+        /// </remarks>
+        /// <response code="200">Success</response>
+        /// <response code="500">Error</response>
+        /// <response code="401">Unauthorized</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResult<ProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [CustomAuthorize]
         public async Task<ApiResult<ProjectResponse>> GetAsync(Guid id)
         {
             var project = await service.GetAsync(id);
