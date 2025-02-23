@@ -9,6 +9,7 @@ using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KPCOS.API.Controllers
 {
@@ -16,8 +17,11 @@ namespace KPCOS.API.Controllers
     public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
     {
         [HttpGet("")]
+        [CustomAuthorize]
         public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] PaginationFilter filter)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
             var count = await service.CountAsync();
             if (count == 0)
             {
@@ -26,7 +30,7 @@ namespace KPCOS.API.Controllers
                     pageSize: filter.PageSize,
                     totalRecords: count);
             }
-            var projects = await service.GetsAsync(filter);
+            var projects = await service.GetsAsync(filter, userId, role);
             return new PagedApiResponse<ProjectForListResponse>(projects,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
@@ -82,18 +86,10 @@ namespace KPCOS.API.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [CustomAuthorize("CUSTOMER")]
         public async Task<ApiResult> CreateAsync(ProjectRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
-            }
-            var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
-            if (isValidPosition != RoleEnum.CUSTOMER)
-            {
-                throw new UnauthorizedAccessException("Không có khả năng truy cập");
-            }
 
             await service.CreateAsync(request, Guid.Parse(userId));
             return Ok();
