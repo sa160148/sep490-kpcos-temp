@@ -1,6 +1,7 @@
 using KPCOS.Common;
 using KPCOS.Common.Utilities;
 using KPCOS.Common;
+using KPCOS.Common.Pagination;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 namespace KPCOS.WebFramework.Api;
@@ -115,19 +116,19 @@ public class ApiResult
         #endregion
     }
     
-    public class PagedApiResponse<TData> : ApiResult<IEnumerable<TData>>
-    {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-        public int TotalRecords { get; set; }
+ public class PagedApiResponse<TData> : ApiResult<IEnumerable<TData>>
+ {
+     public int PageNumber { get; set; }
+     public int PageSize { get; set; }
+     public int TotalPages { get; set; }
+     public int TotalRecords { get; set; }
         
-        public PagedApiResponse(IEnumerable<TData> data, int pageNumber, int pageSize, int totalRecords)
-            : base(true, ApiResultStatusCode.Success, data)
-        {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-            TotalRecords = totalRecords;
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-        }
-    }
+     public PagedApiResponse(IEnumerable<TData> data, int pageNumber, int pageSize, int totalRecords)
+         : base(true, ApiResultStatusCode.Success, data)
+     {
+         PageNumber = pageNumber;
+         PageSize = pageSize;
+         TotalRecords = totalRecords;
+         TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+     }
+ }
