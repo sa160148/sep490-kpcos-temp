@@ -71,11 +71,11 @@ public class ProjectResponse
     public DateTime? CreatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? UpdatedAt { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? IsActive { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public PackageResponse? Package { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public QuotationResponse? Type { get; set; }
+
+    public IEnumerable<StaffResponse?> Staff { get; set; } = new List<StaffResponse?>();
+    /*[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public QuotationResponse? Type { get; set; }*/
 }

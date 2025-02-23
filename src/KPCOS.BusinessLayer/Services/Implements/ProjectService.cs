@@ -33,8 +33,28 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     public async Task<ProjectResponse> GetAsync(Guid id)
     {
         var projectRepo = unitOfWork.Repository<Project>();
+        var project = await projectRepo.Get()
+            .Include(prj => prj.Customer)
+            .ThenInclude(cst => cst.User)
+            .Include(prj => prj.Package)
+            .ThenInclude(pack => pack.PackageDetails)
+            .ThenInclude(pd => pd.PackageItem)
+            .Include(prj => prj.ProjectStaffs)
+            .ThenInclude(ps => ps.Staff)
+            .ThenInclude(staff => staff.User)
+            .SingleOrDefaultAsync(prj => prj.Id == id);
         
-        return new ProjectResponse();
+        if (project is null)
+        {
+            throw new BadRequestException("Project không tồn tại");
+        }
+
+        var projectResult = mapper.Map<ProjectResponse>(project);
+        projectResult.Staff = project.ProjectStaffs
+            .Select(ps => mapper.Map<StaffResponse>(ps.Staff))
+            .ToList();
+
+        return projectResult;
     }
 
     public async Task<int> CountAsync()
