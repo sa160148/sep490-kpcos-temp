@@ -5,6 +5,8 @@ using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
 using KPCOS.Common.Pagination;
 using KPCOS.WebFramework.Api;
+
+using KPCOS.WebFramework.Filters;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,7 +23,7 @@ public class ServicesController : BaseController
     {
         _serviceService = serviceService;
     }
-
+    [CustomAuthorize("ADMINISTRATOR")] 
     [HttpPost("")]
     public async Task<ApiResult> CreateServiceAsync(ServiceCreateRequest request)
     {
@@ -35,8 +37,10 @@ public class ServicesController : BaseController
     //     
     //     var result = await _serviceService.GetsAsync(filter);
     //     return result;
-    // }   
+    // }  
+    
     [HttpGet("")]
+   
     public async Task<PagedApiResponse<ServiceReponse>> GetsAsyncPaging([FromQuery] PaginationFilter filter)
     {
         
@@ -44,6 +48,7 @@ public class ServicesController : BaseController
         return new PagedApiResponse<ServiceReponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
         
     }   
+
 
     [HttpGet("{id}")]
     public async Task<ApiResult<ServiceReponse>> GetServiceByIdAsync(Guid id)
