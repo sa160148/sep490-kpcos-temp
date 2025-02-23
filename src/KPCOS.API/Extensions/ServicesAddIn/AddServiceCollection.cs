@@ -3,6 +3,7 @@ using KPCOS.BusinessLayer.Helpers;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.BusinessLayer.Services.Implements;
 using KPCOS.Common;
+using KPCOS.DataAccessLayer.Entities;
 
 namespace KPCOS.API.Extensions.ServicesAddIn;
 
@@ -22,6 +23,7 @@ public static class AddServiceCollection
         services.AddScoped<ITemplateContructionService, TemplateContructionService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IQuotationService, QuotationService>();
 
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/

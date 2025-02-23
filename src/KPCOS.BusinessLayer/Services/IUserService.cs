@@ -16,4 +16,8 @@ public interface IUserService
     /// <returns></returns>
     Task<IEnumerable<StaffResponse>> GetsStaffAsync(PaginationFilter filter);
     Task<int> CountStaffAsync();
+    
+    Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter);
+    
+    
 }

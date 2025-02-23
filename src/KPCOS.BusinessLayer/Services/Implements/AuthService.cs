@@ -32,6 +32,14 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
             throw new BadRequestException("password is incorrect");
         }
         var role = await CheckRole(userRaw.Id);
+        
+        
+
+        if ( role == null)
+        {
+            throw new NotFoundException("role not found");
+            
+        }
         return new SigninResponse
         {
             Token = await GenerateToken(userRaw, role!),

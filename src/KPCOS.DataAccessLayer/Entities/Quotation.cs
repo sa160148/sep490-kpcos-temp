@@ -19,7 +19,7 @@ public partial class Quotation
 
     public int TotalPrice { get; set; }
 
-    public string Reason { get; set; } = null!;
+    public string Reason { get; set; } = "";
 
     public string? Status { get; set; }
 
