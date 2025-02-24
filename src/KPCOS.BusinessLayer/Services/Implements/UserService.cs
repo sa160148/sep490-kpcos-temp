@@ -61,7 +61,9 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
             FullName = staff.User.FullName,
             Email = staff.User.Email,
             Phone = staff.User.Phone,
-            Position = staff.Position
+            Position = staff.Position,
+            Avatar = staff.User.Avatar,
+            IsActive = staff.User.IsActive
         });
 
         return staffResponses;
