@@ -4,27 +4,40 @@ namespace KPCOS.BusinessLayer.DTOs.Response;
 
 public class QuotationResponse
 {
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public Guid? Id { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? Version { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public decimal? TotalPrice { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ReasonReject { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public DateTime? CreateAt { get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public DateTime? UpdateAt{ get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Status{ get; set; }
-
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<ServiceReponse>? Services { get; set; } = new();
+    public Guid Id { get; set; }
+    public Guid ProjectId { get; set; }
+    public Guid TemplateConstructionId { get; set; }
+    public int Version { get; set; }
+    public string CreatedDate { get; set; }
+    public string UpdatedDate { get; set; }
+    public string Status { get; set; }
+    public string Reason { get; set; }
+    
+    public List<Service> Services { get; set; }
+    public List<Equipment> Equipments { get; set; }
+    
+    
+    public class Service
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int Price { get; set; }
+        public string Unit { get; set; }
+        public string Type { get; set; }
+        public string Note { get; set; }
+        public string Category { get; set; }
+    }
+    
+    public class Equipment
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal Price { get; set; }
+        public string Note { get; set; }
+        public string Category { get; set; }
+    }
+    
 }

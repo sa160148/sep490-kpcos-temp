@@ -19,7 +19,7 @@ public partial class Package
 
     public int Price { get; set; }
 
-    public int Rate { get; set; }
+    public int? Rate { get; set; }
 
     public string? Status { get; set; }
 

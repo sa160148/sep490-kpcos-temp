@@ -67,7 +67,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     public async Task CreateAsync(ProjectRequest request, Guid userId)
     {
         var projectRepo = unitOfWork.Repository<Project>();
-        Project? project = mapper.Map<Project>(request);
+        Project? project = mapper.Map<Project>(request);    
         var customer = await unitOfWork.Repository<Customer>()
             .SingleOrDefaultAsync(customer => customer.UserId == userId);
 

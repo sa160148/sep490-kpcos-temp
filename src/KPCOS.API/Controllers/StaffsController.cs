@@ -94,5 +94,15 @@ namespace KPCOS.API.Controllers
                 filter.PageSize,
                 count);
         }
+        
+        
+        // [CustomAuthorize("ADMINISTRATOR")]
+        [HttpGet("consultant")]
+        public async Task<PagedApiResponse<StaffResponse>> GetConsultant ([FromQuery] PaginationFilter filter)
+        {
+            
+            var response = await userService.GetsConsultantAsync(filter);
+            return new PagedApiResponse<StaffResponse>(response.Data, filter.PageNumber, filter.PageSize, response.TotalRecords);
+        }
     }
 }
