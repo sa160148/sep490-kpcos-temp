@@ -154,6 +154,29 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         await AssignStaffAndUpdateStatus(project, staff);
     }
 
+    public int CountQuotationByProject(Guid id)
+    {
+        return unitOfWork.Repository<Quotation>()
+            .Get(filter: q => q.ProjectId == id)
+            .Count();
+    }
+
+    public Task<IEnumerable<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, PaginationFilter filter)
+    {
+        var query = unitOfWork.Repository<Quotation>()
+            .Get(
+                filter: q => q.ProjectId == id,
+                includeProperties: "Project",
+                orderBy: q => q.OrderByDescending(q => q.CreatedAt),
+                pageIndex: filter.PageNumber,
+                pageSize: filter.PageSize
+            );
+        
+        var quotations = query.ToList();
+
+        return Task.FromResult(quotations.Select(q => mapper.Map<QuotationForProjectResponse>(q)));
+    }
+
     private async Task<Project> ValidateAndGetProject(Guid projectId)
     {
         var project = await unitOfWork.Repository<Project>().FindAsync(projectId);

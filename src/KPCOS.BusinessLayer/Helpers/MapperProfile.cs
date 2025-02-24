@@ -46,5 +46,7 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.PackageItem.Name))
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
+
+        CreateMap<Quotation, QuotationForProjectResponse>();
     }
 }

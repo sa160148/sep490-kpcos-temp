@@ -163,5 +163,42 @@ namespace KPCOS.API.Controllers
             await service.AssignStaffAsync(id, request.StaffId);
             return Ok();
         }
+        
+        /// <summary>
+        /// Get quotation by project
+        /// </summary>
+        /// <param name="filter">
+        /// <para><see cref="PaginationFilter"/> request object contains: </para>
+        ///
+        /// pageNumber: int.
+        /// pageSize: int.
+        /// </param>
+        /// <param name="id">Project ID</param>
+        /// <remarks>
+        /// <para>Retrieve a paginated list of quotation by project.</para>
+        /// Sample request:
+        /// 
+        ///     Get /api/projects/{id}/quotation
+        /// </remarks>
+        /// <response code="200">Success</response>
+        /// <response code="500">Error</response>
+        /// <response code="401">Unauthorized</response>
+        [HttpGet("{id}/quotation")]
+        public async Task<PagedApiResponse<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, [FromQuery] PaginationFilter filter)
+        {
+            var count = service.CountQuotationByProject(id);
+            if (count == 0)
+            {
+                return new PagedApiResponse<QuotationForProjectResponse>(new List<QuotationForProjectResponse>(),
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: count);
+            }
+            var quotations = await service.GetQuotationsByProjectAsync(id, filter);
+            return new PagedApiResponse<QuotationForProjectResponse>(quotations,
+                pageNumber: filter.PageNumber,
+                pageSize: filter.PageSize,
+                totalRecords: count);
+        }
     }
 }
