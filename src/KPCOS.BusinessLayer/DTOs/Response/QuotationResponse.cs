@@ -2,17 +2,28 @@
 
 namespace KPCOS.BusinessLayer.DTOs.Response;
 
-public class QuotationResponse
+public class QuotationForProjectResponse
 {
-    public Guid Id { get; set; }
-    public Guid ProjectId { get; set; }
-    public Guid TemplateConstructionId { get; set; }
-    public int Version { get; set; }
-    public string CreatedDate { get; set; }
-    public string UpdatedDate { get; set; }
-    public string Status { get; set; }
-    public string Reason { get; set; }
-    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? Id { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? ProjectId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? TemplateConstructionId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Version { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CreatedDate { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? UpdatedDate { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Status { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Reason { get; set; }
+}
+
+public class QuotationResponse : QuotationForProjectResponse
+{
     public List<Service> Services { get; set; }
     public List<Equipment> Equipments { get; set; }
     

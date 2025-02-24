@@ -76,4 +76,7 @@ public interface IProjectService
     /// </exception>
     /// <returns>A task that represents the asynchronous operation</returns>
     Task AssignStaffAsync(Guid projectId, Guid userId);
+
+    int CountQuotationByProject(Guid id);
+    Task<IEnumerable<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, PaginationFilter filter);
 }
