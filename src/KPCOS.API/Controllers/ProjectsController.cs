@@ -138,49 +138,29 @@ namespace KPCOS.API.Controllers
         }
 
         /// <summary>
-        /// Assign consultant to project by admin
+        /// Assign staff to project based on project status
         /// </summary>
         /// <param name="request">
         /// <para><see cref="StaffAssignRequest"/> request object contains: </para>
-        ///
-        /// staffId: guid.
-        ///</param>
-        /// <param name="id">
-        /// <para> request param: </para>
-        ///
-        /// id: guid.
-        /// </param>
-        /// <returns>
-        /// An Object with a JSON format.  <see cref="ApiResult"/>
-        /// </returns>
-        /// <remarks>
-        /// <para>Assign a consultant to project, only administrator can assign consultant.</para>  
-        /// Sample request:
         /// 
-        ///     POST /api/projects/{id}/assignconsultant
-        ///     {
-        ///         "staffId": "5ca78687-26db-40ed-99d0-685dff2b7e3e"
-        ///     }
+        /// staffId: guid (UserId from Staff table).
+        ///</param>
+        /// <param name="id">Project ID</param>
+        /// <returns>An Object with a JSON format. <see cref="ApiResult"/></returns>
+        /// <remarks>
+        /// <para>Only admin can do this.</para>
+        /// <para>Assigns staff to project following the status chain:</para>
+        /// <para>REQUESTING -> Assign Consultant -> PROCESSING</para>
+        /// <para>PROCESSING -> Assign Designer -> DESIGNING</para>
+        /// <para>DESIGNING -> Assign Constructor -> CONSTRUCTING</para>
         /// </remarks>
-        /// <response code="200">Success</response>
-        /// <response code="500">Error</response>
         [HttpPost("{id}/assignconsultant")]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        public async Task<ApiResult> AssignConsultantAsync(Guid id, StaffAssignRequest request)
+        [CustomAuthorize("ADMINISTRATOR")]
+        public async Task<ApiResult> AssignStaffAsync(Guid id, StaffAssignRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("Vui lòng đăng nhập lại");
-            }
-            var isValidPosition = await authService.GetPositionAsync(Guid.Parse(userId));
-            if (isValidPosition != RoleEnum.ADMINISTRATOR)
-            {
-                throw new UnauthorizedAccessException("Không có khả năng truy cập");
-            }
-
-            await service.AssignConsultantAsync(id, request);
+            await service.AssignStaffAsync(id, request.StaffId);
             return Ok();
         }
     }
