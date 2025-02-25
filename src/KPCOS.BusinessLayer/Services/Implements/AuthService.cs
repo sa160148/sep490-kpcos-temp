@@ -14,14 +14,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, IMapper mapper) : IAuthService
+public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, IMapper mapper, FirebaseService firebaseService) : IAuthService
 {
 
     public async Task<SigninResponse> SignInAsync(SigninRequest request)
     {
         IRepository<User> userRepo = unitOfWork.Repository<User>();
         var userRaw = await userRepo.SingleOrDefaultAsync(user => user.Email == request.Email);
-
+        
         if (userRaw == null)
         {
             throw new NotFoundException("user not found");
@@ -32,8 +32,7 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
             throw new BadRequestException("password is incorrect");
         }
         var role = await CheckRole(userRaw.Id);
-        
-        
+        firebaseService.SaveUser(userRaw, userRaw.Id, "users");
 
         if ( role == null)
         {
