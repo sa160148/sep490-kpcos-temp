@@ -1,4 +1,5 @@
-﻿using KPCOS.BusinessLayer;
+﻿using AutoMapper;
+using KPCOS.BusinessLayer;
 using KPCOS.BusinessLayer.Helpers;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.BusinessLayer.Services.Implements;
@@ -28,6 +29,12 @@ public static class AddServiceCollection
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
 
+        return services;
+    }
+    
+    public static IServiceCollection AddFirebase(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<FirebaseService>(sp => new FirebaseService(configuration, sp.GetRequiredService<IMapper>()));
         return services;
     }
 }

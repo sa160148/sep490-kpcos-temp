@@ -13,6 +13,7 @@ public static class ExtensionProfiles
         services.AddAuthServices(configuration: configuration);
         services.AddSwaggerServices();
         services.AddServices();
+        services.AddFirebase(configuration);
         return services;
     }
 }

@@ -14,6 +14,7 @@ public class MapperProfile : Profile
     {
         CreateMap<AuthRequest, User>();
         CreateMap<SignupRequest, User>();
+        CreateMap<User, UserResponse>();
 
         CreateMap<ProjectRequest, Project>()
             .ForMember(dest => dest.Name,
