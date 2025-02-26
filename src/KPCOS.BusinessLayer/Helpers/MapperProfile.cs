@@ -5,6 +5,8 @@ using KPCOS.DataAccessLayer.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -29,6 +31,7 @@ public class MapperProfile : Profile
         CreateMap<Project, ProjectForListResponse>()
             .ForMember(dest => dest.PackageName,
                 opt => opt.MapFrom(project => project.Package.Name));
+        CreateMap<Project, GetAllProjectForQuotationResponse>();
         
         CreateMap<Staff, StaffResponse>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))

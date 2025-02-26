@@ -10,11 +10,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Linq.Expressions;
+using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using System.Linq;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
 {
+    private string GetRequiredIncludes() => 
+        "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
     public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role)
     {
         var filterOption = new GetAllProjectByRoleRequest();
@@ -30,6 +36,243 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var projectResponses = query.Select(project => mapper.Map<ProjectForListResponse>(project)).ToList();
 
         return projectResponses;
+    }
+
+    /// <summary>
+    /// Gets all projects for a user with quotation-related information and standout status
+    /// </summary>
+    /// <param name="filter">Filter and pagination parameters</param>
+    /// <param name="userId">The ID of the user requesting projects</param>
+    /// <param name="role">The role of the user</param>
+    /// <returns>Collection of projects with quotation information and standout status</returns>
+    public async Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectByUserIdAsync(
+        GetAllProjectByUserIdRequest filter, 
+        string? userId, 
+        string? role = null)
+    {
+        ValidateRequest(filter);
+        var projects = GetFilteredProjects(filter, userId, role);
+        return MapProjectsToResponse(projects, userId, role);
+    }
+
+    /// <summary>
+    /// Validates the project request filter
+    /// </summary>
+    /// <param name="filter">The filter to validate</param>
+    /// <exception cref="BadRequestException">Thrown when filter is null or contains invalid status</exception>
+    private void ValidateRequest(GetAllProjectByUserIdRequest filter)
+    {
+        if (filter == null)
+            throw new BadRequestException("Filter không được để trống");
+
+        if (filter.Status != null && !filter.Status.All(IsValidProjectStatus))
+            throw new BadRequestException("Trạng thái dự án không hợp lệ");
+    }
+
+    private bool IsValidProjectStatus(string status)
+    {
+        return Enum.TryParse<EnumProjectStatus>(status, true, out _);
+    }
+
+    /// <summary>
+    /// Gets filtered projects with all required related entities
+    /// </summary>
+    /// <remarks>
+    /// Includes related entities:
+    /// - Package
+    /// - Customer and User
+    /// - ProjectStaffs with Staff and User
+    /// - Quotations
+    /// - Contracts
+    /// </remarks>
+    private IEnumerable<Project> GetFilteredProjects(
+        GetAllProjectByUserIdRequest filter, 
+        string? userId, 
+        string? role)
+    {
+        var baseQuery = unitOfWork.Repository<Project>().Get(
+            filter: BuildProjectFilter(filter, userId, role),
+            includeProperties: GetRequiredIncludes(),
+            orderBy: null,
+            pageIndex: filter.page,
+            pageSize: filter.per_page
+        );
+
+        return baseQuery;
+    }
+
+    /// <summary>
+    /// Builds the filter expression for projects based on user role and status
+    /// </summary>
+    /// <remarks>
+    /// <para>Filtering logic:</para>
+    /// <list type="bullet">
+    ///     <item><description>Applies status filter if provided</description></item>
+    ///     <item><description>Administrators can see all projects</description></item>
+    ///     <item><description>Other users see only their projects or assigned projects</description></item>
+    /// </list>
+    /// </remarks>
+    private Expression<Func<Project, bool>> BuildProjectFilter(
+        GetAllProjectByUserIdRequest filter, 
+        string? userId, 
+        string? role)
+    {
+        var predicate = PredicateBuilder.New<Project>(true);
+
+        // Add status filter if provided
+        if (filter.Status?.Any() == true)
+        {
+            predicate = predicate.And(p => filter.Status.Contains(p.Status));
+        }
+
+        // Add role-based filter
+        if (role == RoleEnum.ADMINISTRATOR.ToString())
+        {
+            return predicate; // Admin can see all projects
+        }
+
+        var parsedUserId = Guid.Parse(userId ?? throw new BadRequestException("UserId is required"));
+        
+        // User can see their own projects or projects they're assigned to
+        predicate = predicate.And(p => 
+            p.Customer.UserId == parsedUserId || 
+            p.ProjectStaffs.Any(ps => ps.Staff.UserId == parsedUserId));
+
+        return predicate;
+    }
+
+    private IEnumerable<GetAllProjectForQuotationResponse> MapProjectsToResponse(
+        IEnumerable<Project> projects,
+        string userId,
+        string? role)
+    {
+        return projects.Select(project => MapProjectToResponse(project, userId, role));
+    }
+
+    private GetAllProjectForQuotationResponse MapProjectToResponse(
+        Project project, 
+        string userId, 
+        string? role)
+    {
+        var response = mapper.Map<GetAllProjectForQuotationResponse>(project);
+        var userRoles = GetUserRolesInProject(project, userId);
+        response.StandOut = DetermineStandOutFlag(project, role, userRoles);
+        return response;
+    }
+
+    private UserProjectRoles GetUserRolesInProject(Project project, string userId)
+    {
+        var parsedUserId = Guid.Parse(userId);
+        var staffProject = project.ProjectStaffs
+            .FirstOrDefault(ps => ps.Staff.UserId == parsedUserId);
+
+        return new UserProjectRoles
+        {
+            IsStaff = staffProject != null,
+            IsCustomer = project.Customer.UserId == parsedUserId,
+            StaffRole = staffProject?.Staff.Position.ToUpper()
+        };
+    }
+
+    /// <summary>
+    /// Determines if a project should be marked as standing out based on user role and project status
+    /// </summary>
+    /// <remarks>
+    /// <para>Standout rules by role:</para>
+    /// <list type="bullet">
+    ///     <item>
+    ///         <description>Administrator: Projects with open quotations or approved quotations without active contracts</description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Consultant: Projects with no quotations or with updating/rejected quotations</description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Customer: Projects with processing contracts or preview quotations without approved/updating status</description>
+    ///     </item>
+    /// </list>
+    /// </remarks>
+    private bool DetermineStandOutFlag(
+        Project project, 
+        string? userRole, 
+        UserProjectRoles roles)
+    {
+        if (IsAdministratorRole(userRole, roles.StaffRole))
+            return CheckAdministratorStandOut(project);
+
+        if (roles.StaffRole == RoleEnum.CONSULTANT.ToString())
+            return CheckConsultantStandOut(project);
+
+        if (roles.IsCustomer)
+            return CheckCustomerStandOut(project);
+
+        return false;
+    }
+
+    private bool IsAdministratorRole(string? userRole, string? staffRole) =>
+        userRole == RoleEnum.ADMINISTRATOR.ToString() || 
+        staffRole == RoleEnum.ADMINISTRATOR.ToString();
+
+    private bool CheckAdministratorStandOut(Project project)
+    {
+        var hasOpenQuotation = project.Quotations
+            .Any(q => q.Status == EnumQuotationStatus.OPEN.ToString());
+
+        var hasApprovedWithoutActiveContract = project.Quotations
+            .Any(q => q.Status == EnumQuotationStatus.APPROVED.ToString() 
+                      && !HasActiveOrProcessingContract(project, q.Id));
+
+        return hasOpenQuotation || hasApprovedWithoutActiveContract;
+    }
+
+    private bool HasActiveOrProcessingContract(Project project, Guid quotationId) =>
+        project.Contracts.Any(c => c.QuotationId == quotationId 
+                                  && (c.Status == EnumContractStatus.Processing.ToString() ||
+                                      c.Status == EnumContractStatus.Active.ToString()));
+
+    private bool CheckConsultantStandOut(Project project)
+    {
+        if (!project.Quotations.Any())
+            return true;
+
+        return project.Quotations.Any(q => 
+            q.Status == EnumQuotationStatus.UPDATING.ToString() || 
+            q.Status == EnumQuotationStatus.REJECTED.ToString());
+    }
+
+    private bool CheckCustomerStandOut(Project project)
+    {
+        if (project.Contracts.Any(c => c.Status == EnumContractStatus.Processing.ToString()))
+            return true;
+
+        return project.Quotations.Any(q => 
+            q.Status == EnumQuotationStatus.PREVIEW.ToString() 
+            && !HasApprovedOrUpdatingQuotation(project));
+    }
+
+    private bool HasApprovedOrUpdatingQuotation(Project project) =>
+        project.Quotations.Any(q => 
+            q.Status == EnumQuotationStatus.APPROVED.ToString() || 
+            q.Status == EnumQuotationStatus.UPDATING.ToString());
+
+    /// <summary>
+    /// Represents a user's roles and relationships to a project
+    /// </summary>
+    private class UserProjectRoles
+    {
+        /// <summary>
+        /// Whether the user is assigned to the project as staff
+        /// </summary>
+        public bool IsStaff { get; set; }
+
+        /// <summary>
+        /// Whether the user is the customer for the project
+        /// </summary>
+        public bool IsCustomer { get; set; }
+
+        /// <summary>
+        /// The user's staff role in the project, if any
+        /// </summary>
+        public string? StaffRole { get; set; }
     }
 
     public async Task<ProjectResponse> GetAsync(Guid id)
@@ -62,6 +305,12 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     public async Task<int> CountAsync()
     {
         return await unitOfWork.Repository<Project>().Get().CountAsync();
+    }
+
+    public int CountProjectByUserIdAsync(Guid userId)
+    {
+        var repo = unitOfWork.Repository<Project>();
+        return repo.Get(filter: p => p.Customer.UserId == userId).Count();
     }
 
     public async Task CreateAsync(ProjectRequest request, Guid userId)

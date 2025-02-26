@@ -1,18 +1,23 @@
-﻿using KPCOS.BusinessLayer.DTOs.Request;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.Services;
-using KPCOS.BusinessLayer.Services.Implements;
-using KPCOS.Common;
+
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.WebFramework.Api;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 
 namespace KPCOS.API.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="service"></param>
+    /// <param name="authService"></param>
     [Route("api/[controller]")]
     public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
     {
@@ -54,6 +59,62 @@ namespace KPCOS.API.Controllers
             }
             var projects = await service.GetsAsync(filter, userId, role);
             return new PagedApiResponse<ProjectForListResponse>(projects,
+                pageNumber: filter.PageNumber,
+                pageSize: filter.PageSize,
+                totalRecords: count);
+        }
+        
+        /// <summary>
+        /// Gets projects for consultation with quotation base on project with actor: ADMINISTRATOR, CONSULTANT, CUSTOMER
+        /// </summary>
+        /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
+        /// <returns>Paginated list of projects with quotation information and standout status</returns>
+        /// <remarks>
+        /// <para>Retrieve a paginated list of project for consultation with each Role user: Administrator, Customer, Staff Consultant.</para>
+        /// <para>This endpoint returns projects with status REQUESTING and PROCESSING.</para>
+        /// 
+        /// Projects are marked as standout based on role:
+        /// 
+        /// For Administrator:
+        /// - Has open quotations
+        /// - Has approved quotations without active/processing contracts
+        /// 
+        /// For Consultant:
+        /// - Has no quotations
+        /// - Has quotations in UPDATING or REJECTED status
+        /// 
+        /// For Customer:
+        /// - Has contracts in PROCESSING status
+        /// - Has PREVIEW quotations without any APPROVED/UPDATING quotations
+        /// </remarks>
+        /// <response code="200">Success. Returns paginated list of projects</response>
+        /// <response code="401">Unauthorized. User is not authenticated</response>
+        /// <response code="500">Internal server error</response>
+        [HttpGet("consultation")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectForQuotationResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<PagedApiResponse<GetAllProjectForQuotationResponse>> GetsProjectForConsultationAsync(
+            [FromQuery] PaginationFilter filter)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
+            
+            var advandcedFilter = new GetAllProjectByUserIdRequest
+            {
+                page = filter.PageNumber,
+                per_page = filter.PageSize,
+                Status = new List<string>()
+                {
+                    EnumProjectStatus.REQUESTING.ToString(),
+                    EnumProjectStatus.PROCESSING.ToString()
+                },
+            };
+            
+            var projects = await service.GetAllProjectByUserIdAsync(advandcedFilter, userId, role);
+            return new PagedApiResponse<GetAllProjectForQuotationResponse>(
+                projects,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
                 totalRecords: count);
