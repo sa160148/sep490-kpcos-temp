@@ -18,10 +18,12 @@ public class QuotationController : BaseController
         _quotationService = quotationService;
     }
 
-    [CustomAuthorize("CONSULTANT")]
+    // [CustomAuthorize("CONSULTANT")]
     [HttpPost("")]
     public async Task<ApiResult> CreateQuotationAsync(QuotationCreateRequest request)
     {
+        
+        
         await _quotationService.CreateQuotationAsync(request);
         return Ok();
        
@@ -42,6 +44,39 @@ public class QuotationController : BaseController
     {
         var result = await _quotationService.GetQuotationByIdAsync(id);
         return result;
+    }
+    
+    
+    // [CustomAuthorize("ADMINISTRATOR")]
+    [HttpPut("{id}/reject-accept")]
+    public async Task<ApiResult> RejectOrAcceptQuotationAsync(Guid id, QuotationRejectOrAcceptRequest request)
+    {
+        await _quotationService.RejectOrAcceptQuotationAsync(id, request);
+        return Ok();
+    }
+    
+    
+    
+    // [CustomAuthorize("CUSTOMER")]
+    [HttpPut("{id}/approve-edit")]
+    public async Task<ApiResult> ApproveOrCancelEditQuotationAsync(Guid id, QuotationApproveOrEditRequest request)
+    {
+        await _quotationService.ApproveOrCancelEditQuotationAsync(id, request);
+        return Ok();
+    }
+    
+    [HttpPut("{id}/edit")]
+    public async Task<ApiResult> UpdateQuotationAsync(Guid id, QuotationCreateRequest request)
+    {
+        await _quotationService.UpdateQuotationAsync(id, request);
+        return Ok();
+    }
+    
+    [HttpPut("{id}/rewrite")]
+    public async Task<ApiResult> RewriteQuotationAsync(Guid id, QuotationCreateRequest request)
+    {
+        await _quotationService.RewriteQuotationAsync(id, request);
+        return Ok();
     }
 
         
