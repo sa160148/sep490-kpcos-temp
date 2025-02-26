@@ -6,10 +6,12 @@ using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Quartz.Logging;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class UserService(IUnitOfWork unitOfWork) : IUserService
+public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : IUserService
 {
     public async Task RegiterStaffAsync(UserRequest request)
     {
@@ -59,7 +61,9 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
             FullName = staff.User.FullName,
             Email = staff.User.Email,
             Phone = staff.User.Phone,
-            Position = staff.Position
+            Position = staff.Position,
+            Avatar = staff.User.Avatar,
+            IsActive = staff.User.IsActive
         });
 
         return staffResponses;
@@ -68,6 +72,44 @@ public class UserService(IUnitOfWork unitOfWork) : IUserService
     public async Task<int> CountStaffAsync()
     {
         return await unitOfWork.Repository<Staff>().Get().CountAsync();
+    }
+
+    public async Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Staff>();
+        // get all consultant not have in  process project
+        var pageData = await repo.Get()
+            .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
+                            !staff.ProjectStaffs.
+                                Any(ps => ps.Project.IsActive == true && 
+                                          ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
+            .Include("User")
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+
+
+        var totalRecords = await repo.Get()
+            .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
+                            !staff.ProjectStaffs.
+                                Any(ps => ps.Project.IsActive == true && 
+                                          ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
+            .CountAsync();
+       
+        
+        var data = pageData.Select(staff => new StaffResponse
+        {
+            Id = staff.User.Id,
+            FullName = staff.User.FullName,
+            Email = staff.User.Email,
+            Phone = staff.User.Phone,
+            Position = staff.Position,
+            Avatar = staff.User.Avatar
+           
+        });
+        
+        
+        return (data, totalRecords);
     }
 
     private async Task<User?> UserExitByEmail(string email)

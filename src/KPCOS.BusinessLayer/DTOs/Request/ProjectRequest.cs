@@ -9,7 +9,6 @@ public class ProjectRequest
     [DefaultValue("customer")]
     public string CustomerName { get; set; }
 
-    [Required(ErrorMessage = "can not let note null")]
     [DefaultValue("note")]
     public string Note { get; set; }
 
