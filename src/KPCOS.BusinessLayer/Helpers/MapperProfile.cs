@@ -51,6 +51,9 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
 
-        CreateMap<Quotation, QuotationForProjectResponse>();
+        CreateMap<Quotation, QuotationForProjectResponse>()
+            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt))
+            .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedAt))
+            .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate));
     }
 }
