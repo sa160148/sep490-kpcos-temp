@@ -226,8 +226,8 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
 
     private bool HasActiveOrProcessingContract(Project project, Guid quotationId) =>
         project.Contracts.Any(c => c.QuotationId == quotationId 
-                                  && (c.Status == EnumContractStatus.Processing.ToString() ||
-                                      c.Status == EnumContractStatus.Active.ToString()));
+                                  && (c.Status == EnumContractStatus.PROCESSING.ToString() ||
+                                      c.Status == EnumContractStatus.ACTIVE.ToString()));
 
     private bool CheckConsultantStandOut(Project project)
     {
@@ -241,7 +241,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
 
     private bool CheckCustomerStandOut(Project project)
     {
-        if (project.Contracts.Any(c => c.Status == EnumContractStatus.Processing.ToString()))
+        if (project.Contracts.Any(c => c.Status == EnumContractStatus.PROCESSING.ToString()))
             return true;
 
         return project.Quotations.Any(q => 

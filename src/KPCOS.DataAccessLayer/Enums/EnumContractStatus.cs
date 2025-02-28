@@ -6,9 +6,9 @@ namespace KPCOS.DataAccessLayer.Enums;
 public enum EnumContractStatus
 {
     [EnumMember(Value = "PROCESSING")]
-    Processing,
+    PROCESSING,
     [EnumMember(Value = "ACTIVE")]
-    Active,
-    [EnumMember(Value = "INACTIVE")]
-    Cancelled
+    ACTIVE,
+    [EnumMember(Value = "CANCELLED")]
+    CANCELLED
 }

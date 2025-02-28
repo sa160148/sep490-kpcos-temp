@@ -5,8 +5,10 @@ using KPCOS.DataAccessLayer.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.DataAccessLayer.Enums;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -55,5 +57,16 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt))
             .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedAt))
             .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate));
+
+        CreateMap<ContractRequest, Contract>()
+            .ForMember(dest => dest.Name, opt =>
+                opt.MapFrom(src => src.Name ?? " "))
+            .ForMember(dest => dest.Note, opt =>
+                opt.MapFrom(src => src.Note ?? " "))
+            .ForMember(dest => dest.Status, opt =>
+                opt.MapFrom(src => EnumContractStatus.PROCESSING.ToString()))
+            .ForMember(dest => dest.ContractValue, opt =>
+                opt.MapFrom(src => src.ContractValue ?? 0)
+            );
     }
 }

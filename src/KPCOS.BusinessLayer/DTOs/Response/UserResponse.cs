@@ -3,7 +3,6 @@ using Google.Cloud.Firestore;
 
 namespace KPCOS.BusinessLayer.DTOs.Response;
 
-[FirestoreData]
 public class UserResponse
 {
     /// <summary>
@@ -11,14 +10,14 @@ public class UserResponse
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? Id { get; set; }
+    
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    [FirestoreProperty]
     public string? FullName{ get; set; }
+    
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    [FirestoreProperty]
     public string? Email { get; set; }
+    
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    [FirestoreProperty]
     public string? Position { get; set; }
 }
 
