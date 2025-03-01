@@ -1,4 +1,6 @@
-﻿using KPCOS.BusinessLayer.DTOs.Request;
+﻿using System.Linq.Expressions;
+using AutoMapper;
+using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
@@ -7,11 +9,10 @@ using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Quartz.Logging;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : IUserService
+public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger) : IUserService
 {
     public async Task RegiterStaffAsync(UserRequest request)
     {
@@ -110,6 +111,64 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
         
         
         return (data, totalRecords);
+    }
+
+    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Staff>();
+        Expression<Func<Staff, bool>> advanceFilter = staff => 
+            staff.Position == RoleEnum.MANAGER.ToString() &&
+            staff.User.IsActive == true &&
+            !staff.ProjectStaffs.Any(ps => 
+                ps.Project.IsActive == true && 
+                ps.Project.Status != EnumProjectStatus.FINISHED.ToString());
+        var staffs = repo.Get(
+            filter: advanceFilter,
+            orderBy: null,
+            "User",
+            filter.PageNumber,
+            filter.PageSize);
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
+        return (response, response.Count());
+    }
+
+    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Staff>();
+        Expression<Func<Staff, bool>> advanceFilter = staff => 
+            staff.Position == RoleEnum.DESIGNER.ToString() &&
+            staff.User.IsActive == true &&
+            !staff.ProjectStaffs.Any(ps => 
+                ps.Project.IsActive == true && 
+                ps.Project.Status == EnumProjectStatus.DESIGNING.ToString());
+        var staffs = repo.Get(
+            filter: advanceFilter,
+            orderBy: null,
+            "User",
+            filter.PageNumber,
+            filter.PageSize);
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
+        return (response, response.Count());
+    }
+
+    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Staff>();
+        Expression<Func<Staff, bool>> advanceFilter = staff => 
+            staff.Position == RoleEnum.CONSTRUCTOR.ToString() &&
+            staff.User.IsActive == true &&
+            staff.User.IsActive == true &&
+            !staff.ProjectStaffs.Any(ps => 
+                ps.Project.IsActive == true &&
+                ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString());
+        var staffs = repo.Get(
+            filter: advanceFilter,
+            orderBy: null,
+            "User",
+            filter.PageNumber,
+            filter.PageSize);
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
+        return (response, response.Count());
     }
 
     private async Task<User?> UserExitByEmail(string email)
