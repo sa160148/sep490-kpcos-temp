@@ -112,8 +112,69 @@ namespace KPCOS.API.Controllers
                 },
             };
             
-            var projects = await service.GetAllProjectByUserIdAsync(advandcedFilter, userId, role);
+            var projects = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
             return new PagedApiResponse<GetAllProjectForQuotationResponse>(
+                projects,
+                pageNumber: filter.PageNumber,
+                pageSize: filter.PageSize,
+                totalRecords: count);
+        }
+        
+        /// <summary>
+        /// Gets projects for design with standout flags based on user role: ADMINISTRATOR, MANAGER, DESIGNER, CUSTOMER
+        /// </summary>
+        /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
+        /// <returns>Paginated list of projects with design information and standout status</returns>
+        /// <remarks>
+        /// This endpoint returns projects with status DESIGNING.
+        /// 
+        /// Projects are marked as standout based on role:
+        /// 
+        /// For Administrator:
+        /// - Project has no manager assigned
+        /// 
+        /// For Manager:
+        /// - Project has no designer assigned
+        /// - OR project has any designs in OPENING status
+        /// 
+        /// For Designer:
+        /// - Project has no designs
+        /// - OR project has designs in REJECTED/EDITING status
+        /// 
+        /// For Customer:
+        /// - Project has any design in PREVIEWING status
+        /// 
+        /// Sample request:
+        /// 
+        ///     GET /api/projects/design?PageNumber=1&amp;PageSize=10
+        /// </remarks>
+        /// <response code="200">Success. Returns paginated list of projects</response>
+        /// <response code="401">Unauthorized. User is not authenticated</response>
+        /// <response code="500">Internal server error</response>
+        [HttpGet("design")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectForDesignResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        /*[CustomAuthorize]*/
+        public async Task<PagedApiResponse<GetAllProjectForDesignResponse>> GetsProjectForDesignAsync(
+            [FromQuery] PaginationFilter filter)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
+            
+            var advandcedFilter = new GetAllProjectByUserIdRequest
+            {
+                page = filter.PageNumber,
+                per_page = filter.PageSize,
+                Status = new List<string>()
+                {
+                    EnumProjectStatus.DESIGNING.ToString()
+                },
+            };
+            
+            var projects = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
+            return new PagedApiResponse<GetAllProjectForDesignResponse>(
                 projects,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,

@@ -19,8 +19,10 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
 {
-    private string GetRequiredIncludes() => 
+    private string GetQuotationRequiredIncludes() => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
+    private string GetDesignRequiredIncludes() => 
+        "Package,Customer.User,ProjectStaffs.Staff.User,Designs,Designs.DesignImages";
     public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role)
     {
         var filterOption = new GetAllProjectByRoleRequest();
@@ -45,14 +47,14 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user</param>
     /// <returns>Collection of projects with quotation information and standout status</returns>
-    public async Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectByUserIdAsync(
+    public async Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null)
     {
         ValidateRequest(filter);
-        var projects = GetFilteredProjects(filter, userId, role);
-        return MapProjectsToResponse(projects, userId, role);
+        var projects = GetFilteredProjects(filter, "Quotation",userId, role);
+        return MapProjectsForQuotationToResponse(projects, userId, role);
     }
 
     /// <summary>
@@ -87,12 +89,18 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </remarks>
     private IEnumerable<Project> GetFilteredProjects(
         GetAllProjectByUserIdRequest filter, 
+        string? purpose,
         string? userId, 
         string? role)
     {
         var baseQuery = unitOfWork.Repository<Project>().Get(
             filter: BuildProjectFilter(filter, userId, role),
-            includeProperties: GetRequiredIncludes(),
+            includeProperties: purpose switch
+            {
+                "Quotation" => GetQuotationRequiredIncludes(),
+                "Design" => GetDesignRequiredIncludes(),
+                _ => ""
+            },
             orderBy: null,
             pageIndex: filter.page,
             pageSize: filter.per_page
@@ -141,22 +149,22 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return predicate;
     }
 
-    private IEnumerable<GetAllProjectForQuotationResponse> MapProjectsToResponse(
+    private IEnumerable<GetAllProjectForQuotationResponse> MapProjectsForQuotationToResponse(
         IEnumerable<Project> projects,
         string userId,
         string? role)
     {
-        return projects.Select(project => MapProjectToResponse(project, userId, role));
+        return projects.Select(project => MapProjectsForQuotationToResponse(project, userId, role));
     }
 
-    private GetAllProjectForQuotationResponse MapProjectToResponse(
+    private GetAllProjectForQuotationResponse MapProjectsForQuotationToResponse(
         Project project, 
         string userId, 
         string? role)
     {
         var response = mapper.Map<GetAllProjectForQuotationResponse>(project);
         var userRoles = GetUserRolesInProject(project, userId);
-        response.StandOut = DetermineStandOutFlag(project, role, userRoles);
+        response.StandOut = DetermineStandOutFlagForQuotation(project, role, userRoles);
         return response;
     }
 
@@ -191,19 +199,19 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     ///     </item>
     /// </list>
     /// </remarks>
-    private bool DetermineStandOutFlag(
+    private bool DetermineStandOutFlagForQuotation(
         Project project, 
         string? userRole, 
         UserProjectRoles roles)
     {
         if (IsAdministratorRole(userRole, roles.StaffRole))
-            return CheckAdministratorStandOut(project);
+            return CheckAdministratorStandOutForQuotation(project);
 
         if (roles.StaffRole == RoleEnum.CONSULTANT.ToString())
             return CheckConsultantStandOut(project);
 
         if (roles.IsCustomer)
-            return CheckCustomerStandOut(project);
+            return CheckCustomerStandOutForQuotation(project);
 
         return false;
     }
@@ -212,7 +220,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         userRole == RoleEnum.ADMINISTRATOR.ToString() || 
         staffRole == RoleEnum.ADMINISTRATOR.ToString();
 
-    private bool CheckAdministratorStandOut(Project project)
+    private bool CheckAdministratorStandOutForQuotation(Project project)
     {
         var hasOpenQuotation = project.Quotations
             .Any(q => q.Status == EnumQuotationStatus.OPEN.ToString());
@@ -239,7 +247,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             q.Status == EnumQuotationStatus.REJECTED.ToString());
     }
 
-    private bool CheckCustomerStandOut(Project project)
+    private bool CheckCustomerStandOutForQuotation(Project project)
     {
         if (project.Contracts.Any(c => c.Status == EnumContractStatus.PROCESSING.ToString()))
             return true;
@@ -424,6 +432,176 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var quotations = query.ToList();
 
         return Task.FromResult(quotations.Select(q => mapper.Map<QuotationForProjectResponse>(q)));
+    }
+
+    /// <summary>
+    /// Gets all projects for design purposes with design-related information and standout status
+    /// </summary>
+    /// <param name="advandcedFilter">Filter and pagination parameters including optional status filtering</param>
+    /// <param name="userId">The ID of the user requesting projects</param>
+    /// <param name="role">The role of the user (ADMINISTRATOR, MANAGER, DESIGNER, etc.)</param>
+    /// <returns>Collection of projects with design information and standout status</returns>
+    /// <remarks>
+    /// <para>Access Rules:</para>
+    /// <list type="bullet">
+    ///     <item><description>Administrators can see all projects</description></item>
+    ///     <item><description>Other users can only see their own projects or projects they're assigned to</description></item>
+    /// </list>
+    /// <para>StandOut Flag Rules by Role:</para>
+    /// <list type="bullet">
+    ///     <item>
+    ///         <description>Administrator: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No manager assigned</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Manager: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No designer assigned</description></item>
+    ///                 <item><description>OR any designs in OPENING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Designer: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No designs</description></item>
+    ///                 <item><description>OR designs in REJECTED/EDITING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Customer: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>Any design in PREVIEWING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// <list type="bullet">
+    ///     <item><description>Filter is null</description></item>
+    ///     <item><description>Status filter contains invalid project status</description></item>
+    ///     <item><description>UserId is null or invalid</description></item>
+    /// </list>
+    /// </exception>
+    public async Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+        GetAllProjectByUserIdRequest advandcedFilter, 
+        string userId,
+        string? role = null)
+    {
+        ValidateRequest(advandcedFilter);
+        var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
+        var responses = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+        return responses;
+    }
+
+    /// <summary>
+    /// Maps a project entity to a design response with standout status and latest design image
+    /// </summary>
+    /// <param name="project">The project entity to map</param>
+    /// <param name="userId">The ID of the user requesting the project</param>
+    /// <param name="role">The role of the user</param>
+    /// <returns>Project response with design information and standout status</returns>
+    private GetAllProjectForDesignResponse MapProjectForDesignToResponse(
+        Project project, 
+        string userId, 
+        string? role)
+    {
+        var response = mapper.Map<GetAllProjectForDesignResponse>(project);
+        var userRoles = GetUserRolesInProject(project, userId);
+        response.StandOut = DetermineStandOutFlagForDesign(project, role, userRoles);
+        
+        // Set design URL if exists
+        var latestDesign = project.Designs
+            .OrderByDescending(d => d.CreatedAt)
+            .FirstOrDefault();
+        if (latestDesign?.DesignImages?.Any() == true)
+        {
+            response.Url = latestDesign.DesignImages.First().ImageUrl;
+        }
+        
+        return response;
+    }
+
+    /// <summary>
+    /// Determines if a project should be marked as standing out based on user role and design status
+    /// </summary>
+    /// <param name="project">The project to check</param>
+    /// <param name="userRole">The user's system role</param>
+    /// <param name="roles">The user's roles specific to this project</param>
+    /// <returns>True if the project should stand out, false otherwise</returns>
+    /// <remarks>
+    /// <para>Standout rules by role:</para>
+    /// <list type="bullet">
+    ///     <item>
+    ///         <description>Administrator: True when project has no manager assigned</description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Manager: True when project has no designer OR has designs in OPENING status</description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Designer: True when project has no designs, or has rejected/edit status designs</description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Customer: True when any design has preview status</description>
+    ///     </item>
+    /// </list>
+    /// </remarks>
+    private bool DetermineStandOutFlagForDesign(
+        Project project, 
+        string? userRole, 
+        UserProjectRoles roles)
+    {
+        if (IsAdministratorRole(userRole, roles.StaffRole))
+            return CheckAdministratorStandOutForDesign(project);
+
+        if (roles.StaffRole == RoleEnum.MANAGER.ToString())
+            return CheckManagerStandOutForDesign(project);
+
+        if (roles.StaffRole == RoleEnum.DESIGNER.ToString())
+            return CheckDesignerStandOut(project);
+
+        if (roles.IsCustomer)
+            return CheckCustomerStandOutForDesign(project);
+
+        return false;
+    }
+
+    private bool CheckAdministratorStandOutForDesign(Project project)
+    {
+        return !project.ProjectStaffs
+            .Any(ps => ps.Staff.Position == RoleEnum.MANAGER.ToString());
+    }
+
+    private bool CheckManagerStandOutForDesign(Project project)
+    {
+        var hasDesigner = project.ProjectStaffs
+            .Any(ps => ps.Staff.Position == RoleEnum.DESIGNER.ToString());
+        
+        var hasOpenDesign = project.Designs
+            .Any(d => d.Status == EnumDesignStatus.OPENING.ToString());
+
+        return !hasDesigner || hasOpenDesign;
+    }
+
+    private bool CheckDesignerStandOut(Project project)
+    {
+        if (!project.Designs.Any())
+            return true;
+
+        return project.Designs.Any(d => 
+            d.Status == EnumDesignStatus.REJECTED.ToString() || 
+            d.Status == EnumDesignStatus.EDITING.ToString());
+    }
+
+    private bool CheckCustomerStandOutForDesign(Project project)
+    {
+        return project.Designs.Any(d => d.Status == EnumDesignStatus.PREVIEWING.ToString());
     }
 
     private async Task<Project> ValidateAndGetProject(Guid projectId)

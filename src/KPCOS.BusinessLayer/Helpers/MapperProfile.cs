@@ -34,6 +34,7 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.PackageName,
                 opt => opt.MapFrom(project => project.Package.Name));
         CreateMap<Project, GetAllProjectForQuotationResponse>();
+        CreateMap<Project, GetAllProjectForDesignResponse>();
         
         CreateMap<Staff, StaffResponse>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
