@@ -629,19 +629,23 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
 
     private Task ValidateProjectStatusForStaffAssignment(Project project, Staff staff)
     {
-        var allowedAssignments = new Dictionary<string, (string RequiredStatus, string NewStatus)>
+        var allowedAssignments = new Dictionary<string, (string RequiredStatus, string? NewStatus)>
         {
             [RoleEnum.CONSULTANT.ToString()] = (
                 EnumProjectStatus.REQUESTING.ToString(),
                 EnumProjectStatus.PROCESSING.ToString()
             ),
+            [RoleEnum.MANAGER.ToString()] = (
+                EnumProjectStatus.DESIGNING.ToString(),
+                null // No status change for manager
+            ),
             [RoleEnum.DESIGNER.ToString()] = (
-                EnumProjectStatus.PROCESSING.ToString(),
-                EnumProjectStatus.DESIGNING.ToString()
+                EnumProjectStatus.DESIGNING.ToString(),
+                null // No status change for designer
             ),
             [RoleEnum.CONSTRUCTOR.ToString()] = (
-                EnumProjectStatus.DESIGNING.ToString(),
-                EnumProjectStatus.CONSTRUCTING.ToString()
+                EnumProjectStatus.CONSTRUCTING.ToString(),
+                null // No status change for constructor
             )
         };
 
@@ -656,6 +660,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             var statusMessages = new Dictionary<string, string>
             {
                 [RoleEnum.CONSULTANT.ToString()] = "đang yêu cầu",
+                [RoleEnum.MANAGER.ToString()] = "đang xử lý",
                 [RoleEnum.DESIGNER.ToString()] = "đang xử lý",
                 [RoleEnum.CONSTRUCTOR.ToString()] = "đang thiết kế"
             };
@@ -675,14 +680,11 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             StaffId = staff.Id
         };
 
-        var statusUpdates = new Dictionary<string, string>
+        // Only update status for Consultant assignments
+        if (staff.Position.ToUpper() == RoleEnum.CONSULTANT.ToString())
         {
-            [RoleEnum.CONSULTANT.ToString()] = EnumProjectStatus.PROCESSING.ToString(),
-            [RoleEnum.DESIGNER.ToString()] = EnumProjectStatus.DESIGNING.ToString(),
-            [RoleEnum.CONSTRUCTOR.ToString()] = EnumProjectStatus.CONSTRUCTING.ToString()
-        };
-
-        project.Status = statusUpdates[staff.Position.ToUpper()];
+            project.Status = EnumProjectStatus.PROCESSING.ToString();
+        }
 
         await unitOfWork.Repository<ProjectStaff>().AddAsync(projectStaff, false);
         await unitOfWork.SaveChangesAsync();
@@ -739,6 +741,21 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         if (position == RoleEnum.ADMINISTRATOR.ToString())
         {
             throw new BadRequestException("Administrator không thể được phân công vào dự án");
+        }
+
+        // Special validation for Manager - all other projects must be FINISHED
+        if (position == RoleEnum.MANAGER.ToString())
+        {
+            var hasUnfinishedProjects = staff.ProjectStaffs
+                .Any(ps => ps.Project.IsActive == true && 
+                          ps.Project.Status != EnumProjectStatus.FINISHED.ToString());
+
+            if (hasUnfinishedProjects)
+            {
+                throw new BadRequestException($"Manager {staff.User.Email} có dự án chưa hoàn thành");
+            }
+            
+            return true;
         }
 
         // Check specific status restrictions for each role

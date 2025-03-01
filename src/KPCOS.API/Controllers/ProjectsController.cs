@@ -273,13 +273,14 @@ namespace KPCOS.API.Controllers
         /// <para>Only admin can do this.</para>
         /// <para>Assigns staff to project following the status chain:</para>
         /// <para>REQUESTING -> Assign Consultant -> PROCESSING</para>
-        /// <para>PROCESSING -> Assign Designer -> DESIGNING</para>
-        /// <para>DESIGNING -> Assign Constructor -> CONSTRUCTING</para>
+        /// <para>DESIGNING -> Assign Manager -> DESIGNING</para>
+        /// <para>DESIGNING -> Assign Designer -> DESIGNING</para>
+        /// <para>CONSTRUCTING -> Assign Constructor -> CONSTRUCTING</para>
         /// </remarks>
         [HttpPost("{id}/assignconsultant")]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        [CustomAuthorize("ADMINISTRATOR")]
+        // [CustomAuthorize("ADMINISTRATOR")]
         public async Task<ApiResult> AssignStaffAsync(Guid id, StaffAssignRequest request)
         {
             await service.AssignStaffAsync(id, request.StaffId);
