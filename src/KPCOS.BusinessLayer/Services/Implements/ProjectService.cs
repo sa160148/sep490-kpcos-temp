@@ -522,7 +522,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             .FirstOrDefault();
         if (latestDesign?.DesignImages?.Any() == true)
         {
-            response.Url = latestDesign.DesignImages.First().ImageUrl;
+            response.ImageUrl = latestDesign.DesignImages.First().ImageUrl;
         }
         
         return response;

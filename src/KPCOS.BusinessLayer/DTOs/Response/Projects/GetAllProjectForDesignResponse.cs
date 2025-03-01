@@ -3,5 +3,5 @@
 public class GetAllProjectForDesignResponse : ProjectForListResponse
 {
     public bool StandOut { get; set; }
-    public string Url { get; set; } = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg";
+    public string ImageUrl { get; set; } = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg";
 }
