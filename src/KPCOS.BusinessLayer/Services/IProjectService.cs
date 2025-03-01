@@ -59,7 +59,7 @@ public interface IProjectService
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectByUserIdAsync(
+    Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null);
@@ -136,4 +136,64 @@ public interface IProjectService
 
     int CountQuotationByProject(Guid id);
     Task<IEnumerable<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, PaginationFilter filter);
+
+    /// <summary>
+    /// Gets all projects for design purposes with design-related information and standout status
+    /// </summary>
+    /// <param name="advandcedFilter">Filter and pagination parameters including optional status filtering</param>
+    /// <param name="userId">The ID of the user requesting projects</param>
+    /// <param name="role">The role of the user (ADMINISTRATOR, MANAGER, DESIGNER, etc.)</param>
+    /// <returns>Collection of projects with design information and standout status</returns>
+    /// <remarks>
+    /// <para>Access Rules:</para>
+    /// <list type="bullet">
+    ///     <item><description>Administrators can see all projects</description></item>
+    ///     <item><description>Other users can only see their own projects or projects they're assigned to</description></item>
+    /// </list>
+    /// <para>StandOut Flag Rules by Role:</para>
+    /// <list type="bullet">
+    ///     <item>
+    ///         <description>Administrator: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No manager assigned</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Manager: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No designer assigned</description></item>
+    ///                 <item><description>OR any designs in OPENING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Designer: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>No designs</description></item>
+    ///                 <item><description>OR designs in REJECTED/EDITING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    ///     <item>
+    ///         <description>Customer: Projects marked when they have:
+    ///             <list type="bullet">
+    ///                 <item><description>Any design in PREVIEWING status</description></item>
+    ///             </list>
+    ///         </description>
+    ///     </item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// <list type="bullet">
+    ///     <item><description>Filter is null</description></item>
+    ///     <item><description>Status filter contains invalid project status</description></item>
+    ///     <item><description>UserId is null or invalid</description></item>
+    /// </list>
+    /// </exception>
+    Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+        GetAllProjectByUserIdRequest advandcedFilter, 
+        string userId, 
+        string? role = null);
 }
