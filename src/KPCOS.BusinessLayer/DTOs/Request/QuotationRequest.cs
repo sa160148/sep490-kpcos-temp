@@ -28,3 +28,16 @@ public class QuotationCreateRequest
         public string Category { get; set; }
     }
 }
+
+public class QuotationRejectOrAcceptRequest
+{
+    public bool IsAccept { get; set; }
+    public string? Reason { get; set; }
+}
+
+
+public class QuotationApproveOrEditRequest
+{
+    public bool IsApprove { get; set; }
+    public string? Reason { get; set; }
+}

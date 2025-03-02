@@ -15,4 +15,12 @@ public interface IQuotationService
     // Task UpdateQuotationAsync(Guid id, QuotationCreateRequest request);
     // Task DeleteQuotationAsync(Guid id);
     
+    Task RejectOrAcceptQuotationAsync(Guid id, QuotationRejectOrAcceptRequest request);
+    
+    Task ApproveOrCancelEditQuotationAsync(Guid id, QuotationApproveOrEditRequest request);
+    
+    Task UpdateQuotationAsync(Guid id, QuotationCreateRequest request);
+    
+    Task RewriteQuotationAsync (Guid id, QuotationCreateRequest request);
+    
 }

@@ -19,5 +19,7 @@ public interface IUserService
     
     Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter);
     
-    
+    Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter);
 }

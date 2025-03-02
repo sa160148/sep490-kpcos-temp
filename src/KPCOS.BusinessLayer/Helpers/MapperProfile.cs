@@ -5,6 +5,11 @@ using KPCOS.DataAccessLayer.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Request.Designs;
+using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.DataAccessLayer.Enums;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -29,6 +34,8 @@ public class MapperProfile : Profile
         CreateMap<Project, ProjectForListResponse>()
             .ForMember(dest => dest.PackageName,
                 opt => opt.MapFrom(project => project.Package.Name));
+        CreateMap<Project, GetAllProjectForQuotationResponse>();
+        CreateMap<Project, GetAllProjectForDesignResponse>();
         
         CreateMap<Staff, StaffResponse>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
@@ -48,6 +55,44 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
 
-        CreateMap<Quotation, QuotationForProjectResponse>();
+        CreateMap<Quotation, QuotationForProjectResponse>()
+            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt))
+            .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedAt))
+            .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate));
+
+        CreateMap<ContractRequest, Contract>()
+            .ForMember(dest => dest.Name, opt =>
+                opt.MapFrom(src => src.Name ?? " "))
+            .ForMember(dest => dest.Note, opt =>
+                opt.MapFrom(src => src.Note ?? " "))
+            .ForMember(dest => dest.Status, opt =>
+                opt.MapFrom(src => EnumContractStatus.PROCESSING.ToString()))
+            .ForMember(dest => dest.ContractValue, opt =>
+                opt.MapFrom(src => src.ContractValue ?? 0)
+            );
+
+        CreateMap<CreateDesignRequest, Design>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
+            .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
+            .ForMember(dest => dest.DesignImages,
+                opt => opt.MapFrom(src => 
+                    src.DesignImages.Select(url => new DesignImage
+                    {
+                        ImageUrl = url.ToString(),
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    })))
+            ;
+        CreateMap<UpdateDesignRequest, Design>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
+            .ForMember(dest => dest.DesignImages,
+                opt => opt.MapFrom(src => 
+                    src.DesignImages.Select(url => new DesignImage
+                    {
+                        ImageUrl = url.ToString(),
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    })))
+            ;
     }
 }
