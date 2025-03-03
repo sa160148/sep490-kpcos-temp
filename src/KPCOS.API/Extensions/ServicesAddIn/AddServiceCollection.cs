@@ -25,6 +25,8 @@ public static class AddServiceCollection
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IQuotationService, QuotationService>();
+        services.AddScoped<IContractService, ContractService>();
+        services.AddScoped<IConstructionServices, ConstructionService>();
 
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/

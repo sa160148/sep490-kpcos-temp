@@ -20,6 +20,8 @@ public class QuotationForProjectResponse
     public string? Status { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; set; }
+    
+    public int? TotalPrice { get; set; }
 }
 
 public class QuotationResponse : QuotationForProjectResponse
