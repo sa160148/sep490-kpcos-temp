@@ -13,6 +13,7 @@ using System.Linq.Expressions;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using System.Linq;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
@@ -496,8 +497,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     {
         ValidateRequest(advandcedFilter);
         var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
-        var responses = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
-        return responses;
+        return projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
     }
 
     /// <summary>

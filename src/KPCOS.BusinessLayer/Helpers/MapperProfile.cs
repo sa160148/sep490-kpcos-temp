@@ -9,6 +9,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 
@@ -21,6 +22,17 @@ public class MapperProfile : Profile
         CreateMap<AuthRequest, User>();
         CreateMap<SignupRequest, User>();
         CreateMap<User, UserResponse>();
+        CreateMap<Staff, GetAllStaffForDesignResponse>()
+            .ForMember(dest => dest.Avatar, 
+                opt => opt.MapFrom(src => src.User.Avatar))
+            .ForMember(dest => dest.Id, 
+                opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, 
+                opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position,
+                opt => opt.MapFrom(src => src.Position));
 
         CreateMap<ProjectRequest, Project>()
             .ForMember(dest => dest.Name,
