@@ -503,6 +503,21 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return responses;
     }
 
+    /// <summary>
+    /// Gets all contracts associated with a specific project with pagination
+    /// </summary>
+    /// <param name="id">The project ID to get contracts for</param>
+    /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
+    /// <returns>Tuple containing the list of contracts and total count</returns>
+    /// <remarks>
+    /// <para>Returns active contracts for a project with:</para>
+    /// <list type="bullet">
+    ///     <item><description>Basic contract information</description></item>
+    ///     <item><description>Contract value from the contract itself</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter)
     {
         // Validate project exists using existing method
