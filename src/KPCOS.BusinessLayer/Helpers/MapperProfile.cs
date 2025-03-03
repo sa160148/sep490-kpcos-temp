@@ -10,6 +10,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.DataAccessLayer.Enums;
+using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 
 namespace KPCOS.BusinessLayer.Helpers;
 

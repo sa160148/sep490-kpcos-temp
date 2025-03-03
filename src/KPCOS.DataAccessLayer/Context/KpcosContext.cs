@@ -200,7 +200,6 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Esttime).HasColumnName("esttime");
             entity.Property(e => e.Idparent).HasColumnName("idparent");
             entity.Property(e => e.Idtemplate).HasColumnName("idtemplate");
             entity.Property(e => e.IsActive)

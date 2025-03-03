@@ -17,7 +17,7 @@ public partial class PaymentBatch
 
     public int TotalValue { get; set; }
 
-    public bool? IsPaid { get; set; }
+    public bool? IsPaid { get; set; } = false;
 
     public Guid ContractId { get; set; }
 

@@ -323,5 +323,14 @@ namespace KPCOS.API.Controllers
                 pageSize: filter.PageSize,
                 totalRecords: count);
         }
+        
+        // [HttpGet("{id}/construction")]
+        // public async Task<ApiResult<ConstructionResponse>> GetConstructionByProjectAsync(Guid id)
+        // {
+        //     var construction = await service.GetConstructionByProjectAsync(id);
+        //     return construction;
+        // }
     }
+    
+    
 }
