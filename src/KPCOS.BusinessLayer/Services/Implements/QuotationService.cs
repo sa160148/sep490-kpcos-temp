@@ -139,6 +139,7 @@ public class QuotationService : IQuotationService
             TemplateConstructionId = quotation.Idtemplate,
             Version = quotation.Version,
             Status = quotation.Status, 
+            TotalPrice = quotation.TotalPrice,
             CreatedDate = quotation.CreatedAt.ToString(),
             UpdatedDate = quotation.UpdatedAt.ToString(),
             Services = repoQuotationService.Get().Where(qs => qs.QuotationId == quotation.Id)

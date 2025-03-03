@@ -1,10 +1,11 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Mvc;
+using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 
 namespace KPCOS.API.Controllers;
 
