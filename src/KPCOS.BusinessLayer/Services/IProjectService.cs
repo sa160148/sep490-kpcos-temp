@@ -1,6 +1,7 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.Common.Pagination;
 
@@ -196,4 +197,6 @@ public interface IProjectService
         GetAllProjectByUserIdRequest advandcedFilter, 
         string userId, 
         string? role = null);
+
+    Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter);
 }

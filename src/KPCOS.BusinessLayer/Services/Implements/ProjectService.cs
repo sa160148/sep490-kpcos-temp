@@ -13,7 +13,10 @@ using System.Linq.Expressions;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using System.Linq;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using LinqKit;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -498,6 +501,44 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
         var responses = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
         return responses;
+    }
+
+    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter)
+    {
+        // Validate project exists using existing method
+        var project = await IsExistById(id);
+        
+        if (!project.IsActive == true)
+        {
+            throw new BadRequestException("Không tìm thấy Project");
+        }
+
+        // Get contracts with validation
+        var contracts = unitOfWork.Repository<Contract>()
+            .Get(
+                filter: c => c.ProjectId == id && c.IsActive == true,
+                includeProperties: "Project.Quotations",
+                orderBy: q => q.OrderByDescending(c => c.CreatedAt),
+                pageIndex: filter.PageNumber,
+                pageSize: filter.PageSize
+            );
+        
+        if (!contracts.Any())
+        {
+            return (Enumerable.Empty<GetAllContractResponse>(), 0);
+        }
+
+        var contractResponses = contracts.Select(contract =>
+        {
+            var response = mapper.Map<GetAllContractResponse>(contract);
+            
+            // Find the quotation associated with this contract and get its total price
+            var quotation = contract.Project.Quotations
+                .FirstOrDefault(q => q.Id == contract.QuotationId);
+            return response;
+        }).ToList();
+
+        return (contractResponses, contracts.Count());
     }
 
     /// <summary>
