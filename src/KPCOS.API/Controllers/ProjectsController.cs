@@ -4,6 +4,7 @@ using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.Services;
 
@@ -322,6 +323,13 @@ namespace KPCOS.API.Controllers
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
                 totalRecords: count);
+        }
+        
+        [HttpGet("{id}/contract")]
+        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(Guid id, [FromQuery]PaginationFilter filter)
+        {
+            var contract = await service.GetContractByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllContractResponse>(contract.data, filter.PageNumber, filter.PageSize, contract.total);
         }
         
         // [HttpGet("{id}/construction")]

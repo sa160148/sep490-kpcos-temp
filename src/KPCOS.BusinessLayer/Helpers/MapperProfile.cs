@@ -8,6 +8,7 @@ using System;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
@@ -71,6 +72,7 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.ContractValue, opt =>
                 opt.MapFrom(src => src.ContractValue ?? 0)
             );
+        CreateMap<Contract, GetAllContractResponse>();
 
         CreateMap<CreateDesignRequest, Design>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
