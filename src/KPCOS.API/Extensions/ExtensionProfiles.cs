@@ -12,8 +12,10 @@ public static class ExtensionProfiles
         services.AddAutoMapper(typeof(MapperProfile));
         services.AddAuthServices(configuration: configuration);
         services.AddSwaggerServices();
+        services.AddBackgroundServices();
         services.AddServices();
         services.AddFirebase(configuration);
+
         return services;
     }
 }

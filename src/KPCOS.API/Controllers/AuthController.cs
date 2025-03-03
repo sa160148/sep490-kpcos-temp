@@ -12,7 +12,7 @@ namespace KPCOS.API.Controllers
     public class AuthController(IAuthService authService) : BaseController
     {
         /// <summary>
-        /// FEATURE : Login, signin
+        /// Login, signin
         /// </summary>
         /// <param name="request">
         /// request object contains email property and password property. 
@@ -43,7 +43,7 @@ namespace KPCOS.API.Controllers
         }
 
         /// <summary>
-        /// FEATURE : Register, signup by customer
+        /// Register, signup by customer
         /// </summary>
         /// <param name="request">
         /// request object contains fullName, email, password,
