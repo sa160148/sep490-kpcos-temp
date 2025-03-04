@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
@@ -44,6 +45,13 @@ public class DesignsController(IDesignService service): BaseController
         var userId = Guid.Parse(userIdClaim.Value);
         await service.CreateDesignAsync(userId, request);
         return Ok();
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ApiResult<GetDesignDetailResponse>> GetDesignDetail(Guid id)
+    {
+        var result = await service.GetDesignDetailAsync(id);
+        return result;
     }
     
     /// <summary>
