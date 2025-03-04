@@ -4,7 +4,9 @@ using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using System;
+using System.Data.Entity;
 using System.Threading.Tasks;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.Common.Exceptions;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
@@ -158,5 +160,19 @@ public class DesignService : IDesignService
         await repo.AddAsync(clonedDesign, false);
         await repo.UpdateAsync(design, false);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<GetDesignDetailResponse> GetDesignDetailAsync(Guid id)
+    {
+        var repo = _unitOfWork.Repository<Design>();
+        var design = repo.Get(
+                filter: d => d.Id == id,
+                includeProperties: "DesignImages,Project")
+            .SingleOrDefault();
+        if (design == null)
+        {
+            throw new NotFoundException("Không tìm thấy Design");
+        }
+        return _mapper.Map<GetDesignDetailResponse>(design);
     }
 }

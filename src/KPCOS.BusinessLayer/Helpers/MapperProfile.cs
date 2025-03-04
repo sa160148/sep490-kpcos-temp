@@ -115,5 +115,14 @@ public class MapperProfile : Profile
                 opt => opt.MapFrom(src => 
                     src.DesignImages.FirstOrDefault()!.ImageUrl))
             ;
+        CreateMap<DesignImage, GetAllDesignImageResponse>()
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+        CreateMap<Design, GetDesignDetailResponse>()
+           .ForMember(dest => dest.CustomerName, 
+                opt => opt.MapFrom(src => src.Project.CustomerName))
+            .ForMember(dest => dest.Reason, 
+                opt => opt.MapFrom(src => src.Reason ?? ""))
+            ;
     }
 }
