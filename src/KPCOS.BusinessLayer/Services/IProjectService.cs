@@ -2,6 +2,7 @@
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
@@ -215,4 +216,22 @@ public interface IProjectService
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter);
+
+    /// <summary>
+    /// Gets all designs associated with a specific project with pagination
+    /// </summary>
+    /// <param name="id">The project ID to get designs for</param>
+    /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
+    /// <returns>Tuple containing the list of designs and total count</returns>
+    /// <remarks>
+    /// <para>Returns all designs for a project with:</para>
+    /// <list type="bullet">
+    ///     <item><description>Basic design information (ID, version, status, etc.)</description></item>
+    ///     <item><description>Design images associated with each design</description></item>
+    ///     <item><description>Staff information who created the design</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
+    Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, PaginationFilter filter);
 }
