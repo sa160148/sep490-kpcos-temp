@@ -3,6 +3,7 @@ using System.Security.Claims;
 using KPCOS.API.Extensions.ServicesAddIn;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
 using KPCOS.Common.Pagination;

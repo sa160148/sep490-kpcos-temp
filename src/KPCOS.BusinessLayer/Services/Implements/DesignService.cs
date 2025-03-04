@@ -89,15 +89,18 @@ public class DesignService : IDesignService
         {
             design.Status = EnumDesignStatus.CONFIRMED.ToString();
             
-            // Get project and update its status
-            var projectRepo = _unitOfWork.Repository<Project>();
-            var project = await projectRepo.SingleOrDefaultAsync(p => p.Id == design.ProjectId);
-            if (project == null)
+            // Only update project status to CONSTRUCTING for 2D designs
+            if (design.Type.Equals("2D", StringComparison.OrdinalIgnoreCase))
             {
-                throw new NotFoundException("Không tìm thấy Project");
+                var projectRepo = _unitOfWork.Repository<Project>();
+                var project = await projectRepo.SingleOrDefaultAsync(p => p.Id == design.ProjectId);
+                if (project == null)
+                {
+                    throw new NotFoundException("Không tìm thấy Project");
+                }
+                project.Status = EnumProjectStatus.CONSTRUCTING.ToString();
+                await projectRepo.UpdateAsync(project, false);
             }
-            project.Status = EnumProjectStatus.CONSTRUCTING.ToString();
-            await projectRepo.UpdateAsync(project, false);
         }
         
         await repo.UpdateAsync(design, false);

@@ -2,6 +2,7 @@
 using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;

@@ -129,7 +129,7 @@ namespace KPCOS.API.Controllers
         /// <remarks>
         /// This endpoint returns projects with status DESIGNING.
         /// 
-        /// Projects are marked as standout based on role:
+        /// Projects are marked as StandOut based on role:
         /// 
         /// For Administrator:
         /// - Project has no manager assigned

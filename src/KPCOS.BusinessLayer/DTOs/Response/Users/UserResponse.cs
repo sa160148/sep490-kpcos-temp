@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
-using Google.Cloud.Firestore;
 
-namespace KPCOS.BusinessLayer.DTOs.Response;
+namespace KPCOS.BusinessLayer.DTOs.Response.Users;
 
 public class UserResponse
 {
