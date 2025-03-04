@@ -18,6 +18,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -554,6 +555,20 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         }).ToList();
 
         return (contractResponses, contracts.Count());
+    }
+
+    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Design>();
+        var query = repo.Get(
+            filter: d => d.ProjectId == id,
+            includeProperties: "DesignImages",
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        var designs = mapper.Map<List<GetAllDesignResponse>>(query.ToList());
+        return (designs, designs.Count);
     }
 
     /// <summary>

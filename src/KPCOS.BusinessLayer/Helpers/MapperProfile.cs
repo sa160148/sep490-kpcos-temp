@@ -9,6 +9,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.DataAccessLayer.Enums;
@@ -91,9 +92,9 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
             .ForMember(dest => dest.DesignImages,
                 opt => opt.MapFrom(src => 
-                    src.DesignImages.Select(url => new DesignImage
+                    src.DesignImages.Select(img => new DesignImage
                     {
-                        ImageUrl = url.ToString(),
+                        ImageUrl = img.ImageUrl,
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true
                     })))
@@ -104,10 +105,15 @@ public class MapperProfile : Profile
                 opt => opt.MapFrom(src => 
                     src.DesignImages.Select(url => new DesignImage
                     {
-                        ImageUrl = url.ToString(),
+                        ImageUrl = url.ImageUrl,
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true
                     })))
+            ;
+        CreateMap<Design, GetAllDesignResponse>()
+            .ForMember(dest => dest.ImageUrl, 
+                opt => opt.MapFrom(src => 
+                    src.DesignImages.FirstOrDefault()!.ImageUrl))
             ;
     }
 }
