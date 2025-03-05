@@ -14,4 +14,8 @@ public class GetAllContractResponse
     public string? CustomerName { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? ContractValue { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? CreatedAt { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? UpdatedAt { get; set; }
 }
