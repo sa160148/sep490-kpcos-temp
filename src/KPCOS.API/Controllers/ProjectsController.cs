@@ -7,6 +7,7 @@ using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.BusinessLayer.Services;
 
 using KPCOS.Common.Pagination;
@@ -105,8 +106,8 @@ namespace KPCOS.API.Controllers
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
-                page = filter.PageNumber,
-                per_page = filter.PageSize,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
                 Status = new List<string>()
                 {
                     EnumProjectStatus.REQUESTING.ToString(),
@@ -167,8 +168,8 @@ namespace KPCOS.API.Controllers
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
-                page = filter.PageNumber,
-                per_page = filter.PageSize,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
                 Status = new List<string>()
                 {
                     EnumProjectStatus.DESIGNING.ToString()

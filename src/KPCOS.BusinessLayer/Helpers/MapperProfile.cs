@@ -10,10 +10,14 @@ using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
+using KPCOS.BusinessLayer.DTOs.Response.Services;
+using KPCOS.BusinessLayer.DTOs.Response.Equipments;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -75,6 +79,37 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedAt))
             .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate));
 
+        CreateMap<Quotation, QuotationResponse>()
+            .ForMember(dest => dest.Services, 
+            opt => opt.MapFrom(src => src.QuotationDetails))
+            .ForMember(dest => dest.Equipments, 
+            opt => opt.MapFrom(src => src.QuotationEquipments))
+            .ForMember(dest => dest.TemplateConstructionId, 
+            opt => opt.MapFrom(src => src.Idtemplate))
+            .ForMember(dest => dest.Reason, 
+            opt => opt.MapFrom(src => src.Reason ?? string.Empty))
+            ;
+        CreateMap<QuotationDetail, GetAllServiceResponse>()
+            .ForMember(dest => dest.Id, 
+            opt => opt.MapFrom(src => src.ServiceId))
+            .ForMember(dest => dest.Name, 
+            opt => opt.MapFrom(src => src.Service.Name))
+            .ForMember(dest => dest.Description, 
+            opt => opt.MapFrom(src => src.Service.Description))
+            .ForMember(dest => dest.Price, 
+            opt => opt.MapFrom(src => src.Service.Price))
+        ;
+        CreateMap<QuotationEquipment, GetAllEquipmentResponse>()
+            .ForMember(dest => dest.Id, 
+            opt => opt.MapFrom(src => src.EquipmentId))
+            .ForMember(dest => dest.Name, 
+            opt => opt.MapFrom(src => src.Equipment.Name))
+            .ForMember(dest => dest.Description, 
+            opt => opt.MapFrom(src => src.Equipment.Description))
+            .ForMember(dest => dest.Price, 
+            opt => opt.MapFrom(src => src.Price))
+            ;
+
         CreateMap<ContractRequest, Contract>()
             .ForMember(dest => dest.Name, opt =>
                 opt.MapFrom(src => src.Name ?? " "))
@@ -86,6 +121,8 @@ public class MapperProfile : Profile
                 opt.MapFrom(src => src.ContractValue ?? 0)
             );
         CreateMap<Contract, GetAllContractResponse>();
+        CreateMap<Contract, GetContractDetailResponse>();
+        CreateMap<PaymentBatch, GetAllPaymentBatchesResponse>();
 
         CreateMap<CreateDesignRequest, Design>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))

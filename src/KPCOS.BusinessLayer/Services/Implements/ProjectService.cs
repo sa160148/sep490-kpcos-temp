@@ -19,6 +19,7 @@ using LinqKit;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -107,8 +108,8 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
                 _ => ""
             },
             orderBy: null,
-            pageIndex: filter.page,
-            pageSize: filter.per_page
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
         );
 
         return baseQuery;
