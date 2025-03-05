@@ -145,21 +145,14 @@ public class DesignService : IDesignService
         {
             throw new NotFoundException("Không tìm thấy Design");
         }
-        Design clonedDesign = _mapper.Map<Design>(request);
-        clonedDesign.Id = Guid.NewGuid();
-        clonedDesign.StaffId = _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(staff => staff.UserId == userId).Result.Id;
-        foreach (var image in clonedDesign.DesignImages)
+        if (design.Status == EnumDesignStatus.EDITING.ToString())
         {
-            image.Id = Guid.NewGuid();
-            image.DesignId = clonedDesign.Id;
+            await UpdateDesignEditingAsync(design, userId, request);
         }
-        design.Status = EnumDesignStatus.PREVIEWING.ToString();
-        clonedDesign.Version = design.Version + 1;
-        clonedDesign.ProjectId = design.ProjectId;
-        
-        await repo.AddAsync(clonedDesign, false);
-        await repo.UpdateAsync(design, false);
-        await _unitOfWork.SaveChangesAsync();
+        if (design.Status == EnumDesignStatus.REJECTED.ToString())
+        {
+            await UpdateDesignRejectedAsync(design, userId, request);
+        }
     }
 
     public async Task<GetDesignDetailResponse> GetDesignDetailAsync(Guid id)
@@ -174,5 +167,55 @@ public class DesignService : IDesignService
             throw new NotFoundException("Không tìm thấy Design");
         }
         return _mapper.Map<GetDesignDetailResponse>(design);
+    }
+
+    private async Task UpdateDesignEditingAsync(Design design, Guid userId, UpdateDesignRequest request)
+    {
+        Design clonedDesign = _mapper.Map<Design>(request);
+        clonedDesign.Id = Guid.NewGuid();
+        clonedDesign.StaffId = _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(staff => staff.UserId == userId).Result.Id;
+        foreach (var image in clonedDesign.DesignImages)
+        {
+            image.Id = Guid.NewGuid();
+            image.DesignId = clonedDesign.Id;
+        }
+        design.Status = EnumDesignStatus.PREVIEWING.ToString();
+        clonedDesign.Version = design.Version + 1;
+        clonedDesign.ProjectId = design.ProjectId;
+        
+        await _unitOfWork.Repository<Design>().AddAsync(clonedDesign, false);
+        await _unitOfWork.Repository<Design>().UpdateAsync(design, false);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task UpdateDesignRejectedAsync(Design design, Guid userId, UpdateDesignRequest request)
+    {
+        // Remove existing design images
+        var designImageRepo = _unitOfWork.Repository<DesignImage>();
+        var designImages = designImageRepo.Get(di => di.DesignId == design.Id).ToList();
+        designImageRepo.RemoveRange(designImages);
+
+        // Map request properties to existing design
+        design.Type = request.Type;
+        design.Status = EnumDesignStatus.OPENING.ToString();
+        design.StaffId = _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(staff => staff.UserId == userId).Result.Id;
+        design.Version = design.Version + 1;
+
+        // Create and add new design images
+        foreach (var imageRequest in request.DesignImages)
+        {
+            var image = new DesignImage
+            {
+                Id = Guid.NewGuid(),
+                DesignId = design.Id,
+                ImageUrl = imageRequest.ImageUrl,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            await designImageRepo.AddAsync(image, false);
+        }
+
+        await _unitOfWork.Repository<Design>().UpdateAsync(design, false);
+        await _unitOfWork.SaveChangesAsync();
     }
 }
