@@ -10,14 +10,9 @@ public class GetAllQuotationFilterRequest : PaginationRequest<Quotation>
     public string? Status { get; set; }
     public override Expression<Func<Quotation, bool>> GetExpressions()
     {
-        throw new NotImplementedException();
-    }
-
-    public Expression<Func<Quotation, bool>> GetExpressionsV2()
-    {
         var quotationQueryExpression = PredicateBuilder.New<Quotation>(true);
         if (!string.IsNullOrEmpty(Status)){
-            quotationQueryExpression.And(x => x.Status == Status);
+            quotationQueryExpression.And(q => q.Status == Status);
         }
         return quotationQueryExpression;
     }

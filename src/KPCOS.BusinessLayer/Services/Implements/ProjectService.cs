@@ -18,8 +18,13 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Quotations;
+using System.Linq.Dynamic.Core;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
+using Google.Cloud.Firestore;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -424,20 +429,31 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             .Count();
     }
 
-    public Task<IEnumerable<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, PaginationFilter filter)
+    public async Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(Guid id, GetAllQuotationFilterRequest filter)
     {
+        // First validate project exists
+        var project = await IsExistById(id);
+        if (!project.IsActive == true)
+        {
+            throw new BadRequestException("Không tìm thấy Project");
+        }
+        
+        var builder = filter.GetExpressions();
+        builder = builder.And(q => q.ProjectId == id);
+
+        // Get data with all conditions using repository's features
         var query = unitOfWork.Repository<Quotation>()
             .Get(
-                filter: q => q.ProjectId == id,
-                includeProperties: "Project",
-                orderBy: q => q.OrderByDescending(q => q.CreatedAt),
+                filter: builder,
+                orderBy: filter.GetOrder(),
+                includeProperties: "QuotationDetails.Service,QuotationEquipments.Equipment",
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            );
-        
-        var quotations = query.ToList();
+            ).ToList();
 
-        return Task.FromResult(quotations.Select(q => mapper.Map<QuotationForProjectResponse>(q)));
+        var quotations = mapper.Map<List<QuotationForProjectResponse>>(query);
+
+        return (quotations, quotations.Count);
     }
 
     /// <summary>
@@ -520,7 +536,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
-    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter)
+    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, GetAllContractFilterRequest filter)
     {
         // Validate project exists using existing method
         var project = await IsExistById(id);
@@ -530,6 +546,8 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             throw new BadRequestException("Không tìm thấy Project");
         }
 
+        var advancedFilter = filter.GetExpressions();
+        advancedFilter.And(c => c.ProjectId == id);
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
             .Get(
@@ -538,7 +556,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
                 orderBy: q => q.OrderByDescending(c => c.CreatedAt),
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            );
+            ).ToList();
         
         if (!contracts.Any())
         {
@@ -558,18 +576,27 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (contractResponses, contracts.Count());
     }
 
-    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, PaginationFilter filter)
+    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, GetAllDesignFilterRequest filter)
     {
+        // Validate project exists and is active
+        await IsExistById(id);
+
         var repo = unitOfWork.Repository<Design>();
-        var query = repo.Get(
-            filter: d => d.ProjectId == id,
+        
+        // Combine project ID filter with other filter conditions
+        var combinedFilter = filter.GetExpressions().And(d => d.ProjectId == id);
+
+        // Get data with all conditions applied
+        var (designs, total) = repo.GetWithCount(
+            filter: combinedFilter,
             includeProperties: "DesignImages",
-            orderBy: null,
+            orderBy: filter.GetOrder(),
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
-        var designs = mapper.Map<List<GetAllDesignResponse>>(query.ToList());
-        return (designs, designs.Count);
+
+        var designResponses = mapper.Map<List<GetAllDesignResponse>>(designs);
+        return (designResponses, total);
     }
 
     /// <summary>
