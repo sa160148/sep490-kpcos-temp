@@ -14,6 +14,8 @@ using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.WebFramework.Api;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 
 namespace KPCOS.API.Controllers
 {
@@ -311,21 +313,13 @@ namespace KPCOS.API.Controllers
         /// <response code="500">Error</response>
         /// <response code="401">Unauthorized</response>
         [HttpGet("{id}/quotation")]
-        public async Task<PagedApiResponse<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, [FromQuery] PaginationFilter filter)
+        public async Task<PagedApiResponse<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, [FromQuery] GetAllQuotationFilterRequest filter)
         {
-            var count = service.CountQuotationByProject(id);
-            if (count == 0)
-            {
-                return new PagedApiResponse<QuotationForProjectResponse>(new List<QuotationForProjectResponse>(),
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: count);
-            }
             var quotations = await service.GetQuotationsByProjectAsync(id, filter);
-            return new PagedApiResponse<QuotationForProjectResponse>(quotations,
+            return new PagedApiResponse<QuotationForProjectResponse>(quotations.data,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
-                totalRecords: count);
+                totalRecords: quotations.total);
         }
         
         /// <summary>
@@ -358,7 +352,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(Guid id, [FromQuery]PaginationFilter filter)
+        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(Guid id, [FromQuery]GetAllContractFilterRequest filter)
         {
             var contract = await service.GetContractByProjectAsync(id, filter);
             return new PagedApiResponse<GetAllContractResponse>(contract.data, filter.PageNumber, filter.PageSize, contract.total);

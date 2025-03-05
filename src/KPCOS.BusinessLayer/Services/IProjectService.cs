@@ -1,6 +1,8 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
@@ -140,7 +142,7 @@ public interface IProjectService
     Task AssignStaffAsync(Guid projectId, Guid userId);
 
     int CountQuotationByProject(Guid id);
-    Task<IEnumerable<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, PaginationFilter filter);
+    Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(Guid id, GetAllQuotationFilterRequest filter);
 
     /// <summary>
     /// Gets all projects for design purposes with design-related information and standout status
@@ -217,7 +219,7 @@ public interface IProjectService
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
-    Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter);
+    Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, GetAllContractFilterRequest filter);
 
     /// <summary>
     /// Gets all designs associated with a specific project with pagination

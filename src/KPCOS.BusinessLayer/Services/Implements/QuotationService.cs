@@ -127,7 +127,7 @@ public class QuotationService : IQuotationService
         var repoQuotation = _unitOfWork.Repository<Quotation>();
         
         var pageData =  repoQuotation.Get(
-            filter.GetExpressionsV2(),
+            filter.GetExpressions(),
             null,
             "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment",
             filter.PageNumber,
