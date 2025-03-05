@@ -1,4 +1,6 @@
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.Common.Exceptions;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -40,4 +42,6 @@ public interface IContractService
     /// <param name="request"></param>
     /// <returns></returns>
     Task CreateContractAsync(ContractRequest request);
+
+    Task<GetContractDetailResponse> GetContractDetailAsync(Guid id);
 }

@@ -1,6 +1,7 @@
 using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
@@ -113,7 +114,18 @@ public class ContractService : IContractService
         contract.Id = Guid.NewGuid();
         await repo.AddAsync(contract);
     }
-    
+
+    public async Task<GetContractDetailResponse> GetContractDetailAsync(Guid id)
+    {
+        var repo = _unitOfWork.Repository<Contract>();
+        var contract = repo.Get(
+            filter: contract => contract.Id == id,
+            includeProperties: "PaymentBatches,Project")
+            .SingleOrDefault() ?? throw new NotFoundException("Hợp đồng không tồn tại");
+        var response = _mapper.Map<GetContractDetailResponse>(contract);
+        return response;
+    }
+
     private async Task<bool> IsProjectExitAsync(Guid projectId)
     {
         var project = await _unitOfWork.Repository<Project>().SingleOrDefaultAsync(project => project.Id == projectId);

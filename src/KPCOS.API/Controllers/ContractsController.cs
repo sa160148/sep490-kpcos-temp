@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
@@ -27,6 +28,21 @@ public class ContractsController : BaseController
     {
         await _contractService.CreateContractAsync(request);
         return Ok();
+    }
+    
+    /// <summary>
+    /// Get contract detail by id
+    /// </summary>
+    /// <param name="id">Contract ID to get</param>
+    /// <remarks>
+    /// Get contract detail by id, include payment batches.
+    /// </remarks>
+    /// <returns></returns>
+    [HttpGet("{id}")]
+    public async Task<ApiResult<GetContractDetailResponse>> GetContractDetail(Guid id)
+    {
+        var contract = await _contractService.GetContractDetailAsync(id);
+        return contract;
     }
     
     /// <summary>
