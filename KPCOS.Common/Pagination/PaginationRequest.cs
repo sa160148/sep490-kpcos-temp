@@ -26,7 +26,7 @@ public abstract class PaginationRequest<T> where T : class
             : PaginationConstants.DefaultPageSize;
     }
 
-    public string? SortColumn { get; set; } = "Id";
+    public string? SortColumn { get; set; } = "CreatedAt";
 
     public SortDirection? SortDir { get; set; } = SortDirection.Desc;
 

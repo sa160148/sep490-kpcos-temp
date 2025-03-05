@@ -149,8 +149,8 @@ public class MapperProfile : Profile
             ;
         CreateMap<Design, GetAllDesignResponse>()
             .ForMember(dest => dest.ImageUrl, 
-                opt => opt.MapFrom(src => 
-                    src.DesignImages.FirstOrDefault()!.ImageUrl))
+                opt =>
+                    opt.MapFrom(src => src.DesignImages.FirstOrDefault()!.ImageUrl))
             ;
         CreateMap<DesignImage, GetAllDesignImageResponse>()
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
