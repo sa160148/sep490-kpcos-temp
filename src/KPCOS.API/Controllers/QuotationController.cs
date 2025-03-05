@@ -66,6 +66,41 @@ public class QuotationController : BaseController
         return Ok();
     }
     
+    /// <summary>
+    /// Updates an existing quotation with new details
+    /// </summary>
+    /// <param name="id">The unique identifier of the quotation to update</param>
+    /// <param name="request">The quotation details for update
+    /// <example>
+    /// 
+    ///     {
+    ///         "projectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "templateConstructionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "services": [
+    ///              {
+    ///                 "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///                 "note": "string",
+    ///                 "quantity": 0,
+    ///                 "category": "string"
+    ///             }
+    ///         ],
+    ///         "equipments": [
+    ///             {
+    ///                 "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///                 "note": "string",
+    ///                 "quantity": 0,
+    ///                 "price": 0,
+    ///                 "category": "string"
+    ///             }
+    ///         ]
+    ///     } 
+    /// </example>
+    /// </param>
+    /// <returns>Returns OK if the update is successful</returns>
+    /// <remarks>
+    /// This api accept design with status PREVIEWING
+    ///     
+    /// </remarks>
     [HttpPut("{id}/edit")]
     public async Task<ApiResult> UpdateQuotationAsync(Guid id, QuotationCreateRequest request)
     {
@@ -73,6 +108,41 @@ public class QuotationController : BaseController
         return Ok();
     }
     
+    /// <summary>
+    /// Rewrites an existing quotation with completely new details, creating a new version
+    /// </summary>
+    /// <param name="id">The unique identifier of the quotation to rewrite</param>
+    /// <param name="request">The new quotation details
+    /// <example>
+    /// 
+    /// {
+    ///   "projectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "templateConstructionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "services": [
+    ///     {
+    ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///       "note": "string",
+    ///       "quantity": 0,
+    ///       "category": "string"
+    ///     }
+    ///   ],
+    ///   "equipments": [
+    ///     {
+    ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///       "note": "string",
+    ///       "quantity": 0,
+    ///       "price": 0,
+    ///       "category": "string"
+    ///     }
+    ///   ]
+    /// }
+    /// </example>
+    /// </param>
+    /// <returns>Returns OK if the rewrite is successful</returns>
+    /// <remarks>
+    /// This api accept design with status REJECTED
+    ///     
+    /// </remarks>
     [HttpPut("{id}/rewrite")]
     public async Task<ApiResult> RewriteQuotationAsync(Guid id, QuotationCreateRequest request)
     {
