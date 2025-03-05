@@ -130,8 +130,8 @@ public class QuotationService : IQuotationService
             filter.GetExpressionsV2(),
             null,
             "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment",
-            filter.page,
-            filter.per_page
+            filter.PageNumber,
+            filter.PageSize
         ).ToList();
         
         var data = _mapper.Map<IEnumerable<QuotationResponse>>(pageData);

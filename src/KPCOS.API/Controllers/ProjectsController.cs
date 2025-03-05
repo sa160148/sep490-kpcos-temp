@@ -106,8 +106,8 @@ namespace KPCOS.API.Controllers
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
-                page = filter.PageNumber,
-                per_page = filter.PageSize,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
                 Status = new List<string>()
                 {
                     EnumProjectStatus.REQUESTING.ToString(),
@@ -168,8 +168,8 @@ namespace KPCOS.API.Controllers
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
-                page = filter.PageNumber,
-                per_page = filter.PageSize,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
                 Status = new List<string>()
                 {
                     EnumProjectStatus.DESIGNING.ToString()
