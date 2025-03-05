@@ -2,6 +2,7 @@
 using System.Security.Claims;
 
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
@@ -394,7 +395,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        public async Task<PagedApiResponse<GetAllDesignResponse>> GetAllDesignByProjectAsync(Guid id, [FromQuery]PaginationFilter filter)
+        public async Task<PagedApiResponse<GetAllDesignResponse>> GetAllDesignByProjectAsync(Guid id, [FromQuery]GetAllDesignFilterRequest filter)
         {
             var design = await service.GetAllDesignByProjectAsync(id, filter);
             return new PagedApiResponse<GetAllDesignResponse>(design.data, filter.PageNumber, filter.PageSize, design.total);

@@ -18,8 +18,10 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Quotations;
+using System.Linq.Dynamic.Core;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -558,18 +560,27 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (contractResponses, contracts.Count());
     }
 
-    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, PaginationFilter filter)
+    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, GetAllDesignFilterRequest filter)
     {
+        // Validate project exists and is active
+        await IsExistById(id);
+
         var repo = unitOfWork.Repository<Design>();
-        var query = repo.Get(
-            filter: d => d.ProjectId == id,
+        
+        // Combine project ID filter with other filter conditions
+        var combinedFilter = filter.GetExpressions().And(d => d.ProjectId == id);
+
+        // Get data with all conditions applied
+        var (designs, total) = repo.GetWithCount(
+            filter: combinedFilter,
             includeProperties: "DesignImages",
-            orderBy: null,
+            orderBy: filter.GetOrder(),
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
-        var designs = mapper.Map<List<GetAllDesignResponse>>(query.ToList());
-        return (designs, designs.Count);
+
+        var designResponses = mapper.Map<List<GetAllDesignResponse>>(designs);
+        return (designResponses, total);
     }
 
     /// <summary>
