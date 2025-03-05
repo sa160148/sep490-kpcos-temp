@@ -13,7 +13,12 @@ using System.Linq.Expressions;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using System.Linq;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -496,8 +501,74 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     {
         ValidateRequest(advandcedFilter);
         var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
-        var responses = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
-        return responses;
+        return projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+    }
+
+    /// <summary>
+    /// Gets all contracts associated with a specific project with pagination
+    /// </summary>
+    /// <param name="id">The project ID to get contracts for</param>
+    /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
+    /// <returns>Tuple containing the list of contracts and total count</returns>
+    /// <remarks>
+    /// <para>Returns active contracts for a project with:</para>
+    /// <list type="bullet">
+    ///     <item><description>Basic contract information</description></item>
+    ///     <item><description>Contract value from the contract itself</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
+    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, PaginationFilter filter)
+    {
+        // Validate project exists using existing method
+        var project = await IsExistById(id);
+        
+        if (!project.IsActive == true)
+        {
+            throw new BadRequestException("Không tìm thấy Project");
+        }
+
+        // Get contracts with validation
+        var contracts = unitOfWork.Repository<Contract>()
+            .Get(
+                filter: c => c.ProjectId == id && c.IsActive == true,
+                includeProperties: "Project.Quotations",
+                orderBy: q => q.OrderByDescending(c => c.CreatedAt),
+                pageIndex: filter.PageNumber,
+                pageSize: filter.PageSize
+            );
+        
+        if (!contracts.Any())
+        {
+            return (Enumerable.Empty<GetAllContractResponse>(), 0);
+        }
+
+        var contractResponses = contracts.Select(contract =>
+        {
+            var response = mapper.Map<GetAllContractResponse>(contract);
+            
+            // Find the quotation associated with this contract and get its total price
+            var quotation = contract.Project.Quotations
+                .FirstOrDefault(q => q.Id == contract.QuotationId);
+            return response;
+        }).ToList();
+
+        return (contractResponses, contracts.Count());
+    }
+
+    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, PaginationFilter filter)
+    {
+        var repo = unitOfWork.Repository<Design>();
+        var query = repo.Get(
+            filter: d => d.ProjectId == id,
+            includeProperties: "DesignImages",
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        var designs = mapper.Map<List<GetAllDesignResponse>>(query.ToList());
+        return (designs, designs.Count);
     }
 
     /// <summary>

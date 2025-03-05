@@ -4,6 +4,8 @@ using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.Services;
 
@@ -128,7 +130,7 @@ namespace KPCOS.API.Controllers
         /// <remarks>
         /// This endpoint returns projects with status DESIGNING.
         /// 
-        /// Projects are marked as standout based on role:
+        /// Projects are marked as StandOut based on role:
         /// 
         /// For Administrator:
         /// - Project has no manager assigned
@@ -324,6 +326,79 @@ namespace KPCOS.API.Controllers
                 totalRecords: count);
         }
         
+        /// <summary>
+        /// Get all contracts for a specific project
+        /// </summary>
+        /// <param name="id">The project ID to get contracts for</param>
+        /// <param name="filter">
+        /// <para><see cref="PaginationFilter"/> request object contains: </para>
+        /// pageNumber: int - The page number to retrieve
+        /// pageSize: int - The number of items per page
+        /// </param>
+        /// <returns>Paginated list of contracts with their associated quotation total prices</returns>
+        /// <remarks>
+        /// <para>Retrieves a paginated list of contracts for a specific project.</para>
+        /// <para>Each contract includes:</para>
+        /// <list type="bullet">
+        ///     <item><description>Contract details (ID, name, status, etc.)</description></item>
+        ///     <item><description>Contract value from the contract itself</description></item>
+        /// </list>
+        /// Sample request:
+        /// 
+        ///     GET /api/projects/{id}/contract?PageNumber=1&amp;PageSize=10
+        /// </remarks>
+        /// <response code="200">Success. Returns paginated list of contracts</response>
+        /// <response code="404">Project not found</response>
+        /// <response code="400">Project is inactive</response>
+        /// <response code="500">Internal server error</response>
+        [HttpGet("{id}/contract")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllContractResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(Guid id, [FromQuery]PaginationFilter filter)
+        {
+            var contract = await service.GetContractByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllContractResponse>(contract.data, filter.PageNumber, filter.PageSize, contract.total);
+        }
+        
+        /// <summary>
+        /// Get all designs for a specific project
+        /// </summary>
+        /// <param name="id">The project ID to get designs for</param>
+        /// <param name="filter">
+        /// <para><see cref="PaginationFilter"/> request object contains: </para>
+        /// pageNumber: int - The page number to retrieve
+        /// pageSize: int - The number of items per page
+        /// </param>
+        /// <returns>Paginated list of designs with their associated images and staff information</returns>
+        /// <remarks>
+        /// <para>Retrieves a paginated list of designs for a specific project.</para>
+        /// <para>Each design includes:</para>
+        /// <list type="bullet">
+        ///     <item><description>Basic design information (ID, version, status, etc.)</description></item>
+        ///     <item><description>Design images associated with the design</description></item>
+        ///     <item><description>Staff information who created the design</description></item>
+        /// </list>
+        /// Sample request:
+        /// 
+        ///     GET /api/projects/{id}/design?PageNumber=1&amp;PageSize=10
+        /// </remarks>
+        /// <response code="200">Success. Returns paginated list of designs</response>
+        /// <response code="404">Project not found</response>
+        /// <response code="400">Project is inactive</response>
+        /// <response code="500">Internal server error</response>
+        [HttpGet("{id}/design")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllDesignResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<PagedApiResponse<GetAllDesignResponse>> GetAllDesignByProjectAsync(Guid id, [FromQuery]PaginationFilter filter)
+        {
+            var design = await service.GetAllDesignByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllDesignResponse>(design.data, filter.PageNumber, filter.PageSize, design.total);
+        }
+        
         // [HttpGet("{id}/construction")]
         // public async Task<ApiResult<ConstructionResponse>> GetConstructionByProjectAsync(Guid id)
         // {
@@ -331,6 +406,4 @@ namespace KPCOS.API.Controllers
         //     return construction;
         // }
     }
-    
-    
 }

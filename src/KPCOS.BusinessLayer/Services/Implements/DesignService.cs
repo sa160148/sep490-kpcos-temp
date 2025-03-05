@@ -4,7 +4,9 @@ using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using System;
+using System.Data.Entity;
 using System.Threading.Tasks;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.Common.Exceptions;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
@@ -89,15 +91,18 @@ public class DesignService : IDesignService
         {
             design.Status = EnumDesignStatus.CONFIRMED.ToString();
             
-            // Get project and update its status
-            var projectRepo = _unitOfWork.Repository<Project>();
-            var project = await projectRepo.SingleOrDefaultAsync(p => p.Id == design.ProjectId);
-            if (project == null)
+            // Only update project status to CONSTRUCTING for 2D designs
+            if (design.Type.Equals("2D", StringComparison.OrdinalIgnoreCase))
             {
-                throw new NotFoundException("Không tìm thấy Project");
+                var projectRepo = _unitOfWork.Repository<Project>();
+                var project = await projectRepo.SingleOrDefaultAsync(p => p.Id == design.ProjectId);
+                if (project == null)
+                {
+                    throw new NotFoundException("Không tìm thấy Project");
+                }
+                project.Status = EnumProjectStatus.CONSTRUCTING.ToString();
+                await projectRepo.UpdateAsync(project, false);
             }
-            project.Status = EnumProjectStatus.CONSTRUCTING.ToString();
-            await projectRepo.UpdateAsync(project, false);
         }
         
         await repo.UpdateAsync(design, false);
@@ -155,5 +160,19 @@ public class DesignService : IDesignService
         await repo.AddAsync(clonedDesign, false);
         await repo.UpdateAsync(design, false);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<GetDesignDetailResponse> GetDesignDetailAsync(Guid id)
+    {
+        var repo = _unitOfWork.Repository<Design>();
+        var design = repo.Get(
+                filter: d => d.Id == id,
+                includeProperties: "DesignImages,Project")
+            .SingleOrDefault();
+        if (design == null)
+        {
+            throw new NotFoundException("Không tìm thấy Design");
+        }
+        return _mapper.Map<GetDesignDetailResponse>(design);
     }
 }

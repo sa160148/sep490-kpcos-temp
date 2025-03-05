@@ -13,6 +13,9 @@ public class ContractRequest
     
     [DefaultValue("Contract 1")]
     public string? Name { get; set; }
+    
+    [DefaultValue("Customer 1")]
+    public string? CustomerName { get; set; }
 
     [DefaultValue(0)]
     public int? ContractValue { get; set; }

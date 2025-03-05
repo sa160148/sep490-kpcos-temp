@@ -8,7 +8,10 @@ using System;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 
@@ -21,6 +24,17 @@ public class MapperProfile : Profile
         CreateMap<AuthRequest, User>();
         CreateMap<SignupRequest, User>();
         CreateMap<User, UserResponse>();
+        CreateMap<Staff, GetAllStaffForDesignResponse>()
+            .ForMember(dest => dest.Avatar, 
+                opt => opt.MapFrom(src => src.User.Avatar))
+            .ForMember(dest => dest.Id, 
+                opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, 
+                opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position,
+                opt => opt.MapFrom(src => src.Position));
 
         CreateMap<ProjectRequest, Project>()
             .ForMember(dest => dest.Name,
@@ -71,15 +85,16 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.ContractValue, opt =>
                 opt.MapFrom(src => src.ContractValue ?? 0)
             );
+        CreateMap<Contract, GetAllContractResponse>();
 
         CreateMap<CreateDesignRequest, Design>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
             .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
             .ForMember(dest => dest.DesignImages,
                 opt => opt.MapFrom(src => 
-                    src.DesignImages.Select(url => new DesignImage
+                    src.DesignImages.Select(img => new DesignImage
                     {
-                        ImageUrl = url.ToString(),
+                        ImageUrl = img.ImageUrl,
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true
                     })))
@@ -90,10 +105,24 @@ public class MapperProfile : Profile
                 opt => opt.MapFrom(src => 
                     src.DesignImages.Select(url => new DesignImage
                     {
-                        ImageUrl = url.ToString(),
+                        ImageUrl = url.ImageUrl,
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true
                     })))
+            ;
+        CreateMap<Design, GetAllDesignResponse>()
+            .ForMember(dest => dest.ImageUrl, 
+                opt => opt.MapFrom(src => 
+                    src.DesignImages.FirstOrDefault()!.ImageUrl))
+            ;
+        CreateMap<DesignImage, GetAllDesignImageResponse>()
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+        CreateMap<Design, GetDesignDetailResponse>()
+           .ForMember(dest => dest.CustomerName, 
+                opt => opt.MapFrom(src => src.Project.CustomerName))
+            .ForMember(dest => dest.Reason, 
+                opt => opt.MapFrom(src => src.Reason ?? ""))
             ;
     }
 }

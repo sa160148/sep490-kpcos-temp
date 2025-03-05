@@ -109,7 +109,7 @@ public class ContractService : IContractService
         
         var repo = _unitOfWork.Repository<Contract>();
         var contract = _mapper.Map<Contract>(request);
-        contract.ContractValue = quotation.TotalPrice;
+        contract.ContractValue = quotation.TotalPrice;; 
         contract.Id = Guid.NewGuid();
         await repo.AddAsync(contract);
     }

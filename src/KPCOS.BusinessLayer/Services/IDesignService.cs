@@ -1,4 +1,6 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
+using KPCOS.Common.Exceptions;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -52,4 +54,6 @@ public interface IDesignService
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the design is not found</exception>
     Task UpdateDesignAsync(Guid id, Guid userId, UpdateDesignRequest request);
+
+    Task<GetDesignDetailResponse> GetDesignDetailAsync(Guid id);
 }
