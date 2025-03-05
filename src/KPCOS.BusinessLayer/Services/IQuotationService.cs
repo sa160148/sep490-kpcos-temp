@@ -1,5 +1,7 @@
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.Common.Pagination;
 
 namespace KPCOS.BusinessLayer.Services;
@@ -8,7 +10,7 @@ public interface IQuotationService
 {
     Task CreateQuotationAsync(QuotationCreateRequest request);
     
-    Task<(IEnumerable<QuotationResponse> Data, int TotalRecords)> GetsAsyncPaging(PaginationFilter filter);
+    Task<(IEnumerable<QuotationResponse> Data, int TotalRecords)> GetsAsyncPaging(GetAllQuotationFilterRequest filter);
     //
     Task<QuotationResponse> GetQuotationByIdAsync(Guid id);
     //

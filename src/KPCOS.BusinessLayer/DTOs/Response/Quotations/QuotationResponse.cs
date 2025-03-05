@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Serialization;
+using KPCOS.BusinessLayer.DTOs.Response.Equipments;
+using KPCOS.BusinessLayer.DTOs.Response.Services;
 
-namespace KPCOS.BusinessLayer.DTOs.Response;
+namespace KPCOS.BusinessLayer.DTOs.Response.Quotations;
 
 public class QuotationForProjectResponse
 {
@@ -26,8 +28,8 @@ public class QuotationForProjectResponse
 
 public class QuotationResponse : QuotationForProjectResponse
 {
-    public List<Service> Services { get; set; }
-    public List<Equipment> Equipments { get; set; }
+    public IEnumerable<GetAllServiceResponse> Services { get; set; } = new List<GetAllServiceResponse>();
+    public IEnumerable<GetAllEquipmentResponse> Equipments { get; set; } = new List<GetAllEquipmentResponse>();
     
     
     public class Service

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Pagination;
 using KPCOS.WebFramework.Api;
@@ -32,11 +34,10 @@ public class QuotationController : BaseController
         
     // [CustomAuthorize("ADMINISTRATOR")]
     [HttpGet("")]
-    public async Task<PagedApiResponse<QuotationResponse>> GetsAsyncPaging([FromQuery] PaginationFilter filter)
+    public async Task<PagedApiResponse<QuotationResponse>> GetsAsyncPaging([FromQuery] GetAllQuotationFilterRequest filter)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var result = await _quotationService.GetsAsyncPaging(filter);
-        return new PagedApiResponse<QuotationResponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
+        return new PagedApiResponse<QuotationResponse>(result.Data, filter.page, filter.per_page, result.TotalRecords);
     }
         
     [HttpGet("{id}")]
