@@ -10,7 +10,7 @@ public abstract class PaginationRequest<T> where T : class
 
     private int _pageSize = PaginationConstants.DefaultPageSize;
 
-    public int page
+    public int PageNumber
     {
         get => _pageNumber;
         set => _pageNumber = value > 0
@@ -18,7 +18,7 @@ public abstract class PaginationRequest<T> where T : class
             : PaginationConstants.DefaultPageNumber;
     }
 
-    public int per_page
+    public int PageSize
     {
         get => _pageSize;
         set => _pageSize = value > 0 && value <= PaginationConstants.MaxPageSize
@@ -28,7 +28,7 @@ public abstract class PaginationRequest<T> where T : class
 
     public string? SortColumn { get; set; } = "Id";
 
-    public SortDirection SortDir { get; set; } = SortDirection.Desc;
+    public SortDirection? SortDir { get; set; } = SortDirection.Desc;
 
     protected Expression<Func<T, bool>> Expression = PredicateBuilder.New<T>(true);
 

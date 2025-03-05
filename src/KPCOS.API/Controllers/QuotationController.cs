@@ -37,7 +37,7 @@ public class QuotationController : BaseController
     public async Task<PagedApiResponse<QuotationResponse>> GetsAsyncPaging([FromQuery] GetAllQuotationFilterRequest filter)
     {
         var result = await _quotationService.GetsAsyncPaging(filter);
-        return new PagedApiResponse<QuotationResponse>(result.Data, filter.page, filter.per_page, result.TotalRecords);
+        return new PagedApiResponse<QuotationResponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
     }
         
     [HttpGet("{id}")]
