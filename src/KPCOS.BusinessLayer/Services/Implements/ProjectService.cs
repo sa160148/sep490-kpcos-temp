@@ -19,6 +19,7 @@ using LinqKit;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
