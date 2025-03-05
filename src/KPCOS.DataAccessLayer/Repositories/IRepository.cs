@@ -33,6 +33,12 @@ public interface IRepository<T> where T : class
     public T? FirstOrDefault(Expression<Func<T?, bool>> predicate = null);
     public T? SingleOrDefault(Expression<Func<T?, bool>> predicate = null);
     public T? Find(params object?[]? keyValues);
+    
+    /// <summary>
+    /// This function is used to remove list entity from database, no auto save
+    /// </summary>
+    /// <param name="entities"></param>
+    public void RemoveRange(List<T> entities);
 
     #endregion
 
@@ -42,9 +48,6 @@ public interface IRepository<T> where T : class
     ///     unsafe to use, ill
     /// </summary>
     /// <returns>Task<IQueryable<T>></returns>
-    public Task<IQueryable<T>> GetAsync();
-
-    public Task<IQueryable<T>> WhereAsync(Expression<Func<T?, bool>> predic = null);
     public Task AddAsync(T? entity, bool saveChanges = true);
     public Task AddRangeAsync(List<T> entities, bool saveChanges = true);
     public Task UpdateAsync(T? entity, bool saveChanges = true);
