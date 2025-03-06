@@ -1,25 +1,18 @@
-using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ConstructionService : IConstructionServices
 {
-    
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<PackageService> _logger;
 
-    public ConstructionService(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<PackageService> logger)
+    public ConstructionService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _configuration = configuration;
-        _logger = logger;
     }
 
    public async Task CreateConstructionAsync(ConstructionRequest request)
@@ -92,7 +85,106 @@ public class ConstructionService : IConstructionServices
 
   
    
+   
     
     await _unitOfWork.SaveChangesAsync();
 }
+
+    public async Task CreateConstructionV2Async(CreateConstructionRequest request)
+    {
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var constructionTemplateItemRepo = _unitOfWork.Repository<ConstructionTemplateItem>();
+        var projectRepo = _unitOfWork.Repository<Project>();
+        
+        // Validate project exists
+        var project = await projectRepo.FindAsync(request.ProjectId);
+        if (project == null)
+        {
+            throw new NotFoundException("Dự án không tồn tại");
+        }
+
+        // Validate maximum number of special items
+        var specialItemCount = request.Items.Count(x => x.IsPayment == true);
+        if (specialItemCount > 3)
+        {
+            throw new BadRequestException("Số lượng hạng mục thanh toán không được vượt quá 3");
+        }
+
+        // Remove existing construction items
+        var existingItems = constructionItemRepo.Get(x => x.Idproject == request.ProjectId).ToList();
+        foreach (var item in existingItems)
+        {
+            await constructionItemRepo.RemoveAsync(item, false);
+        }
+
+        // Create new construction items
+        foreach (var item in request.Items)
+        {
+            await CreateConstructionItemAsync(item, request.ProjectId, null, constructionItemRepo, constructionTemplateItemRepo, isParent: true);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task CreateConstructionItemAsync(
+        CreateConstructionItemRequest request,
+        Guid projectId,
+        Guid? parentId,
+        IRepository<ConstructionItem> constructionItemRepo,
+        IRepository<ConstructionTemplateItem> templateItemRepo,
+        bool isParent)
+    {
+        ConstructionItem constructionItem;
+
+        // Determine status - child items are always NORMAL
+        string status = isParent && request.IsPayment == true 
+            ? EnumConstructionItem.SPECIAL.ToString() 
+            : EnumConstructionItem.NORMAL.ToString();
+
+        if (request.TemplateItemId.HasValue)
+        {
+            // Create from template
+            var templateItem = await templateItemRepo.FindAsync(request.TemplateItemId.Value);
+            if (templateItem == null)
+            {
+                throw new NotFoundException($"Mẫu công trình với ID {request.TemplateItemId} không tồn tại");
+            }
+
+            constructionItem = new ConstructionItem
+            {
+                Id = Guid.NewGuid(),
+                Name = templateItem.Name,
+                Description = templateItem.Description,
+                Status = status,
+                Estdate = request.EstDate,
+                Idproject = projectId,
+                Idparent = parentId
+            };
+        }
+        else
+        {
+            // Create custom item
+            constructionItem = new ConstructionItem
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name,
+                Description = request.Description,
+                Status = status,
+                Estdate = request.EstDate,
+                Idproject = projectId,
+                Idparent = parentId
+            };
+        }
+
+        await constructionItemRepo.AddAsync(constructionItem, false);
+
+        // Create child items if this is a parent item
+        if (isParent && request.Childs?.Any() == true)
+        {
+            foreach (var child in request.Childs)
+            {
+                await CreateConstructionItemAsync(child, projectId, constructionItem.Id, constructionItemRepo, templateItemRepo, isParent: false);
+            }
+        }
+    }
 }
