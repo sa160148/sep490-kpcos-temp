@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 
 namespace KPCOS.BusinessLayer.DTOs.Response.Projects;
 
@@ -30,4 +31,6 @@ public class ProjectForListResponse
     public DateTime? CreatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? UpdatedAt { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IEnumerable<GetAllStaffForDesignResponse>? Staffs { get; set; } = new List<GetAllStaffForDesignResponse>();
 }

@@ -34,7 +34,11 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
     private string GetDesignRequiredIncludes() => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Designs,Designs.DesignImages";
-    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role)
+
+    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(
+        PaginationFilter filter, 
+        string? userId, 
+        string role)
     {
         var filterOption = new GetAllProjectByRoleRequest();
         var repo = unitOfWork.Repository<Project>();
@@ -110,7 +114,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             {
                 "Quotation" => GetQuotationRequiredIncludes(),
                 "Design" => GetDesignRequiredIncludes(),
-                _ => ""
+                _ => "Package,ProjectStaffs.Staff.User"
             },
             orderBy: null,
             pageIndex: filter.PageNumber,
@@ -176,10 +180,18 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var response = mapper.Map<GetAllProjectForQuotationResponse>(project);
         var userRoles = GetUserRolesInProject(project, userId);
         response.StandOut = DetermineStandOutFlagForQuotation(project, role, userRoles);
+        
+        // Manually map staff list
+        response.Staffs = project.ProjectStaffs
+            .Select(ps => mapper.Map<GetAllStaffForDesignResponse>(ps.Staff))
+            .ToList();
+            
         return response;
     }
 
-    private UserProjectRoles GetUserRolesInProject(Project project, string userId)
+    private UserProjectRoles GetUserRolesInProject(
+        Project project, 
+        string userId)
     {
         var parsedUserId = Guid.Parse(userId);
         var staffProject = project.ProjectStaffs
@@ -227,7 +239,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return false;
     }
 
-    private bool IsAdministratorRole(string? userRole, string? staffRole) =>
+    private bool IsAdministratorRole(
+        string? userRole, 
+        string? staffRole) =>
         userRole == RoleEnum.ADMINISTRATOR.ToString() || 
         staffRole == RoleEnum.ADMINISTRATOR.ToString();
 
@@ -243,7 +257,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return hasOpenQuotation || hasApprovedWithoutActiveContract;
     }
 
-    private bool HasActiveOrProcessingContract(Project project, Guid quotationId) =>
+    private bool HasActiveOrProcessingContract(
+        Project project, 
+        Guid quotationId) =>
         project.Contracts.Any(c => c.QuotationId == quotationId 
                                   && (c.Status == EnumContractStatus.PROCESSING.ToString() ||
                                       c.Status == EnumContractStatus.ACTIVE.ToString()));
@@ -332,7 +348,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return repo.Get(filter: p => p.Customer.UserId == userId).Count();
     }
 
-    public async Task CreateAsync(ProjectRequest request, Guid userId)
+    public async Task CreateAsync(
+        ProjectRequest request, 
+        Guid userId)
     {
         var projectRepo = unitOfWork.Repository<Project>();
         Project? project = mapper.Map<Project>(request);    
@@ -345,7 +363,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         await projectRepo.AddAsync(project);
     }
 
-    public Task<IEnumerable<StaffResponse>> GetsConsultantAsync(PaginationFilter filter, Guid projectId)
+    public Task<IEnumerable<StaffResponse>> GetsConsultantAsync(
+        PaginationFilter filter, 
+        Guid projectId)
     {
         throw new NotImplementedException();
     }
@@ -410,7 +430,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </list>
     /// </exception>
     /// <returns>A task that represents the asynchronous operation</returns>
-    public async Task AssignStaffAsync(Guid projectId, Guid userId)
+    public async Task AssignStaffAsync(
+        Guid projectId, 
+        Guid userId)
     {
         var project = await ValidateAndGetProject(projectId);
         var staff = await ValidateAndGetStaff(userId);
@@ -429,7 +451,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             .Count();
     }
 
-    public async Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(Guid id, GetAllQuotationFilterRequest filter)
+    public async Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(
+        Guid id, 
+        GetAllQuotationFilterRequest filter)
     {
         // First validate project exists
         var project = await IsExistById(id);
@@ -446,7 +470,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             .Get(
                 filter: builder,
                 orderBy: filter.GetOrder(),
-                includeProperties: "QuotationDetails.Service,QuotationEquipments.Equipment",
+                includeProperties: "QuotationDetails.Service,QuotationEquipments.Equipment,Project.ProjectStaffs.Staff.User",
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
             ).ToList();
@@ -536,7 +560,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
-    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, GetAllContractFilterRequest filter)
+    public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(
+        Guid id, 
+        GetAllContractFilterRequest filter)
     {
         // Validate project exists using existing method
         var project = await IsExistById(id);
@@ -576,7 +602,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (contractResponses, contracts.Count());
     }
 
-    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, GetAllDesignFilterRequest filter)
+    public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(
+        Guid id, 
+        GetAllDesignFilterRequest filter)
     {
         // Validate project exists and is active
         await IsExistById(id);
@@ -589,7 +617,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         // Get data with all conditions applied
         var (designs, total) = repo.GetWithCount(
             filter: combinedFilter,
-            includeProperties: "DesignImages",
+            includeProperties: "DesignImages,Project.ProjectStaffs.Staff.User",
             orderBy: filter.GetOrder(),
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
@@ -726,7 +754,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return staff;
     }
 
-    private Task ValidateProjectStatusForStaffAssignment(Project project, Staff staff)
+    private Task ValidateProjectStatusForStaffAssignment(
+        Project project, 
+        Staff staff)
     {
         var allowedAssignments = new Dictionary<string, (string RequiredStatus, string? NewStatus)>
         {
@@ -771,7 +801,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return Task.CompletedTask;
     }
 
-    private async Task AssignStaffAndUpdateStatus(Project project, Staff staff)
+    private async Task AssignStaffAndUpdateStatus(
+        Project project, 
+        Staff staff)
     {
         var projectStaff = new ProjectStaff
         {
@@ -893,7 +925,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// <param name="projectId">Project ID to check</param>
     /// <param name="staffId">Staff ID being assigned but this is actually is UserId in table staff</param>
     /// <exception cref="BadRequestException">Thrown when duplicate position found</exception>
-    private async Task ValidateUniquePositionInProject(Guid projectId, Guid userId)
+    private async Task ValidateUniquePositionInProject(
+        Guid projectId, 
+        Guid userId)
     {
         var staff = unitOfWork.Repository<Staff>()
             .Get(filter: s => s.UserId == userId, includeProperties: "User")
