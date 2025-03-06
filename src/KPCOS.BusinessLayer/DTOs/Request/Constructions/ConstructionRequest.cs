@@ -1,4 +1,4 @@
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.BusinessLayer.DTOs.Request.Constructions;
 
 public class ConstructionRequest
 {
