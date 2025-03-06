@@ -1,4 +1,5 @@
-﻿using KPCOS.Common.Constants;
+﻿using KPCOS.BusinessLayer.DTOs.Response.Users;
+using KPCOS.Common.Constants;
 
 namespace KPCOS.BusinessLayer.DTOs.Response.Designs;
 
@@ -14,4 +15,5 @@ public class GetAllDesignResponse
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? ImageUrl { get; set; } = ImageConstant.BlankImageUrl;
+    public IEnumerable<GetAllStaffForDesignResponse>? Staffs { get; set; }
 }
