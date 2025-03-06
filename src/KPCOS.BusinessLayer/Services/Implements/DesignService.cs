@@ -29,7 +29,9 @@ public class DesignService : IDesignService
     /// <param name="request">The design creation request containing project and image information</param>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="BadRequestException">Thrown when the designer ID is not found in the staff table</exception>
-    public async Task CreateDesignAsync(Guid designerId, CreateDesignRequest request)
+    public async Task CreateDesignAsync(
+        Guid designerId, 
+        CreateDesignRequest request)
     {
         var repo = _unitOfWork.Repository<Design>();
         var design = _mapper.Map<Design>(request);
@@ -50,13 +52,20 @@ public class DesignService : IDesignService
     /// <param name="request">The rejection request containing the reason for rejection</param>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the design is not found</exception>
-    public async Task RejectDesignAsync(Guid id, RejectDesignRequest request)
+    public async Task RejectDesignAsync(
+        Guid id, 
+        RejectDesignRequest request)
     {
         var repo = _unitOfWork.Repository<Design>();
         var design = await repo.SingleOrDefaultAsync(d => d.Id == id);
         if (design == null)
         {
             throw new NotFoundException("Không tìm thấy Design");
+        }
+
+        if (design.Status != EnumDesignStatus.OPENING.ToString())
+        {
+            throw new BadRequestException("Design đang không ở trạng thái mở");
         }
         design.Status = EnumDesignStatus.REJECTED.ToString();
         design.Reason = request.Reason;
@@ -74,7 +83,9 @@ public class DesignService : IDesignService
     /// For managers: Changes design status to PREVIEWING
     /// For customers: Changes design status to CONFIRMED and updates project status to CONSTRUCTING
     /// </remarks>
-    public async Task AcceptDesignAsync(Guid id, string role)
+    public async Task AcceptDesignAsync(
+        Guid id, 
+        string role)
     {
         var repo = _unitOfWork.Repository<Design>();
         var design = await repo.SingleOrDefaultAsync(d => d.Id == id);
@@ -83,11 +94,13 @@ public class DesignService : IDesignService
             throw new NotFoundException("Không tìm thấy Design");
         }
 
-        if (role == RoleEnum.MANAGER.ToString())
+        if (role == RoleEnum.MANAGER.ToString() && 
+            design.Status == EnumDesignStatus.OPENING.ToString())
         {
             design.Status = EnumDesignStatus.PREVIEWING.ToString();
         }
-        if (role == RoleEnum.CUSTOMER.ToString())
+        if (role == RoleEnum.CUSTOMER.ToString() && 
+            design.Status == EnumDesignStatus.PREVIEWING.ToString())
         {
             design.Status = EnumDesignStatus.CONFIRMED.ToString();
             
@@ -116,7 +129,9 @@ public class DesignService : IDesignService
     /// <param name="request">The request containing the reason for the edit</param>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the design is not found</exception>
-    public async Task EditDesignAsync(Guid id, RejectDesignRequest request)
+    public async Task EditDesignAsync(
+        Guid id, 
+        RejectDesignRequest request)
     {
         var repo = _unitOfWork.Repository<Design>();
         var design = await repo.SingleOrDefaultAsync(d => d.Id == id);
@@ -137,7 +152,10 @@ public class DesignService : IDesignService
     /// <param name="request">The update request containing the new design information</param>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the design is not found</exception>
-    public async Task UpdateDesignAsync(Guid id, Guid userId, UpdateDesignRequest request)
+    public async Task UpdateDesignAsync(
+        Guid id, 
+        Guid userId, 
+        UpdateDesignRequest request)
     {
         var repo = _unitOfWork.Repository<Design>();
         var design = await repo.SingleOrDefaultAsync(d => d.Id == id);
@@ -169,7 +187,10 @@ public class DesignService : IDesignService
         return _mapper.Map<GetDesignDetailResponse>(design);
     }
 
-    private async Task UpdateDesignEditingAsync(Design design, Guid userId, UpdateDesignRequest request)
+    private async Task UpdateDesignEditingAsync(
+        Design design, 
+        Guid userId, 
+        UpdateDesignRequest request)
     {
         Design clonedDesign = _mapper.Map<Design>(request);
         clonedDesign.Id = Guid.NewGuid();
@@ -188,7 +209,10 @@ public class DesignService : IDesignService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    private async Task UpdateDesignRejectedAsync(Design design, Guid userId, UpdateDesignRequest request)
+    private async Task UpdateDesignRejectedAsync(
+        Design design, 
+        Guid userId, 
+        UpdateDesignRequest request)
     {
         // Remove existing design images
         var designImageRepo = _unitOfWork.Repository<DesignImage>();
