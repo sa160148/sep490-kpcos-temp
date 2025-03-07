@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class Doc
 {
