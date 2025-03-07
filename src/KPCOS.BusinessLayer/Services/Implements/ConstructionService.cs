@@ -137,9 +137,9 @@ public class ConstructionService : IConstructionServices
 
         // Validate maximum number of special items
         var specialItemCount = request.Items.Count(x => x.IsPayment == true);
-        if (specialItemCount > 3)
+        if (specialItemCount != 3)
         {
-            throw new BadRequestException("Số lượng hạng mục thanh toán không được vượt quá 3");
+            throw new BadRequestException("Số lượng hạng mục thanh toán phải bằng 3");
         }
 
         // Remove existing construction items
