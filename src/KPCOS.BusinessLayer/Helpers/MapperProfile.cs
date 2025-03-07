@@ -28,6 +28,17 @@ public class MapperProfile : Profile
         CreateMap<AuthRequest, User>();
         CreateMap<SignupRequest, User>();
         CreateMap<User, UserResponse>();
+        CreateMap<Staff, GetAllStaffResponse>()
+            .ForMember(dest => dest.Avatar, 
+                opt => opt.MapFrom(src => src.User.Avatar))
+            .ForMember(dest => dest.Id, 
+                opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, 
+                opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position,
+                opt => opt.MapFrom(src => src.Position));
         CreateMap<Staff, GetAllStaffForDesignResponse>()
             .ForMember(dest => dest.Avatar, 
                 opt => opt.MapFrom(src => src.User.Avatar))
@@ -52,7 +63,10 @@ public class MapperProfile : Profile
                 opt => opt.MapFrom(src => new List<StaffResponse>()));
         CreateMap<Project, ProjectForListResponse>()
             .ForMember(dest => dest.PackageName,
-                opt => opt.MapFrom(project => project.Package.Name));
+                opt => opt.MapFrom(project => project.Package.Name))
+                .ForMember(dest => dest.Staffs,
+                opt => opt.MapFrom(project => project.ProjectStaffs.Select(ps => ps.Staff)))
+                ;
         CreateMap<Project, GetAllProjectForQuotationResponse>();
         CreateMap<Project, GetAllProjectForDesignResponse>();
         
@@ -77,7 +91,19 @@ public class MapperProfile : Profile
         CreateMap<Quotation, QuotationForProjectResponse>()
             .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt))
             .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedAt))
-            .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate));
+            .ForMember(dest => dest.TemplateConstructionId, opt => opt.MapFrom(src => src.Idtemplate))
+            .ForMember(dest => dest.Staffs,
+                opt => opt.MapFrom(src => src.Project.ProjectStaffs.Select(ps => ps.Staff)))
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => "Báo giá " + src.Version))
+            ;
+
+        CreateMap<Staff, GetAllStaffResponse>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position))
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.User.Avatar));
 
         CreateMap<Quotation, QuotationResponse>()
             .ForMember(dest => dest.Services, 
@@ -151,6 +177,8 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.ImageUrl, 
                 opt =>
                     opt.MapFrom(src => src.DesignImages.FirstOrDefault()!.ImageUrl))
+            .ForMember(dest => dest.Staffs,
+                opt => opt.MapFrom(src => src.Project.ProjectStaffs.Select(ps => ps.Staff)))
             ;
         CreateMap<DesignImage, GetAllDesignImageResponse>()
             .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
@@ -161,5 +189,13 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Reason, 
                 opt => opt.MapFrom(src => src.Reason ?? ""))
             ;
+
+        // Add mapping for Staff to GetAllStaffForDesignResponse
+        CreateMap<Staff, GetAllStaffForDesignResponse>()
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.User.Avatar))
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position));
     }
 }

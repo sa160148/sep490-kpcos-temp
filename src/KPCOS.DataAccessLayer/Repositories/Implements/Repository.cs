@@ -126,6 +126,11 @@ public class Repository<T> : IRepository<T> where T : class
         return Entities.Find(keyValues);
     }
 
+    public void RemoveRange(List<T> entities)
+    {
+        Entities.RemoveRange(entities);
+    }
+
     public async Task<IQueryable<T>> GetAsync()
     {
         return await (Task<IQueryable<T>>)Entities.AsQueryable();

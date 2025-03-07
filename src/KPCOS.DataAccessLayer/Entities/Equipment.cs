@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class Equipment
 {
@@ -15,7 +12,7 @@ public partial class Equipment
 
     public string Name { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public virtual ICollection<QuotationEquipment> QuotationEquipments { get; set; } = new List<QuotationEquipment>();
 }

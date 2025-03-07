@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class Package
 {
@@ -15,11 +12,11 @@ public partial class Package
 
     public string Name { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public int Price { get; set; }
 
-    public int? Rate { get; set; }
+    public int Rate { get; set; }
 
     public string? Status { get; set; }
 

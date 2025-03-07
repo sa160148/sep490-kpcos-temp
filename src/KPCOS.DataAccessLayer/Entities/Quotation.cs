@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class Quotation
 {
@@ -19,7 +16,7 @@ public partial class Quotation
 
     public int TotalPrice { get; set; }
 
-    public string Reason { get; set; } = "";
+    public string? Reason { get; set; }
 
     public string? Status { get; set; }
 

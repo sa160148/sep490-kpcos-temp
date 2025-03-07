@@ -2,11 +2,21 @@
 --create database kpcos;
 -- database
 
+-- Start transaction to ensure all-or-nothing execution
+BEGIN;
+
+-- Set error handling to abort transaction on any error
+\set ON_ERROR_ROLLBACK on
+\set ON_ERROR_STOP on
+
+-- Set timezone to Bangkok (UTC+7)
+SET timezone = 'Asia/Bangkok';
+
 -- Trigger function to update updated_at column when row is updated
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = NOW();
+    NEW.updated_at = NOW() AT TIME ZONE 'Asia/Bangkok';
     RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
@@ -14,11 +24,11 @@ $$ LANGUAGE 'plpgsql';
 -- create construction template table
 CREATE table construction_template(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     status VARCHAR(255)
 );
 
@@ -33,11 +43,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create construction template item table
 CREATE table construction_template_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     idParent UUID,
     idTemplate UUID NOT NULL,
     estTime INT NOT NULL,
@@ -57,8 +67,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create construction template task table
 CREATE table construction_template_task(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     idTemplateItem UUID NOT NULL,
@@ -77,8 +87,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     email VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -97,8 +107,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create customer table
 CREATE table customer(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     point INT DEFAULT 0,
     address VARCHAR(255) NOT NULL,
@@ -119,8 +129,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create staff table
 CREATE table staff(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     position VARCHAR(255) NOT NULL,
     user_id UUID NOT NULL,
@@ -138,8 +148,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create package item table
 CREATE table package_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL
 );
@@ -155,11 +165,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create package table
 CREATE table package(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     price int NOT NULL,
     rate int not null,
     status VARCHAR(255)
@@ -176,8 +186,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create package detail table
 CREATE table package_detail(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     quantity INT,
     description TEXT,
@@ -198,8 +208,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create project table
 CREATE table project(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     customer_name VARCHAR(255) NOT NULL,
@@ -226,8 +236,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create project staff table
 CREATE table project_staff(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     project_id UUID NOT NULL,
     staff_id UUID NOT NULL,
     FOREIGN KEY (project_id) REFERENCES project(id),
@@ -243,11 +253,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create equipment table
 CREATE table equipment(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL
+    description TEXT
 );
 
 -- Trigger to update updated_at column when row is updated in equipment table
@@ -259,11 +269,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create service table
 CREATE table service(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     type VARCHAR(255) NOT NULL,
     unit VARCHAR(255) NOT NULL,
     price int NOT NULL,
@@ -279,8 +289,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create promotion table
 CREATE table promotion(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     code TEXT NOT NULL,
@@ -299,13 +309,13 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create quotation table
 CREATE table quotation(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     project_id UUID NOT NULL,
     version INT NOT NULL,
     total_price INT NOT NULL,
-    reason TEXT NOT NULL,
+    reason TEXT ,
     status VARCHAR(255),
     promotion_id UUID,
     idTemplate uuid not null,
@@ -323,8 +333,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create quotation detail table
 CREATE table quotation_detail(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     quantity INT NOT NULL,
     price INT NOT NULL,
@@ -345,8 +355,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create quotation equipment table
 CREATE table quotation_equipment(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     quantity INT NOT NULL,
     price INT NOT NULL,
@@ -367,8 +377,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create design table
 CREATE table design(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     version INT NOT NULL,
     reason TEXT,
@@ -390,8 +400,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create design image
 CREATE table design_image(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     image_url VARCHAR(255) NOT NULL,
     design_id UUID NOT NULL,
@@ -407,8 +417,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create docs table
 CREATE table docs(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     url VARCHAR(255) NOT NULL,
@@ -426,8 +436,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create contract table
 CREATE table contract(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     customer_name VARCHAR(255) NOT NULL,
@@ -449,13 +459,16 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create payment batch table
 CREATE table payment_batch(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    total_value INT NOT NULL,
+    total_value DECIMAL NOT NULL,
     is_paid BOOLEAN DEFAULT FALSE,
     contract_id UUID NOT NULL,
+    construction_item_id UUID,
+    payment_phase VARCHAR(255),
+    percents INT,
     FOREIGN KEY (contract_id) REFERENCES contract(id),
     status VARCHAR(255)
 );
@@ -469,8 +482,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create transaction table
 CREATE table transaction(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     customer_id UUID NOT NULL,
     type VARCHAR(255) NOT NULL,
@@ -492,17 +505,18 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create construction item table
 CREATE table construction_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    estDate DATE NOT NULL,
-    actDate DATE,
-    idParent UUID,
-    idProject UUID NOT NULL,
+    description TEXT,
+    estimate_at DATE NOT NULL,
+    actual_at DATE,
+    parent_id UUID,
+    project_id UUID NOT NULL,
+    is_payment BOOLEAN DEFAULT FALSE,
     status VARCHAR(255),
-    FOREIGN KEY (idProject) REFERENCES project(id)
+    FOREIGN KEY (project_id) REFERENCES project(id)
 );
 
 -- Trigger to update updated_at column when row is updated in construction_item table
@@ -514,17 +528,18 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create construction task table
 CREATE table construction_task(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    idConstructionItem UUID NOT NULL,
+    construction_item_id UUID NOT NULL,
     image_url VARCHAR(255),
     reason TEXT,
-    idStaff UUID,
+    staff_id UUID,
+    deadline TIMESTAMPTZ,
     status VARCHAR(255),
-    FOREIGN KEY (idConstructionItem) REFERENCES construction_item(id),
-    FOREIGN KEY (idStaff) REFERENCES staff(id)
+    FOREIGN KEY (construction_item_id) REFERENCES construction_item(id),
+    FOREIGN KEY (staff_id) REFERENCES staff(id)
 );
 
 -- Trigger to update updated_at column when row is updated in construction_task table
@@ -536,11 +551,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create maintenance package table
 CREATE table maintenance_package(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     price_per_unit INT NOT NULL,
     status VARCHAR(255)
 );
@@ -554,11 +569,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create maintenance item table
 CREATE table maintenance_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL
+    description TEXT
 );
 
 -- Trigger to update updated_at column when row is updated in maintenance_item table
@@ -570,8 +585,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create maintenance package item table
 CREATE table maintenance_package_item(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     maintenance_package_id UUID NOT NULL,
     maintenance_item_id UUID NOT NULL,
@@ -588,8 +603,8 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create maintenance request table
 CREATE table maintenance_request(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     customer_id UUID NOT NULL,
     maintenance_package_id UUID NOT NULL,
@@ -607,11 +622,11 @@ EXECUTE FUNCTION update_updated_at_column();
 -- create maintenance request task table
 CREATE table maintenance_request_task(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     maintenance_request_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     staff_id UUID NOT NULL,
     status VARCHAR(255),
     image_url VARCHAR(255),
@@ -624,3 +639,6 @@ CREATE TRIGGER update_maintenance_request_task_updated_at
 BEFORE UPDATE ON maintenance_request_task
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+-- Commit the transaction if everything succeeded
+COMMIT;

@@ -1,4 +1,4 @@
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.BusinessLayer.DTOs.Request.Quotations;
 
 public class QuotationRequest
 {

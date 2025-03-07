@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using KPCOS.Common.Utilities;
+﻿using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -92,31 +90,34 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
-            entity.Property(e => e.Actdate).HasColumnName("actdate");
+            entity.Property(e => e.ActualAt).HasColumnName("actual_at");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Estdate).HasColumnName("estdate");
-            entity.Property(e => e.Idparent).HasColumnName("idparent");
-            entity.Property(e => e.Idproject).HasColumnName("idproject");
+            entity.Property(e => e.EstimateAt).HasColumnName("estimate_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.ParentId).HasColumnName("parent_id");
+            entity.Property(e => e.ProjectId).HasColumnName("project_id");
+            entity.Property(e => e.IsPayment)
+                .HasDefaultValue(false)
+                .HasColumnName("is_payment");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
-            entity.HasOne(d => d.IdprojectNavigation).WithMany(p => p.ConstructionItems)
-                .HasForeignKey(d => d.Idproject)
+            entity.HasOne(d => d.Project).WithMany(p => p.ConstructionItems)
+                .HasForeignKey(d => d.ProjectId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("construction_item_idproject_fkey");
+                .HasConstraintName("construction_item_project_id_fkey");
         });
 
         modelBuilder.Entity<ConstructionTask>(entity =>
@@ -128,11 +129,11 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
+            entity.Property(e => e.ConstructionItemId).HasColumnName("construction_item_id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Idconstructionitem).HasColumnName("idconstructionitem");
-            entity.Property(e => e.Idstaff).HasColumnName("idstaff");
+            entity.Property(e => e.Deadline).HasColumnName("deadline");
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(255)
                 .HasColumnName("image_url");
@@ -143,21 +144,22 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.Reason).HasColumnName("reason");
+            entity.Property(e => e.StaffId).HasColumnName("staff_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
-            entity.HasOne(d => d.IdconstructionitemNavigation).WithMany(p => p.ConstructionTasks)
-                .HasForeignKey(d => d.Idconstructionitem)
+            entity.HasOne(d => d.ConstructionItem).WithMany(p => p.ConstructionTasks)
+                .HasForeignKey(d => d.ConstructionItemId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("construction_task_idconstructionitem_fkey");
+                .HasConstraintName("construction_task_construction_item_id_fkey");
 
-            entity.HasOne(d => d.IdstaffNavigation).WithMany(p => p.ConstructionTasks)
-                .HasForeignKey(d => d.Idstaff)
-                .HasConstraintName("construction_task_idstaff_fkey");
+            entity.HasOne(d => d.Staff).WithMany(p => p.ConstructionTasks)
+                .HasForeignKey(d => d.StaffId)
+                .HasConstraintName("construction_task_staff_id_fkey");
         });
 
         modelBuilder.Entity<ConstructionTemplate>(entity =>
@@ -170,7 +172,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -183,7 +185,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -197,9 +199,10 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Esttime).HasColumnName("esttime");
             entity.Property(e => e.Idparent).HasColumnName("idparent");
             entity.Property(e => e.Idtemplate).HasColumnName("idtemplate");
             entity.Property(e => e.IsActive)
@@ -212,7 +215,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.IdparentNavigation).WithMany(p => p.InverseIdparentNavigation)
@@ -235,7 +238,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Idtemplateitem).HasColumnName("idtemplateitem");
             entity.Property(e => e.IsActive)
@@ -248,7 +251,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.IdtemplateitemNavigation).WithMany(p => p.ConstructionTemplateTasks)
@@ -268,7 +271,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.ContractValue).HasColumnName("contract_value");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerName)
                 .HasMaxLength(255)
@@ -286,7 +289,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Url)
                 .HasMaxLength(255)
@@ -311,7 +314,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("address");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Dob)
                 .HasDefaultValueSql("'2000-01-01'::date")
@@ -326,7 +329,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValue(0)
                 .HasColumnName("point");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -346,7 +349,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -364,7 +367,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Version).HasColumnName("version");
 
@@ -389,7 +392,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.DesignId).HasColumnName("design_id");
             entity.Property(e => e.ImageUrl)
@@ -399,7 +402,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Design).WithMany(p => p.DesignImages)
@@ -418,7 +421,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -431,7 +434,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Url)
                 .HasMaxLength(255)
@@ -453,7 +456,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -463,7 +466,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -477,7 +480,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -487,7 +490,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -501,7 +504,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -515,7 +518,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -529,7 +532,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -537,7 +540,7 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.MaintenanceItemId).HasColumnName("maintenance_item_id");
             entity.Property(e => e.MaintenancePackageId).HasColumnName("maintenance_package_id");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.MaintenanceItem).WithMany(p => p.MaintenancePackageItems)
@@ -561,7 +564,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.IsActive)
@@ -572,7 +575,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.MaintenanceRequests)
@@ -596,7 +599,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.ImageUrl)
@@ -611,7 +614,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.MaintenanceRequest).WithMany(p => p.MaintenanceRequestTasks)
@@ -635,7 +638,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -650,7 +653,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -664,7 +667,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -674,7 +677,7 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.PackageItemId).HasColumnName("package_item_id");
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Package).WithMany(p => p.PackageDetails)
@@ -698,7 +701,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -707,7 +710,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -720,9 +723,10 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
+            entity.Property(e => e.ConstructionItemId).HasColumnName("construction_item_id");
             entity.Property(e => e.ContractId).HasColumnName("contract_id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -733,12 +737,16 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.PaymentPhase)
+                .HasMaxLength(255)
+                .HasColumnName("payment_phase");
+            entity.Property(e => e.Percents).HasColumnName("percents");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.TotalValue).HasColumnName("total_value");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Contract).WithMany(p => p.PaymentBatches)
@@ -761,7 +769,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("address");
             entity.Property(e => e.Area).HasColumnName("area");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.CustomerName)
@@ -787,7 +795,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("status");
             entity.Property(e => e.Templatedesignid).HasColumnName("templatedesignid");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Projects)
@@ -811,12 +819,12 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.ProjectId).HasColumnName("project_id");
             entity.Property(e => e.StaffId).HasColumnName("staff_id");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Project).WithMany(p => p.ProjectStaffs)
@@ -841,7 +849,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.Code).HasColumnName("code");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Discount).HasColumnName("discount");
             entity.Property(e => e.Exptime).HasColumnName("exptime");
@@ -856,7 +864,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -870,7 +878,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Idtemplate).HasColumnName("idtemplate");
             entity.Property(e => e.IsActive)
@@ -884,7 +892,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("status");
             entity.Property(e => e.TotalPrice).HasColumnName("total_price");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Version).HasColumnName("version");
 
@@ -916,7 +924,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("category");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -927,7 +935,7 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.QuotationId).HasColumnName("quotation_id");
             entity.Property(e => e.ServiceId).HasColumnName("service_id");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Quotation).WithMany(p => p.QuotationDetails)
@@ -954,7 +962,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("category");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.EquipmentId).HasColumnName("equipment_id");
             entity.Property(e => e.IsActive)
@@ -965,7 +973,7 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.QuotationId).HasColumnName("quotation_id");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Equipment).WithMany(p => p.QuotationEquipments)
@@ -989,7 +997,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.IsActive)
@@ -1009,7 +1017,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("unit");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
@@ -1023,7 +1031,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -1032,7 +1040,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("position");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -1053,7 +1061,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.Amount).HasColumnName("amount");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.IdDocs).HasColumnName("id_docs");
@@ -1069,7 +1077,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Transactions)
@@ -1096,7 +1104,7 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s'::character varying")
                 .HasColumnName("avatar");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Email)
                 .HasMaxLength(255)
@@ -1117,7 +1125,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
         });
 
