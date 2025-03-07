@@ -514,6 +514,7 @@ CREATE table construction_item(
     actual_at DATE,
     parent_id UUID,
     project_id UUID NOT NULL,
+    is_payment BOOLEAN DEFAULT FALSE,
     status VARCHAR(255),
     FOREIGN KEY (project_id) REFERENCES project(id)
 );

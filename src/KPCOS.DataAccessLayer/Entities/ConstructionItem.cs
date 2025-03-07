@@ -22,6 +22,8 @@ public partial class ConstructionItem
 
     public Guid ProjectId { get; set; }
 
+    public bool? IsPayment { get; set; }
+    
     public string? Status { get; set; }
 
     public virtual ICollection<ConstructionTask> ConstructionTasks { get; set; } = new List<ConstructionTask>();

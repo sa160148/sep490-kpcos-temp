@@ -104,6 +104,9 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.ParentId).HasColumnName("parent_id");
             entity.Property(e => e.ProjectId).HasColumnName("project_id");
+            entity.Property(e => e.IsPayment)
+                .HasDefaultValue(false)
+                .HasColumnName("is_payment");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
