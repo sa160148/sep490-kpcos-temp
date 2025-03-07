@@ -2,7 +2,7 @@
 
 public class CreateConstructionItemRequest
 {
-    public DateOnly EstDate { get; set; }
+    public DateOnly EstimateAt { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
     public bool? IsPayment { get; set; }
