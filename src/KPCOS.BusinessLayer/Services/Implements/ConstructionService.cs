@@ -27,68 +27,100 @@ public class ConstructionService : IConstructionServices
         throw new NotFoundException("Dự án không tồn tại");
     }
     
-    // remove all construction item of project
-
-    var constructionItemRaw =  constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
+    // Validate maximum number of special items
+    var specialItemCount = request.Items.Count(x => x.IsPayment);
+    if (specialItemCount > 3)
+    {
+        throw new BadRequestException("Số lượng hạng mục thanh toán không được vượt quá 3");
+    }
+    
+    // Remove all construction items of project
+    var constructionItemRaw = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
     foreach (var item in constructionItemRaw)
     {
         await constructionItemRepo.RemoveAsync(item, false);
     }
     
+    // Create new construction items
     foreach (var item in request.Items)
     {
-        var constructionTemplateItemRaw =
-            await constructionTemplateItemRepo.FirstOrDefaultAsync(x => x.Id == item.TemplateItemId);
-        if (constructionTemplateItemRaw == null)
-        {
-            throw new NotFoundException("Mẫu công trình không tồn tại");
-        }
-
-     
-        var constructionItem = new ConstructionItem
-        {
-            Id = Guid.NewGuid(),
-            Name = constructionTemplateItemRaw.Name,
-            Description = constructionTemplateItemRaw.Description,
-            Status = item.IsPayment ? EnumConstructionItem.SPECIAL.ToString() : EnumConstructionItem.NORMAL.ToString(),
-            EstimateAt = item.EstDate,
-            ProjectId = request.ProjectId,
-        };
-        
-        await constructionItemRepo.AddAsync(constructionItem, false);
-
-        foreach (var child in item.Child)
-        {
-           
-            var constructionTemplateItemChildRaw = await constructionTemplateItemRepo.FindAsync(child.TemplateItemId);
-            
-            if (constructionTemplateItemChildRaw == null)
-            {
-                throw new NotFoundException("Mẫu công trình không tồn tại");
-            }
-            
-            var constructionItemChild = new ConstructionItem
-            {
-                Id = Guid.NewGuid(),
-                Name = constructionTemplateItemChildRaw.Name,
-                Description = constructionTemplateItemChildRaw.Description,
-                Status = child.IsPayment ? EnumConstructionItem.SPECIAL.ToString() : EnumConstructionItem.NORMAL.ToString(),
-                EstimateAt = child.EstDate,
-                ProjectId = request.ProjectId,
-                ParentId = constructionItem.Id
-            };
-            
-            await constructionItemRepo.AddAsync(constructionItemChild, false);
-        }
-        
+        await CreateConstructionItemFromRequestAsync(item, request.ProjectId, null, constructionItemRepo, constructionTemplateItemRepo, true);
     }
-
-  
-   
-   
     
     await _unitOfWork.SaveChangesAsync();
 }
+
+    private async Task CreateConstructionItemFromRequestAsync(
+        ConstructionRequest.Item request,
+        Guid projectId,
+        Guid? parentId,
+        IRepository<ConstructionItem> constructionItemRepo,
+        IRepository<ConstructionTemplateItem> templateItemRepo,
+        bool isParent)
+    {
+        // All items now have OPENING status
+        string status = EnumConstructionItemStatus.OPENING.ToString();
+        
+        // Only parent items can have isPayment=true, child items always have isPayment=false
+        bool isPayment = isParent && request.IsPayment;
+        
+        ConstructionItem constructionItem;
+        
+        // Check if we should use template data
+        if (request.TemplateItemId != Guid.Empty)
+        {
+            // Get data from template
+            var templateItem = await templateItemRepo.FindAsync(request.TemplateItemId);
+            if (templateItem == null)
+            {
+                throw new NotFoundException($"Mẫu công trình với ID {request.TemplateItemId} không tồn tại");
+            }
+            
+            // Create item using template data but with EstimateAt and IsPayment from request
+            constructionItem = new ConstructionItem
+            {
+                Id = Guid.NewGuid(),
+                Name = templateItem.Name,
+                Description = templateItem.Description,
+                Status = status,
+                EstimateAt = request.EstDate,
+                IsPayment = isPayment,
+                ProjectId = projectId,
+                ParentId = parentId,
+                IsActive = true,
+                CreatedAt = DateTime.Now
+            };
+        }
+        else
+        {
+            // For custom items without template, we need to provide default values
+            // since ConstructionRequest.Item doesn't have Name and Description
+            constructionItem = new ConstructionItem
+            {
+                Id = Guid.NewGuid(),
+                Name = $"Construction Item {Guid.NewGuid().ToString().Substring(0, 8)}",
+                Description = "Custom construction item",
+                Status = status,
+                EstimateAt = request.EstDate,
+                IsPayment = isPayment,
+                ProjectId = projectId,
+                ParentId = parentId,
+                IsActive = true,
+                CreatedAt = DateTime.Now
+            };
+        }
+        
+        await constructionItemRepo.AddAsync(constructionItem, false);
+        
+        // Create child items if this is a parent item
+        if (isParent && request.Child?.Any() == true)
+        {
+            foreach (var child in request.Child)
+            {
+                await CreateConstructionItemFromRequestAsync(child, projectId, constructionItem.Id, constructionItemRepo, templateItemRepo, false);
+            }
+        }
+    }
 
     public async Task CreateConstructionV2Async(CreateConstructionRequest request)
     {
@@ -136,10 +168,11 @@ public class ConstructionService : IConstructionServices
     {
         ConstructionItem constructionItem;
 
-        // Determine status - child items are always NORMAL
-        string status = isParent && request.IsPayment == true 
-            ? EnumConstructionItem.SPECIAL.ToString() 
-            : EnumConstructionItem.NORMAL.ToString();
+        // All items now have OPENING status
+        string status = EnumConstructionItemStatus.OPENING.ToString();
+        
+        // Only parent items can have isPayment=true, child items always have isPayment=false
+        bool isPayment = isParent && request.IsPayment == true;
 
         if (request.TemplateItemId.HasValue)
         {
@@ -156,7 +189,8 @@ public class ConstructionService : IConstructionServices
                 Name = templateItem.Name,
                 Description = templateItem.Description,
                 Status = status,
-                EstimateAt = request.EstDate,
+                EstimateAt = request.EstimateAt,
+                IsPayment = isPayment,
                 ProjectId = projectId,
                 ParentId = parentId
             };
@@ -170,7 +204,8 @@ public class ConstructionService : IConstructionServices
                 Name = request.Name,
                 Description = request.Description,
                 Status = status,
-                EstimateAt = request.EstDate,
+                EstimateAt = request.EstimateAt,
+                IsPayment = isPayment,
                 ProjectId = projectId,
                 ParentId = parentId
             };

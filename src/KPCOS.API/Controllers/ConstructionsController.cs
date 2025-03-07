@@ -36,9 +36,13 @@ public class ConstructionsController  : BaseController
     /// This endpoint creates a hierarchical structure of construction items for a project.
     /// - Supports up to 2 levels (parent and child items)
     /// - Maximum 3 parent items can have payment status (isPayment: true)
-    /// - Child items always have normal status
+    /// - All items are created with status OPENING
+    /// - Only parent (level 1) items can have isPayment=true
+    /// - Child (level 2) items always have isPayment=false
     /// - Existing construction items for the project will be removed
-    /// - The templateItemId can be null for custom items that not from templates
+    /// - Items can be based on templates or custom-defined
+    /// - When templateItemId is provided, name and description are taken from the template
+    /// - When templateItemId is null, custom name and description are used
     /// 
     /// Sample request:
     /// 
@@ -48,79 +52,80 @@ public class ConstructionsController  : BaseController
     ///                 "childs": [
     ///                     {
     ///                         "childs": null,
-    ///                         "description": "Đào móng nhà",
-    ///                         "estDate": "2023-12-20",
+    ///                         "description": "Lợp ngói mái nhà",
+    ///                         "estimateAt": "2024-02-20",
     ///                         "isPayment": false,
-    ///                         "name": "Đào móng",
-    ///                         "templateItemId": null
-    ///                     },
-    ///                     {
-    ///                         "childs": null,
-    ///                         "description": "Đổ bê tông móng nhà",
-    ///                         "estDate": "2023-12-25",
-    ///                         "isPayment": false,
-    ///                         "name": "Đổ bê tông móng",
-    ///                         "templateItemId": null
-    ///                     }
-    ///                 ],
-    ///                 "description": "Xây dựng móng nhà",
-    ///                 "estDate": "2023-12-15",
-    ///                 "isPayment": true,
-    ///                 "name": "Móng nhà",
-    ///                 "templateItemId": null
-    ///             },
-    ///             {
-    ///                 "childs": [
-    ///                     {
-    ///                         "childs": null,
-    ///                         "description": "Xây tường gạch nhà",
-    ///                         "estDate": "2024-01-15",
-    ///                         "isPayment": false,
-    ///                         "name": "Xây tường gạch",
-    ///                         "templateItemId": null
-    ///                     },
-    ///                     {
-    ///                         "childs": null,
-    ///                         "description": "Trát tường nhà",
-    ///                         "estDate": "2024-01-20",
-    ///                         "isPayment": false,
-    ///                         "name": "Trát tường",
-    ///                         "templateItemId": null
-    ///                     }
-    ///                 ],
-    ///                 "description": "Xây dựng tường nhà",
-    ///                 "estDate": "2024-01-10",
-    ///                 "isPayment": true,
-    ///                 "name": "Tường nhà",
-    ///                 "templateItemId": null
-    ///             },
-    ///             {
-    ///                 "childs": [
-    ///                     {
-    ///                         "childs": null,
-    ///                         "description": "Đổ bê tông mái nhà",
-    ///                         "estDate": "2024-02-15",
-    ///                         "isPayment": false,
-    ///                         "name": "Đổ bê tông mái",
-    ///                         "templateItemId": null
+    ///                         "name": "Lợp ngói",
+    ///                         "templateItemId": "5cd50ec1-a85c-4be5-9dd6-2d7440b83394"
     ///                     },
     ///                     {
     ///                         "childs": null,
     ///                         "description": "Lợp ngói mái nhà",
-    ///                         "estDate": "2024-02-20",
+    ///                         "estimateAt": "2024-02-20",
     ///                         "isPayment": false,
     ///                         "name": "Lợp ngói",
     ///                         "templateItemId": null
     ///                     }
     ///                 ],
     ///                 "description": "Xây dựng mái nhà",
-    ///                 "estDate": "2024-02-10",
+    ///                 "estimateAt": "2024-02-10",
+    ///                 "isPayment": false,
+    ///                 "name": null,
+    ///                 "templateItemId": "7b2c1c48-776f-49a0-86c5-25e9ec628f17"
+    ///             },
+    ///             {
+    ///                 "childs": [
+    ///                     {
+    ///                         "childs": null,
+    ///                         "description": "Lợp ngói mái nhà",
+    ///                         "estimateAt": "2024-02-20",
+    ///                         "isPayment": false,
+    ///                         "name": "Lợp ngói",
+    ///                         "templateItemId": "d2a7cdeb-857c-45ed-bb45-ad185c356f93"
+    ///                     }
+    ///                 ],
+    ///                 "description": "Xây dựng mái nhà",
+    ///                 "estimateAt": "2024-02-10",
     ///                 "isPayment": true,
-    ///                 "name": "Mái nhà",
-    ///                 "templateItemId": null
+    ///                 "name": null,
+    ///                 "templateItemId": "6d664fdd-20b5-473a-bb3c-b8395884452b"
+    ///             },
+    ///             {
+    ///                 "childs": [
+    ///                     {
+    ///                         "childs": null,
+    ///                         "description": "Trát tường nhà",
+    ///                         "estimateAt": "2024-01-20",
+    ///                         "isPayment": false,
+    ///                         "name": "Trát tường",
+    ///                         "templateItemId": "7e7a3d26-2c0b-4ad2-a95b-bf62838d5e32"
+    ///                     }
+    ///                 ],
+    ///                 "description": "Xây dựng tường nhà",
+    ///                 "estimateAt": "2024-01-10",
+    ///                 "isPayment": true,
+    ///                 "name": null,
+    ///                 "templateItemId": "6d664fdd-20b5-473a-bb3c-b8395884452b"
+    ///             },
+    ///             {
+    ///                 "childs": [
+    ///                     {
+    ///                         "childs": null,
+    ///                         "description": "Lợp ngói mái nhà",
+    ///                         "estimateAt": "2024-02-20",
+    ///                         "isPayment": false,
+    ///                         "name": "Lợp ngói",
+    ///                         "templateItemId": "d2a7cdeb-857c-45ed-bb45-ad185c356f93"
+    ///                     }
+    ///                 ],
+    ///                 "description": "Xây dựng mái nhà",
+    ///                 "estimateAt": "2024-02-10",
+    ///                 "isPayment": true,
+    ///                 "name": null,
+    ///                 "templateItemId": "6d664fdd-20b5-473a-bb3c-b8395884452b"
     ///             }
     ///         ],
-    ///         "projectId": "44124f32-7de7-4feb-a8cd-51f19cfa83ab"
+    ///         "projectId": "6e843e92-e55f-414c-a2e7-d52afe8251ce"
     ///     }
     /// </remarks>
     /// <response code="200">Construction items created successfully</response>
