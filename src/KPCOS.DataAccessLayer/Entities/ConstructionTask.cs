@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class ConstructionTask
 {
@@ -15,17 +12,19 @@ public partial class ConstructionTask
 
     public string Name { get; set; } = null!;
 
-    public Guid Idconstructionitem { get; set; }
+    public Guid ConstructionItemId { get; set; }
 
     public string? ImageUrl { get; set; }
 
     public string? Reason { get; set; }
 
-    public Guid? Idstaff { get; set; }
+    public Guid? StaffId { get; set; }
+
+    public DateTime? Deadline { get; set; }
 
     public string? Status { get; set; }
 
-    public virtual ConstructionItem IdconstructionitemNavigation { get; set; } = null!;
+    public virtual ConstructionItem ConstructionItem { get; set; } = null!;
 
-    public virtual Staff? IdstaffNavigation { get; set; }
+    public virtual Staff? Staff { get; set; }
 }

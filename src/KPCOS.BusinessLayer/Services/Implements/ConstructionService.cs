@@ -29,7 +29,7 @@ public class ConstructionService : IConstructionServices
     
     // remove all construction item of project
 
-    var constructionItemRaw =  constructionItemRepo.Get(x => x.Idproject == request.ProjectId).ToList();
+    var constructionItemRaw =  constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
     foreach (var item in constructionItemRaw)
     {
         await constructionItemRepo.RemoveAsync(item, false);
@@ -51,8 +51,8 @@ public class ConstructionService : IConstructionServices
             Name = constructionTemplateItemRaw.Name,
             Description = constructionTemplateItemRaw.Description,
             Status = item.IsPayment ? EnumConstructionItem.SPECIAL.ToString() : EnumConstructionItem.NORMAL.ToString(),
-            Estdate = item.EstDate,
-            Idproject = request.ProjectId,
+            EstimateAt = item.EstDate,
+            ProjectId = request.ProjectId,
         };
         
         await constructionItemRepo.AddAsync(constructionItem, false);
@@ -73,9 +73,9 @@ public class ConstructionService : IConstructionServices
                 Name = constructionTemplateItemChildRaw.Name,
                 Description = constructionTemplateItemChildRaw.Description,
                 Status = child.IsPayment ? EnumConstructionItem.SPECIAL.ToString() : EnumConstructionItem.NORMAL.ToString(),
-                Estdate = child.EstDate,
-                Idproject = request.ProjectId,
-                Idparent = constructionItem.Id
+                EstimateAt = child.EstDate,
+                ProjectId = request.ProjectId,
+                ParentId = constructionItem.Id
             };
             
             await constructionItemRepo.AddAsync(constructionItemChild, false);
@@ -111,7 +111,7 @@ public class ConstructionService : IConstructionServices
         }
 
         // Remove existing construction items
-        var existingItems = constructionItemRepo.Get(x => x.Idproject == request.ProjectId).ToList();
+        var existingItems = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
         foreach (var item in existingItems)
         {
             await constructionItemRepo.RemoveAsync(item, false);
@@ -156,9 +156,9 @@ public class ConstructionService : IConstructionServices
                 Name = templateItem.Name,
                 Description = templateItem.Description,
                 Status = status,
-                Estdate = request.EstDate,
-                Idproject = projectId,
-                Idparent = parentId
+                EstimateAt = request.EstDate,
+                ProjectId = projectId,
+                ParentId = parentId
             };
         }
         else
@@ -170,9 +170,9 @@ public class ConstructionService : IConstructionServices
                 Name = request.Name,
                 Description = request.Description,
                 Status = status,
-                Estdate = request.EstDate,
-                Idproject = projectId,
-                Idparent = parentId
+                EstimateAt = request.EstDate,
+                ProjectId = projectId,
+                ParentId = parentId
             };
         }
 

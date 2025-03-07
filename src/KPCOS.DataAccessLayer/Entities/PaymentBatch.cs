@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class PaymentBatch
 {
@@ -15,11 +12,17 @@ public partial class PaymentBatch
 
     public string Name { get; set; } = null!;
 
-    public int TotalValue { get; set; }
+    public decimal TotalValue { get; set; }
 
-    public bool? IsPaid { get; set; } = false;
+    public bool? IsPaid { get; set; }
 
     public Guid ContractId { get; set; }
+
+    public Guid? ConstructionItemId { get; set; }
+
+    public string? PaymentPhase { get; set; }
+
+    public int? Percents { get; set; }
 
     public string? Status { get; set; }
 

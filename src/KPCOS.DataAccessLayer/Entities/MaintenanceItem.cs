@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KPCOS.DataAccessLayer.Entities;
+﻿namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class MaintenanceItem
 {
@@ -15,7 +12,7 @@ public partial class MaintenanceItem
 
     public string Name { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public virtual ICollection<MaintenancePackageItem> MaintenancePackageItems { get; set; } = new List<MaintenancePackageItem>();
 }
