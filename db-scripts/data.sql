@@ -1,5 +1,4 @@
 BEGIN;
-use kpcos;
 \set ON_ERROR_ROLLBACK on
 \set ON_ERROR_STOP on
 
@@ -55,7 +54,17 @@ values  ('1d31fcfc-df50-4433-989e-5e368bb05c3b', '2025-02-23 07:29:18.264121 +00
         ('bd48a079-c277-4094-810f-48c4415a3092', '2025-02-24 04:36:18.986220 +00:00', '2025-02-24 04:36:18.986220 +00:00', true, 'đào đất'),
         ('ccc8fa55-e635-4039-91c7-09dd51ec65f1', '2025-02-24 04:36:41.402277 +00:00', '2025-02-24 04:36:41.402277 +00:00', true, 'cuộn thép ');
 
-        insert into public.construction_template_item (id, created_at, updated_at, is_active, name, description, idparent, idtemplate, esttime, status)
+        insert into public.construction_template (id, created_at, updated_at, is_active, name, description, status)
+values  ('e3523820-5596-48d0-ab06-ee74ac26ce13', '2025-02-24 08:43:18.792468 +00:00', '2025-02-24 08:43:18.792468 +00:00', true, 'Template Thi Công Hồ Koi Chuẩn', 'Template Thi Công Hồ Koi Chuẩn', null),
+        ('e97146bb-bd95-4478-8cdb-25273e6453fb', '2025-02-24 10:44:19.087083 +00:00', '2025-02-24 10:44:19.087083 +00:00', true, 'sdas', 'sadsad', null),
+        ('f3159543-86f9-4099-aee1-ac8a04e8e015', '2025-02-24 10:44:49.725798 +00:00', '2025-02-24 10:44:49.725798 +00:00', true, 's', '2132', null),
+        ('c05e738c-d49c-4c23-bfe0-729fb806ff72', '2025-02-24 10:44:57.806168 +00:00', '2025-02-24 10:44:57.806168 +00:00', true, 's23123', '2132', null),
+        ('7d81b975-d3d0-43ee-8c16-d7ec96089817', '2025-02-24 10:45:36.430685 +00:00', '2025-02-24 10:45:36.430685 +00:00', true, 'sdad', 'sadas', null),
+        ('f942862d-388a-4d6b-bd79-f3a3075440bc', '2025-02-24 15:47:27.482218 +00:00', '2025-02-24 15:47:27.482218 +00:00', true, 'abcde', 'a', null),
+        ('15f882f9-af13-449e-84b8-2da272d2e005', '2025-02-26 06:30:31.907929 +00:00', '2025-02-26 06:30:31.907929 +00:00', true, 'Template Construction 1', 'Description 1', null),
+        ('222ea727-e39b-4210-aafa-a6b79e836496', '2025-03-06 10:32:11.541466 +00:00', '2025-03-06 10:32:11.541466 +00:00', true, '123134', '12341', null);
+
+insert into public.construction_template_item (id, created_at, updated_at, is_active, name, description, idparent, idtemplate, esttime, status)
 values  ('6d664fdd-20b5-473a-bb3c-b8395884452b', '2025-02-24 08:44:09.438677 +00:00', '2025-02-24 08:44:09.438677 +00:00', true, 'Đào đất', 'Đào đất', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13', 0, null),
         ('e3f13acd-eb9a-4d5d-83fa-b8b2d883d2f5', '2025-02-24 11:42:41.280238 +00:00', '2025-02-24 11:42:41.280238 +00:00', true, 'asd', 'asdas', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13', 0, null),
         ('6e64443e-befc-4d90-a917-e01981987008', '2025-02-24 12:00:39.853500 +00:00', '2025-02-24 12:00:39.853500 +00:00', true, 'Đen', '121', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13', 0, null),
@@ -73,17 +82,31 @@ values  ('6d664fdd-20b5-473a-bb3c-b8395884452b', '2025-02-24 08:44:09.438677 +00
         ('8b21b21d-4677-4ec5-973e-14a27ea2c79c', '2025-02-24 16:57:51.243573 +00:00', '2025-02-24 16:57:51.243573 +00:00', true, '12345a', 'a', '6e64443e-befc-4d90-a917-e01981987008', 'e3523820-5596-48d0-ab06-ee74ac26ce13', 0, null),
         ('7e7a3d26-2c0b-4ad2-a95b-bf62838d5e32', '2025-02-24 17:40:12.311823 +00:00', '2025-02-24 17:40:12.311823 +00:00', true, '12345a', '1', '6d664fdd-20b5-473a-bb3c-b8395884452b', 'e3523820-5596-48d0-ab06-ee74ac26ce13', 0, null);
 
-        insert into public.construction_template (id, created_at, updated_at, is_active, name, description, status)
-values  ('e3523820-5596-48d0-ab06-ee74ac26ce13', '2025-02-24 08:43:18.792468 +00:00', '2025-02-24 08:43:18.792468 +00:00', true, 'Template Thi Công Hồ Koi Chuẩn', 'Template Thi Công Hồ Koi Chuẩn', null),
-        ('e97146bb-bd95-4478-8cdb-25273e6453fb', '2025-02-24 10:44:19.087083 +00:00', '2025-02-24 10:44:19.087083 +00:00', true, 'sdas', 'sadsad', null),
-        ('f3159543-86f9-4099-aee1-ac8a04e8e015', '2025-02-24 10:44:49.725798 +00:00', '2025-02-24 10:44:49.725798 +00:00', true, 's', '2132', null),
-        ('c05e738c-d49c-4c23-bfe0-729fb806ff72', '2025-02-24 10:44:57.806168 +00:00', '2025-02-24 10:44:57.806168 +00:00', true, 's23123', '2132', null),
-        ('7d81b975-d3d0-43ee-8c16-d7ec96089817', '2025-02-24 10:45:36.430685 +00:00', '2025-02-24 10:45:36.430685 +00:00', true, 'sdad', 'sadas', null),
-        ('f942862d-388a-4d6b-bd79-f3a3075440bc', '2025-02-24 15:47:27.482218 +00:00', '2025-02-24 15:47:27.482218 +00:00', true, 'abcde', 'a', null),
-        ('15f882f9-af13-449e-84b8-2da272d2e005', '2025-02-26 06:30:31.907929 +00:00', '2025-02-26 06:30:31.907929 +00:00', true, 'Template Construction 1', 'Description 1', null),
-        ('222ea727-e39b-4210-aafa-a6b79e836496', '2025-03-06 10:32:11.541466 +00:00', '2025-03-06 10:32:11.541466 +00:00', true, '123134', '12341', null);
+        insert into public.package (id, created_at, updated_at, is_active, name, description, price, rate, status)
+values  ('4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '2025-02-23 08:02:22.808201 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 'Package 121', 'Description 1', 100, 0, null),
+        ('053619c8-720e-4baa-bf5e-b0076cf93618', '2025-02-24 08:36:18.719567 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 'Ngow Ngow', 'sdjalsdjlakdaskjdsakjdh', 1231323123, 0, null),
+        ('b8469d8c-91d6-42ad-9242-884c8368d388', '2025-02-24 08:12:19.588494 +00:00', '2025-02-25 07:46:57.596296 +00:00', true, '22', '22', 1000000, 0, null);
 
-        insert into public.design (id, created_at, updated_at, is_active, version, reason, status, is_public, project_id, staff_id, type)
+        insert into public.package_detail (id, created_at, updated_at, is_active, quantity, description, package_id, package_item_id)
+values  ('30b1b37f-882c-4cf8-b453-ab4485e9d1e9', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 0, '', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', 'bd48a079-c277-4094-810f-48c4415a3092'),
+        ('3adb1610-a80c-44e0-a696-92485b4f294d', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 213, '3123', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '1d31fcfc-df50-4433-989e-5e368bb05c3b'),
+        ('5b4b32a4-6f89-45a7-a949-192af66e2ff9', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 0, '', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1'),
+        ('de60bb76-4930-4c25-92f4-ed3dbf055de6', '2025-02-24 11:05:16.652292 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 2, 'ssss23131', '053619c8-720e-4baa-bf5e-b0076cf93618', 'bd48a079-c277-4094-810f-48c4415a3092'),
+        ('e5cc7b3c-958f-497a-b8eb-360ef10c79c5', '2025-02-24 11:05:16.652292 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 3, 'nkjn', '053619c8-720e-4baa-bf5e-b0076cf93618', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1'),
+        ('de77141f-33be-489f-98b8-8e8b5804ae99', '2025-02-25 07:46:57.596296 +00:00', '2025-02-25 07:46:57.596296 +00:00', true, 0, '', 'b8469d8c-91d6-42ad-9242-884c8368d388', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1');
+
+        insert into public.project (id, created_at, updated_at, is_active, name, customer_name, address, phone, email, area, depth, package_id, note, status, customer_id, templatedesignid)
+values  ('d5b59f1c-c6d1-473d-8f33-b56f85a54541', '2025-02-26 07:32:56.773818 +00:00', '2025-02-26 07:32:56.773818 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'root@gmail.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('aa0d8ad7-9483-4611-8704-9c7578b04535', '2025-02-26 07:36:04.962402 +00:00', '2025-02-26 07:36:04.962402 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('7ff6b21d-10fe-443b-898b-7bf0fcf84a38', '2025-02-26 07:46:01.079255 +00:00', '2025-02-26 07:46:01.079255 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('a0949c9f-22c1-4d81-ae19-63f9a74b4fea', '2025-02-26 07:48:35.781225 +00:00', '2025-02-26 07:48:35.781225 +00:00', true, 'Viet project', 'Viet', '671 street, Tan Phu, Phường 05, Quận 5, Thành phố Hồ Chí Minh', '0911413402', 'guest1@example.com', 23, 313, 'b8469d8c-91d6-42ad-9242-884c8368d388', 'sada', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('1d047e21-7b0e-447e-8d31-2ba5d25c1668', '2025-02-26 07:43:35.666068 +00:00', '2025-03-03 00:36:37.129508 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'PROCESSING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('1f6199da-9be8-4fba-b5ad-9c2319ffd451', '2025-02-28 06:59:42.284604 +00:00', '2025-03-03 03:41:14.423201 +00:00', true, '123 project', '123', '123 aaa, Phường Tăng Nhơn Phú A, Quận 9, Thành phố Hồ Chí Minh', '123', '12@gmail.com', 12, 12, '053619c8-720e-4baa-bf5e-b0076cf93618', '1231234', 'PROCESSING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('53ab987b-424c-4c22-89a5-17feb4c1d65c', '2025-02-26 07:35:56.155120 +00:00', '2025-03-03 07:44:43.511318 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'DESIGNING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
+        ('af80b1cf-6f1a-40dd-943c-0ce2dc112fd6', '2025-03-06 03:51:01.353528 +00:00', '2025-03-06 03:51:01.353528 +00:00', true, 'abc project', 'abc', 'nha que, Phường 05, Quận Gò Vấp, Thành phố Hồ Chí Minh', '123', 'abc@gmail.com', 12, 22, '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '', 'REQUESTING', '6c26c8fa-7a97-4b2a-b5f7-83e1cf0ca807', null),
+        ('6e843e92-e55f-414c-a2e7-d52afe8251ce', '2025-02-26 07:38:41.180115 +00:00', '2025-03-06 04:39:58.280472 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'CONSTRUCTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null);
+
+insert into public.design (id, created_at, updated_at, is_active, version, reason, status, is_public, project_id, staff_id, type)
 values  ('c87b6324-cc1d-4dcb-a882-8d0f54e59c9d', '2025-03-05 10:27:55.623188 +00:00', '2025-03-05 10:27:55.623188 +00:00', true, 1, null, 'OPENING', false, '6e843e92-e55f-414c-a2e7-d52afe8251ce', '6931f272-f094-44ca-9fd4-6797f5d9a30a', '3D'),
         ('c5ad3f80-1357-498c-a26a-78d38bc09982', '2025-03-05 10:28:28.872176 +00:00', '2025-03-05 10:28:28.872176 +00:00', true, 1, null, 'OPENING', false, '6e843e92-e55f-414c-a2e7-d52afe8251ce', '6931f272-f094-44ca-9fd4-6797f5d9a30a', '3D'),
         ('379f88d5-aca1-4b28-816d-de47827ea007', '2025-03-05 10:32:03.532773 +00:00', '2025-03-05 10:32:03.532773 +00:00', true, 1, null, 'OPENING', false, '6e843e92-e55f-414c-a2e7-d52afe8251ce', '6931f272-f094-44ca-9fd4-6797f5d9a30a', '3D'),
@@ -126,30 +149,6 @@ values  ('4fc98917-9ae4-43c8-a051-448856ea9aab', '2025-03-05 09:33:45.118138 +00
         ('5555bde5-1bb9-465c-ae27-239f27f9a6d1', '2025-03-06 01:50:19.244102 +00:00', '2025-03-06 01:50:19.250083 +00:00', true, 'https://res.cloudinary.com/dxztbchud/image/upload/v1741225818/image_jbalu8.png', '585b2195-49a0-4845-8732-515f4a54f138'),
         ('3f505b79-1660-4fe3-9d96-4f35c10c60fa', '2025-03-06 08:33:18.583408 +00:00', '2025-03-06 08:33:18.590728 +00:00', true, 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg', 'b8344862-7001-423e-9e2c-ebe7ddb3f561');
 
-        insert into public.package (id, created_at, updated_at, is_active, name, description, price, rate, status)
-values  ('4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '2025-02-23 08:02:22.808201 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 'Package 121', 'Description 1', 100, 0, null),
-        ('053619c8-720e-4baa-bf5e-b0076cf93618', '2025-02-24 08:36:18.719567 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 'Ngow Ngow', 'sdjalsdjlakdaskjdsakjdh', 1231323123, 0, null),
-        ('b8469d8c-91d6-42ad-9242-884c8368d388', '2025-02-24 08:12:19.588494 +00:00', '2025-02-25 07:46:57.596296 +00:00', true, '22', '22', 1000000, 0, null);
-
-        insert into public.package_detail (id, created_at, updated_at, is_active, quantity, description, package_id, package_item_id)
-values  ('30b1b37f-882c-4cf8-b453-ab4485e9d1e9', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 0, '', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', 'bd48a079-c277-4094-810f-48c4415a3092'),
-        ('3adb1610-a80c-44e0-a696-92485b4f294d', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 213, '3123', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '1d31fcfc-df50-4433-989e-5e368bb05c3b'),
-        ('5b4b32a4-6f89-45a7-a949-192af66e2ff9', '2025-02-24 08:59:48.011355 +00:00', '2025-02-24 08:59:48.011355 +00:00', true, 0, '', '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1'),
-        ('de60bb76-4930-4c25-92f4-ed3dbf055de6', '2025-02-24 11:05:16.652292 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 2, 'ssss23131', '053619c8-720e-4baa-bf5e-b0076cf93618', 'bd48a079-c277-4094-810f-48c4415a3092'),
-        ('e5cc7b3c-958f-497a-b8eb-360ef10c79c5', '2025-02-24 11:05:16.652292 +00:00', '2025-02-24 11:05:16.652292 +00:00', true, 3, 'nkjn', '053619c8-720e-4baa-bf5e-b0076cf93618', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1'),
-        ('de77141f-33be-489f-98b8-8e8b5804ae99', '2025-02-25 07:46:57.596296 +00:00', '2025-02-25 07:46:57.596296 +00:00', true, 0, '', 'b8469d8c-91d6-42ad-9242-884c8368d388', 'ccc8fa55-e635-4039-91c7-09dd51ec65f1');
-
-        insert into public.project (id, created_at, updated_at, is_active, name, customer_name, address, phone, email, area, depth, package_id, note, status, customer_id, templatedesignid)
-values  ('d5b59f1c-c6d1-473d-8f33-b56f85a54541', '2025-02-26 07:32:56.773818 +00:00', '2025-02-26 07:32:56.773818 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'root@gmail.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('aa0d8ad7-9483-4611-8704-9c7578b04535', '2025-02-26 07:36:04.962402 +00:00', '2025-02-26 07:36:04.962402 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('7ff6b21d-10fe-443b-898b-7bf0fcf84a38', '2025-02-26 07:46:01.079255 +00:00', '2025-02-26 07:46:01.079255 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('a0949c9f-22c1-4d81-ae19-63f9a74b4fea', '2025-02-26 07:48:35.781225 +00:00', '2025-02-26 07:48:35.781225 +00:00', true, 'Viet project', 'Viet', '671 street, Tan Phu, Phường 05, Quận 5, Thành phố Hồ Chí Minh', '0911413402', 'guest1@example.com', 23, 313, 'b8469d8c-91d6-42ad-9242-884c8368d388', 'sada', 'REQUESTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('1d047e21-7b0e-447e-8d31-2ba5d25c1668', '2025-02-26 07:43:35.666068 +00:00', '2025-03-03 00:36:37.129508 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'PROCESSING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('1f6199da-9be8-4fba-b5ad-9c2319ffd451', '2025-02-28 06:59:42.284604 +00:00', '2025-03-03 03:41:14.423201 +00:00', true, '123 project', '123', '123 aaa, Phường Tăng Nhơn Phú A, Quận 9, Thành phố Hồ Chí Minh', '123', '12@gmail.com', 12, 12, '053619c8-720e-4baa-bf5e-b0076cf93618', '1231234', 'PROCESSING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('53ab987b-424c-4c22-89a5-17feb4c1d65c', '2025-02-26 07:35:56.155120 +00:00', '2025-03-03 07:44:43.511318 +00:00', true, 'customer project', 'customer', 'address', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'DESIGNING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null),
-        ('af80b1cf-6f1a-40dd-943c-0ce2dc112fd6', '2025-03-06 03:51:01.353528 +00:00', '2025-03-06 03:51:01.353528 +00:00', true, 'abc project', 'abc', 'nha que, Phường 05, Quận Gò Vấp, Thành phố Hồ Chí Minh', '123', 'abc@gmail.com', 12, 22, '4d8285fb-d158-49cd-acc8-6fb535e4b9aa', '', 'REQUESTING', '6c26c8fa-7a97-4b2a-b5f7-83e1cf0ca807', null),
-        ('6e843e92-e55f-414c-a2e7-d52afe8251ce', '2025-02-26 07:38:41.180115 +00:00', '2025-03-06 04:39:58.280472 +00:00', true, 'customer project', 'customer', '671 street, Tan Phu, Phường 06, Quận 11, Thành phố Hồ Chí Minh', '0123456789', 'guest1@example.com', 100, 100, '053619c8-720e-4baa-bf5e-b0076cf93618', 'note', 'CONSTRUCTING', '3f82e35e-ecde-405b-905e-efd8b15a4386', null);
-
         insert into public.project_staff (id, created_at, updated_at, project_id, staff_id)
 values  ('b2c6c559-231f-4ced-8dc9-d6ec94b4525c', '2025-03-03 00:36:37.129508 +00:00', '2025-03-03 00:36:37.129508 +00:00', '1d047e21-7b0e-447e-8d31-2ba5d25c1668', '4eff8d9c-99b1-470f-9ad4-776af420f152'),
         ('c08f2b05-b017-48bb-9b94-852a97b78773', '2025-03-03 03:41:14.423201 +00:00', '2025-03-03 03:41:14.423201 +00:00', '1f6199da-9be8-4fba-b5ad-9c2319ffd451', '632a6151-cdde-4e21-b35d-d7892ea67f6e'),
@@ -160,7 +159,28 @@ values  ('b2c6c559-231f-4ced-8dc9-d6ec94b4525c', '2025-03-03 00:36:37.129508 +00
         ('fb591291-8880-482a-a6cf-79cb2462fd3b', '2025-03-05 04:12:42.667596 +00:00', '2025-03-05 04:12:42.667596 +00:00', '6e843e92-e55f-414c-a2e7-d52afe8251ce', '44dda75a-5731-4137-acb1-d480e446187f'),
         ('e39bb81c-428f-4050-ae41-2e8718fdb4c6', '2025-03-05 04:12:57.500076 +00:00', '2025-03-05 04:12:57.500076 +00:00', '6e843e92-e55f-414c-a2e7-d52afe8251ce', '6931f272-f094-44ca-9fd4-6797f5d9a30a');
 
-        insert into public.quotation_detail (id, created_at, updated_at, is_active, quantity, price, category, note, quotation_id, service_id)
+        insert into public.quotation (id, created_at, updated_at, is_active, project_id, version, total_price, reason, status, promotion_id, idtemplate)
+values  ('a75bdf9c-ea5c-49b5-9147-e382fa91d7fe', '2025-03-03 04:17:23.372507 +00:00', '2025-03-03 08:03:37.624249 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 3, 10100, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('f32fa1ab-a560-4b08-98c9-93ed14caed88', '2025-03-03 02:42:42.608380 +00:00', '2025-03-03 08:47:18.309620 +00:00', true, '1d047e21-7b0e-447e-8d31-2ba5d25c1668', 1, 0, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('b81e6792-4a7f-4464-9517-8a9d0933d46d', '2025-03-03 04:17:23.062758 +00:00', '2025-03-03 08:53:25.037788 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 2, 10100, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('97b628bc-a1d2-40da-967d-45ae3f45d8ea', '2025-03-03 04:17:23.524088 +00:00', '2025-03-03 09:37:05.633392 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 4, 10100, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('cda0837d-bfaa-4c9e-966e-1ff0a8494970', '2025-03-04 01:47:06.200803 +00:00', '2025-03-04 16:12:29.438492 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 9, 0, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('c5b29972-df51-44f0-bc87-0d703477d4a7', '2025-03-04 01:45:36.300930 +00:00', '2025-03-04 16:33:20.756180 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 8, 2200018, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('2d8d8c8a-819b-40bf-bac1-0e80e426b0b4', '2025-03-03 19:21:22.574772 +00:00', '2025-03-04 16:34:11.740635 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 7, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
+        ('a932e15f-76fd-474c-85c3-503c0667858c', '2025-03-03 19:21:21.990075 +00:00', '2025-03-04 16:35:40.784695 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 6, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
+        ('4500918f-444d-4528-b39c-efd7110a3789', '2025-03-03 19:21:18.354877 +00:00', '2025-03-04 16:41:23.993200 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 5, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
+        ('da3564b4-3f06-4b18-9396-8538e1906626', '2025-03-03 04:17:16.511973 +00:00', '2025-03-05 03:32:41.683930 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 1, 10100, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('db4adf8f-e9b3-452e-a451-7fb37d42ef0b', '2025-03-04 16:57:30.637410 +00:00', '2025-03-06 03:36:26.696720 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 10, 10000, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('4ca42ae6-b375-49ae-a48e-c75892cd8731', '2025-03-05 15:19:22.948534 +00:00', '2025-03-06 16:48:17.406698 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 11, 5788798, '', 'UPDATING', null, '15f882f9-af13-449e-84b8-2da272d2e005'),
+        ('ae270f5d-55fd-4e9d-849d-d2364a1c3452', '2025-03-05 15:32:55.378379 +00:00', '2025-03-06 17:03:39.896803 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 12, 1618041, '', 'PREVIEW', null, '15f882f9-af13-449e-84b8-2da272d2e005'),
+        ('19343cb1-d541-4e89-8046-e4b0df65c4cd', '2025-03-05 16:08:26.292485 +00:00', '2025-03-06 17:05:48.746312 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 13, 122477, '', 'PREVIEW', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('ed77f9a9-ab45-46dd-a530-87e594447bc4', '2025-03-06 17:03:39.882699 +00:00', '2025-03-06 17:23:42.713702 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 16, 1618041, '', 'UPDATING', null, '7d81b975-d3d0-43ee-8c16-d7ec96089817'),
+        ('046c2b73-1234-4886-8a3d-8af43c78a8b4', '2025-03-05 16:37:36.157073 +00:00', '2025-03-06 17:26:28.369226 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 15, 10000, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('856e64be-5740-4238-bb9e-c96893ec0f28', '2025-03-05 16:36:25.991044 +00:00', '2025-03-06 17:28:12.139230 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 14, 130378, '', 'UPDATING', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
+        ('4664006c-7c45-426b-8ba3-28b1ab706898', '2025-03-06 17:51:41.244027 +00:00', '2025-03-06 17:51:41.244027 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 17, 0, '', 'OPEN', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
+        ('c8367b70-65ea-4fd1-b56d-84e6d0f18760', '2025-03-06 17:54:09.213905 +00:00', '2025-03-06 17:54:09.213905 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 18, 220018, '', 'OPEN', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb');
+
+insert into public.quotation_detail (id, created_at, updated_at, is_active, quantity, price, category, note, quotation_id, service_id)
 values  ('74381b6d-1748-4f58-ae8e-7c475ceedf4c', '2025-03-03 04:17:16.511973 +00:00', '2025-03-03 04:17:16.511973 +00:00', true, 1, 10000, 'PRELIMINARIES', 'Note 1', 'da3564b4-3f06-4b18-9396-8538e1906626', '1ed99461-468a-4c42-aa44-9282e935cee4'),
         ('fd0b5680-50f3-4f52-8fac-50775bec7928', '2025-03-03 04:17:23.062758 +00:00', '2025-03-03 04:17:23.062758 +00:00', true, 1, 10000, 'PRELIMINARIES', 'Note 1', 'b81e6792-4a7f-4464-9517-8a9d0933d46d', '1ed99461-468a-4c42-aa44-9282e935cee4'),
         ('87f7cb1a-a348-4b18-be99-cdd0024be64c', '2025-03-03 04:17:23.372507 +00:00', '2025-03-03 04:17:23.372507 +00:00', true, 1, 10000, 'PRELIMINARIES', 'Note 1', 'a75bdf9c-ea5c-49b5-9147-e382fa91d7fe', '1ed99461-468a-4c42-aa44-9282e935cee4'),
@@ -229,26 +249,5 @@ values  ('eece7e8f-76fb-4c68-a650-1d883f5819c7', '2025-03-03 04:17:16.511973 +00
         ('4e68cc1b-d736-4b70-8754-113b2b140bcd', '2025-03-06 17:54:09.213905 +00:00', '2025-03-06 17:54:09.213905 +00:00', true, 1, 0, '', 'PRELIMINARIES', 'c8367b70-65ea-4fd1-b56d-84e6d0f18760', 'dca8a51d-01f2-4bc6-9eba-b710d62f9162'),
         ('8ae95c78-42b2-4903-9304-416ad3eeb4ae', '2025-03-06 17:54:09.213905 +00:00', '2025-03-06 17:54:09.213905 +00:00', true, 1, 0, '', 'PRELIMINARIES', 'c8367b70-65ea-4fd1-b56d-84e6d0f18760', '9c8fc488-c36e-4283-a169-66d928d1f6ed'),
         ('e8b2b738-c361-41d1-84e8-264086662fdb', '2025-03-06 17:54:09.213905 +00:00', '2025-03-06 17:54:09.213905 +00:00', true, 1, 0, '', 'PRELIMINARIES', 'c8367b70-65ea-4fd1-b56d-84e6d0f18760', '7dfb755f-62c5-40f0-b0eb-2e4ff00af11a');
-
-        insert into public.quotation (id, created_at, updated_at, is_active, project_id, version, total_price, reason, status, promotion_id, idtemplate)
-values  ('a75bdf9c-ea5c-49b5-9147-e382fa91d7fe', '2025-03-03 04:17:23.372507 +00:00', '2025-03-03 08:03:37.624249 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 3, 10100, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('f32fa1ab-a560-4b08-98c9-93ed14caed88', '2025-03-03 02:42:42.608380 +00:00', '2025-03-03 08:47:18.309620 +00:00', true, '1d047e21-7b0e-447e-8d31-2ba5d25c1668', 1, 0, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('b81e6792-4a7f-4464-9517-8a9d0933d46d', '2025-03-03 04:17:23.062758 +00:00', '2025-03-03 08:53:25.037788 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 2, 10100, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('97b628bc-a1d2-40da-967d-45ae3f45d8ea', '2025-03-03 04:17:23.524088 +00:00', '2025-03-03 09:37:05.633392 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 4, 10100, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('cda0837d-bfaa-4c9e-966e-1ff0a8494970', '2025-03-04 01:47:06.200803 +00:00', '2025-03-04 16:12:29.438492 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 9, 0, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('c5b29972-df51-44f0-bc87-0d703477d4a7', '2025-03-04 01:45:36.300930 +00:00', '2025-03-04 16:33:20.756180 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 8, 2200018, '', 'REJECTED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('2d8d8c8a-819b-40bf-bac1-0e80e426b0b4', '2025-03-03 19:21:22.574772 +00:00', '2025-03-04 16:34:11.740635 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 7, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
-        ('a932e15f-76fd-474c-85c3-503c0667858c', '2025-03-03 19:21:21.990075 +00:00', '2025-03-04 16:35:40.784695 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 6, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
-        ('4500918f-444d-4528-b39c-efd7110a3789', '2025-03-03 19:21:18.354877 +00:00', '2025-03-04 16:41:23.993200 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 5, 300027, '', 'REJECTED', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
-        ('da3564b4-3f06-4b18-9396-8538e1906626', '2025-03-03 04:17:16.511973 +00:00', '2025-03-05 03:32:41.683930 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 1, 10100, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('db4adf8f-e9b3-452e-a451-7fb37d42ef0b', '2025-03-04 16:57:30.637410 +00:00', '2025-03-06 03:36:26.696720 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 10, 10000, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('4ca42ae6-b375-49ae-a48e-c75892cd8731', '2025-03-05 15:19:22.948534 +00:00', '2025-03-06 16:48:17.406698 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 11, 5788798, '', 'UPDATING', null, '15f882f9-af13-449e-84b8-2da272d2e005'),
-        ('ae270f5d-55fd-4e9d-849d-d2364a1c3452', '2025-03-05 15:32:55.378379 +00:00', '2025-03-06 17:03:39.896803 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 12, 1618041, '', 'PREVIEW', null, '15f882f9-af13-449e-84b8-2da272d2e005'),
-        ('19343cb1-d541-4e89-8046-e4b0df65c4cd', '2025-03-05 16:08:26.292485 +00:00', '2025-03-06 17:05:48.746312 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 13, 122477, '', 'PREVIEW', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('ed77f9a9-ab45-46dd-a530-87e594447bc4', '2025-03-06 17:03:39.882699 +00:00', '2025-03-06 17:23:42.713702 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 16, 1618041, '', 'UPDATING', null, '7d81b975-d3d0-43ee-8c16-d7ec96089817'),
-        ('046c2b73-1234-4886-8a3d-8af43c78a8b4', '2025-03-05 16:37:36.157073 +00:00', '2025-03-06 17:26:28.369226 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 15, 10000, '', 'APPROVED', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('856e64be-5740-4238-bb9e-c96893ec0f28', '2025-03-05 16:36:25.991044 +00:00', '2025-03-06 17:28:12.139230 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 14, 130378, '', 'UPDATING', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb'),
-        ('4664006c-7c45-426b-8ba3-28b1ab706898', '2025-03-06 17:51:41.244027 +00:00', '2025-03-06 17:51:41.244027 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 17, 0, '', 'OPEN', null, 'e3523820-5596-48d0-ab06-ee74ac26ce13'),
-        ('c8367b70-65ea-4fd1-b56d-84e6d0f18760', '2025-03-06 17:54:09.213905 +00:00', '2025-03-06 17:54:09.213905 +00:00', true, '1f6199da-9be8-4fba-b5ad-9c2319ffd451', 18, 220018, '', 'OPEN', null, 'e97146bb-bd95-4478-8cdb-25273e6453fb');
 
         COMMIT;
