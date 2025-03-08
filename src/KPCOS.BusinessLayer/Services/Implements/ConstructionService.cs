@@ -245,6 +245,29 @@ public class ConstructionService : IConstructionServices
         return (result, total);
     }
 
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter)
+    {
+        // Get the repository for ConstructionTask
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        
+        // Apply the filter expression from the request
+        var filterExpression = filter.GetExpressions();
+        
+        // Get the data with count using the repository's GetWithCount method
+        var result = constructionTaskRepo.GetWithCount(
+            filter: filterExpression,
+            orderBy: filter.GetOrder(),
+            includeProperties: "Staff,Staff.User",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the entities to response DTOs
+        var mappedResult = _mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
+        
+        return (mappedResult, result.Count);
+    }
+
     private async Task CreateConstructionItemAsync(
         CreateConstructionItemRequest request,
         Guid projectId,

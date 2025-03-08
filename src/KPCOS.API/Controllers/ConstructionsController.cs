@@ -195,4 +195,55 @@ public class ConstructionsController  : BaseController
         var (data, total) = await _constructionService.GetAllConstructionItemsAsync(filter);
         return new PagedApiResponse<GetAllConstructionItemResponse>(data, filter.PageNumber, filter.PageSize, total);
     }
+
+    /// <summary>
+    /// Gets a paginated list of construction tasks
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction tasks including:
+    /// - Search: Filters by name containing the search term
+    /// - IsActive: Filters by active status (true/false)
+    /// - Status: Filters by task status (OPENING, PROCESSING, DONE)
+    /// - IsOverdue: Filters by overdue status (true/false)
+    /// - ConstructionItemId: Filters by construction item ID
+    /// - PageNumber: Page number for pagination (1-based)
+    /// - PageSize: Number of items per page
+    /// - SortColumn: Column to sort by (default: CreatedAt)
+    /// - SortDir: Sort direction (Asc or Desc, default: Desc)
+    /// </param>
+    /// <remarks>
+    /// Sample request:
+    /// 
+    ///     GET /api/constructions/task?Search=foundation&amp;IsActive=true&amp;Status=OPENING&amp;IsOverdue=true&amp;ConstructionItemId=6e843e92-e55f-414c-a2e7-d52afe8251ce&amp;PageNumber=1&amp;PageSize=10
+    /// 
+    /// Available status values:
+    /// - OPENING: Initial status for new tasks
+    /// - PROCESSING: Tasks that are currently in progress
+    /// - DONE: Completed tasks
+    /// 
+    /// IsOverdue filter behavior:
+    /// - When IsOverdue=true: Returns only tasks with deadlines in the past that are not marked as DONE
+    /// - When IsOverdue=false: Returns only tasks that are not overdue or are marked as DONE
+    /// - When IsOverdue is not specified: Returns all tasks (default behavior)
+    /// </remarks>
+    /// <returns>A paginated list of construction tasks</returns>
+    /// <response code="200">Returns the paginated list of construction tasks</response>
+    [HttpGet("task")]
+    [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionTaskResponse>), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Gets a paginated list of construction tasks",
+        Description = "Retrieves construction tasks based on the provided filter criteria including search term, active status, task status, overdue status, and construction item ID.",
+        OperationId = "GetAllConstructionTasks",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<PagedApiResponse<GetAllConstructionTaskResponse>> GetAllConstructionTaskAsync(
+        [FromQuery] 
+        [SwaggerParameter(
+            Description = "Filter criteria for construction tasks including Search, IsActive, Status, IsOverdue, ConstructionItemId, PageNumber, PageSize, SortColumn, and SortDir",
+            Required = false
+        )]
+        GetAllConstructionTaskFilterRequest filter)
+    {
+        var (data, total) = await _constructionService.GetAllConstructionTaskAsync(filter);
+        return new PagedApiResponse<GetAllConstructionTaskResponse>(data, filter.PageNumber, filter.PageSize, total);
+    }
 }
