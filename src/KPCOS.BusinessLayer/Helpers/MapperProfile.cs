@@ -152,7 +152,6 @@ public class MapperProfile : Profile
 
         CreateMap<CreateDesignRequest, Design>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
-            .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
             .ForMember(dest => dest.DesignImages,
                 opt => opt.MapFrom(src => 
                     src.DesignImages.Select(img => new DesignImage
