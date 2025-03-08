@@ -1,5 +1,6 @@
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -29,4 +30,26 @@ public interface IConstructionServices
     /// <exception cref="BadRequestException">Thrown when more than 3 parent items have payment status</exception>
     Task CreateConstructionV2Async(CreateConstructionRequest request);
     
+    /// <summary>
+    /// Gets a paginated list of construction items with their children
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction items</param>
+    /// <param name="projectId">Optional project ID to filter items by project</param>
+    /// <returns>A tuple containing the list of construction items and the total count</returns>
+    /// <remarks>
+    /// This method retrieves construction items based on the provided filter criteria.
+    /// Parent items are returned with their child items populated in the Childs property.
+    /// If projectId is provided, only items for that project will be returned.
+    /// 
+    /// Available status values for filtering:
+    /// - OPENING: Initial status for new construction items
+    /// - PROCESSING: Construction items that are currently in progress
+    /// - DONE: Completed construction items
+    /// 
+    /// IsChild filter behavior:
+    /// - When IsChild=true: Returns only child items (items with a parent)
+    /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+    /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+    /// </remarks>
+    Task<(IEnumerable<GetAllConstructionItemResponse> data, int total)> GetAllConstructionItemsAsync(GetAllConstructionItemFilterRequest filter, Guid? projectId = null);
 }

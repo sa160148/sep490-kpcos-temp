@@ -12,6 +12,9 @@ public static class AddSwagger
         {
             opt.SwaggerDoc("v1", new OpenApiInfo { Title = "KPCOS.api", Version = "v1" });
 
+            // Enable annotations for more detailed parameter descriptions
+            opt.EnableAnnotations();
+
             opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
@@ -36,8 +39,25 @@ public static class AddSwagger
                 }
             });
 
+            // Include XML comments from the API assembly
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
+            
+            // Include XML comments from the BusinessLayer assembly
+            var businessLayerXmlFile = "KPCOS.BusinessLayer.xml";
+            var businessLayerXmlPath = Path.Combine(AppContext.BaseDirectory, businessLayerXmlFile);
+            if (File.Exists(businessLayerXmlPath))
+            {
+                opt.IncludeXmlComments(businessLayerXmlPath);
+            }
+            
+            // Include XML comments from the Common assembly
+            var commonXmlFile = "KPCOS.Common.xml";
+            var commonXmlPath = Path.Combine(AppContext.BaseDirectory, commonXmlFile);
+            if (File.Exists(commonXmlPath))
+            {
+                opt.IncludeXmlComments(commonXmlPath);
+            }
         });
 
         return services;
