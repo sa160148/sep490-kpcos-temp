@@ -39,8 +39,27 @@ public interface IContractService
     /// Create a new contract.
     /// <para>Can do this when quotation that have status is APPROVED</para>
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <param name="request">Contract creation request containing project ID, quotation ID, and other contract details</param>
+    /// <remarks>
+    /// <para>This method:</para>
+    /// <list type="bullet">
+    ///     <item><description>Validates that the project exists</description></item>
+    ///     <item><description>Validates that the quotation exists and has APPROVED status</description></item>
+    ///     <item><description>Creates a new contract with the provided details</description></item>
+    ///     <item><description>Creates 4 payment batches automatically:</description>
+    ///         <list type="bullet">
+    ///             <item><description>Deposit payment batch (25% of contract value)</description></item>
+    ///             <item><description>Pre-constructing payment batch (25% of contract value)</description></item>
+    ///             <item><description>Constructing payment batch (25% of contract value)</description></item>
+    ///             <item><description>Acceptance payment batch (25% of contract value)</description></item>
+    ///         </list>
+    ///     </item>
+    ///     <item><description>Links payment batches to construction items with IsPayment=true, ordered by EstimateAt date</description></item>
+    /// </list>
+    /// </remarks>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when project or quotation is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when quotation status is not APPROVED</exception>
     Task CreateContractAsync(ContractRequest request);
 
     Task<GetContractDetailResponse> GetContractDetailAsync(Guid id);

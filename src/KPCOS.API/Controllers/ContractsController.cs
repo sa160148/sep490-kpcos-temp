@@ -23,7 +23,46 @@ public class ContractsController : BaseController
         _contractService = contractService;
     }
 
+    /// <summary>
+    /// Creates a new contract with automatic payment batches
+    /// </summary>
+    /// <param name="request">Contract creation request</param>
+    /// <remarks>
+    /// Creates a new contract based on an approved quotation and automatically generates payment batches.
+    /// 
+    /// The contract creation process:
+    /// 1. Validates that the project exists
+    /// 2. Validates that the quotation exists and has APPROVED status
+    /// 3. Creates a new contract with the provided details
+    /// 4. Automatically creates 4 payment batches (each 25% of contract value):
+    ///    * Deposit payment batch
+    ///    * Pre-constructing payment batch
+    ///    * Constructing payment batch
+    ///    * Acceptance payment batch
+    /// 5. Links payment batches to construction items with IsPayment=true, ordered by EstimateAt date
+    /// 
+    /// Sample request:
+    /// ```json
+    /// {
+    ///   "projectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "quotationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "name": "Contract for Project X",
+    ///   "customerName": "Customer Name",
+    ///   "contractValue": 100000000,
+    ///   "url": "https://example.com/contract.pdf",
+    ///   "note": "Additional notes about the contract"
+    /// }
+    /// ```
+    /// </remarks>
+    /// <response code="200">Contract created successfully with payment batches</response>
+    /// <response code="400">Invalid request or quotation not approved</response>
+    /// <response code="404">Project or quotation not found</response>
+    /// <response code="500">Internal server error</response>
     [HttpPost("")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
     public async Task<ApiResult> CreateContract(ContractRequest request)
     {
         await _contractService.CreateContractAsync(request);
