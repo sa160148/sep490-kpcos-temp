@@ -246,4 +246,24 @@ public class ConstructionsController  : BaseController
         var (data, total) = await _constructionService.GetAllConstructionTaskAsync(filter);
         return new PagedApiResponse<GetAllConstructionTaskResponse>(data, filter.PageNumber, filter.PageSize, total);
     }
+
+    [HttpGet("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult<GetConstructionTaskDetailResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Gets detailed information about a specific construction task",
+        Description = "Retrieves detailed information about a construction task by its ID, including task properties and associated staff information.",
+        OperationId = "GetConstructionTaskDetailById",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult<GetConstructionTaskDetailResponse>> GetConstructionTaskDetailByIdAsync(
+        [SwaggerParameter(
+            Description = "The unique identifier of the construction task",
+            Required = true
+        )]
+        Guid id)
+    {
+        var task = await _constructionService.GetConstructionTaskDetailByIdAsync(id);
+        return Ok(task);
+    }
 }

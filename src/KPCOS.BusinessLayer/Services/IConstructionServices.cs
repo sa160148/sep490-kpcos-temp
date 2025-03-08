@@ -72,4 +72,21 @@ public interface IConstructionServices
     /// Tasks are returned with their associated Staff information.
     /// </remarks>
     Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter);
+
+    /// <summary>
+    /// Gets detailed information about a specific construction task by its ID
+    /// </summary>
+    /// <param name="id">The unique identifier of the construction task</param>
+    /// <returns>Detailed information about the construction task</returns>
+    /// <remarks>
+    /// This method retrieves a specific construction task by its ID and returns detailed information including:
+    /// - Basic task properties (ID, name, reason, status, image URL)
+    /// - Associated construction item ID
+    /// - Deadline and timestamps (creation and last update)
+    /// - Associated staff information
+    /// 
+    /// If the task with the specified ID does not exist, a NotFoundException is thrown.
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    Task<GetConstructionTaskDetailResponse> GetConstructionTaskDetailByIdAsync(Guid id);
 }
