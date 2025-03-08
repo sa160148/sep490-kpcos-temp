@@ -30,9 +30,9 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
 {
-    private string GetQuotationRequiredIncludes() => 
+    private string GetQuotationRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
-    private string GetDesignRequiredIncludes() => 
+    private string GetDesignRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Designs,Designs.DesignImages";
 
     public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(
@@ -45,7 +45,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var query = repo.Get(
             filter: filterOption.GetExpressionsV2(Guid.Parse(userId), role),
             orderBy: null,
-            includeProperties: "Package",
+            includeProperties: "Package,ProjectStaffs.Staff.User",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
@@ -112,8 +112,8 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             filter: BuildProjectFilter(filter, userId, role),
             includeProperties: purpose switch
             {
-                "Quotation" => GetQuotationRequiredIncludes(),
-                "Design" => GetDesignRequiredIncludes(),
+                "Quotation" => GetQuotationRequiredIncludes,
+                "Design" => GetDesignRequiredIncludes,
                 _ => "Package,ProjectStaffs.Staff.User"
             },
             orderBy: null,
@@ -650,6 +650,21 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         if (latestDesign?.DesignImages?.Any() == true)
         {
             response.ImageUrl = latestDesign.DesignImages.First().ImageUrl;
+        }
+        
+        // Map project staff
+        if (project.ProjectStaffs != null)
+        {
+            response.Staffs = project.ProjectStaffs
+                .Select(ps => new GetAllStaffForDesignResponse
+                {
+                    Id = ps.Staff.UserId,
+                    FullName = ps.Staff.User.FullName,
+                    Email = ps.Staff.User.Email,
+                    Position = ps.Staff.Position,
+                    Avatar = ps.Staff.User.Avatar ?? ""
+                })
+                .ToList();
         }
         
         return response;
