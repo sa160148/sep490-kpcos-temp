@@ -89,4 +89,26 @@ public interface IConstructionServices
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
     Task<GetConstructionTaskDetailResponse> GetConstructionTaskDetailByIdAsync(Guid id);
+
+    /// <summary>
+    /// Gets detailed information about a specific construction item by its ID
+    /// </summary>
+    /// <param name="id">The unique identifier of the construction item</param>
+    /// <returns>Detailed information about the construction item</returns>
+    /// <remarks>
+    /// This method retrieves a specific construction item by its ID and returns detailed information including:
+    /// - Basic item properties (ID, name, description, status, etc.)
+    /// - Associated project ID
+    /// - Creation and update timestamps
+    /// 
+    /// The behavior differs based on whether the item is a parent (level 1) or child (level 2):
+    /// - For parent items: Includes child items in the Childs property, Parent property is null
+    /// - For child items: Includes parent item information in the Parent property
+    /// 
+    /// Associated construction tasks are included for both parent and child items.
+    /// 
+    /// If the item with the specified ID does not exist, a NotFoundException is thrown.
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task<GetConstructionItemDetailResponse> GetConstructionItemDetailByIdAsync(Guid id);
 }

@@ -200,6 +200,11 @@ public class MapperProfile : Profile
 
         CreateMap<ConstructionItem, GetAllConstructionItemResponse>();
         CreateMap<ConstructionItem, GetAllConstructionItemChildResponse>();
+        CreateMap<ConstructionItem, GetConstructionItemDetailResponse>();
+        CreateMap<ConstructionItem, GetConstructionItemParentDetailResponse>()
+        .ForMember(dest => dest.ConstructionTasks, 
+        opt => opt.MapFrom(src => src.ConstructionTasks ?? null))
+        ;
 
         CreateMap<ConstructionTask, GetAllConstructionTaskResponse>()
         .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.Deadline))
