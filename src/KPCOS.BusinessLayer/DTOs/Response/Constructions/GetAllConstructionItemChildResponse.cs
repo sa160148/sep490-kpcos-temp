@@ -23,4 +23,6 @@ public class GetAllConstructionItemChildResponse
     public DateTime? UpdatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? ProjectId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IEnumerable<GetAllConstructionTaskResponse>? ConstructionTasks { get; set; } = new List<GetAllConstructionTaskResponse>();
 }

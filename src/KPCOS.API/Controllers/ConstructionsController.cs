@@ -266,4 +266,24 @@ public class ConstructionsController  : BaseController
         var task = await _constructionService.GetConstructionTaskDetailByIdAsync(id);
         return Ok(task);
     }
+
+    [HttpGet("item/{id}")]
+    [ProducesResponseType(typeof(ApiResult<GetConstructionItemDetailResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Gets detailed information about a specific construction item",
+        Description = "Retrieves detailed information about a construction item by its ID, including its properties, tasks, and hierarchical relationships. For parent items, includes child items. For child items, includes parent information.",
+        OperationId = "GetConstructionItemDetailById",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult<GetConstructionItemDetailResponse>> GetConstructionItemDetailByIdAsync(
+        [SwaggerParameter(
+            Description = "The unique identifier of the construction item",
+            Required = true
+        )]
+        Guid id)
+    {
+        var result = await _constructionService.GetConstructionItemDetailByIdAsync(id);
+        return Ok(result);
+    }
 }
