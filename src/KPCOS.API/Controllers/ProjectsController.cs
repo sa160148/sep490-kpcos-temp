@@ -16,6 +16,9 @@ using KPCOS.DataAccessLayer.Enums;
 using KPCOS.WebFramework.Api;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using Swashbuckle.AspNetCore.Annotations;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 
 namespace KPCOS.API.Controllers
 {
@@ -25,7 +28,7 @@ namespace KPCOS.API.Controllers
     /// <param name="service"></param>
     /// <param name="authService"></param>
     [Route("api/[controller]")]
-    public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
+    public class ProjectsController(IProjectService service, IAuthService authService, IConstructionServices constructionService) : BaseController
     {
         /// <summary>
         /// Get all project for each role of user
@@ -430,11 +433,56 @@ namespace KPCOS.API.Controllers
             return new PagedApiResponse<GetAllDesignResponse>(design.data, filter.PageNumber, filter.PageSize, design.total);
         }
         
-        // [HttpGet("{id}/construction")]
-        // public async Task<ApiResult<ConstructionResponse>> GetConstructionByProjectAsync(Guid id)
-        // {
-        //     var construction = await service.GetConstructionByProjectAsync(id);
-        //     return construction;
-        // }
+        /// <summary>
+        /// Gets a paginated list of construction items for a specific project
+        /// </summary>
+        /// <param name="id">The ID of the project</param>
+        /// <param name="filter">Filter criteria for construction items including:
+        /// - Search: Filters by name or description containing the search term
+        /// - IsActive: Filters by active status (true/false)
+        /// - Status: Filters by construction item status (OPENING, PROCESSING, DONE)
+        /// - IsPayment: Filters by payment status (true/false)
+        /// - IsChild: If true, returns only child items; if false, returns only parent items
+        /// - PageNumber: Page number for pagination (1-based)
+        /// - PageSize: Number of items per page
+        /// - SortColumn: Column to sort by (default: CreatedAt)
+        /// - SortDir: Sort direction (Asc or Desc, default: Desc)
+        /// </param>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/projects/{id}/construction?Search=foundation&amp;IsActive=true&amp;Status=OPENING&amp;IsPayment=true&amp;PageNumber=1&amp;PageSize=10
+        /// 
+        /// Available status values:
+        /// - OPENING: Initial status for new construction items
+        /// - PROCESSING: Construction items that are currently in progress
+        /// - DONE: Completed construction items
+        /// 
+        /// IsChild filter behavior:
+        /// - When IsChild=true: Returns only child items (items with a parent)
+        /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+        /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+        /// </remarks>
+        /// <returns>A paginated list of construction items with their children</returns>
+        /// <response code="200">Returns the paginated list of construction items</response>
+        [HttpGet("{id}/construction")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionItemResponse>), StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "Gets a paginated list of construction items for a specific project",
+            Description = "Retrieves construction items for the specified project based on the provided filter criteria. Parent items are returned with their child items populated in the Childs property.",
+            OperationId = "GetAllConstructionItemsByProject",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<GetAllConstructionItemResponse>> GetAllConstructionItemsByProjectAsync(Guid id,
+            [FromQuery] 
+            [SwaggerParameter(
+                Description = "Filter criteria for construction items including Search, IsActive, Status (OPENING, PROCESSING, DONE), IsPayment, IsChild, PageNumber, PageSize, SortColumn, and SortDir",
+                Required = false
+            )]
+            GetAllConstructionItemFilterRequest filter)
+        {
+            var (data, total) = await constructionService.GetAllConstructionItemsAsync(filter, id);
+            return new PagedApiResponse<GetAllConstructionItemResponse>(data, filter.PageNumber, filter.PageSize, total);
+        }
     }
 }

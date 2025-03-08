@@ -1,18 +1,28 @@
+using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using KPCOS.BusinessLayer.Exceptions;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
+using AutoMapper;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ConstructionService : IConstructionServices
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public ConstructionService(IUnitOfWork unitOfWork)
+    public ConstructionService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
    public async Task CreateConstructionAsync(ConstructionRequest request)
@@ -156,6 +166,83 @@ public class ConstructionService : IConstructionServices
         }
 
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Gets a paginated list of construction items with their children
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction items</param>
+    /// <param name="projectId">Optional project ID to filter items by project</param>
+    /// <returns>A tuple containing the list of construction items and the total count</returns>
+    /// <remarks>
+    /// This method retrieves construction items based on the provided filter criteria.
+    /// Parent items are returned with their child items populated in the Childs property.
+    /// If projectId is provided, only items for that project will be returned.
+    /// 
+    /// Available status values for filtering:
+    /// - OPENING: Initial status for new construction items
+    /// - PROCESSING: Construction items that are currently in progress
+    /// - DONE: Completed construction items
+    /// 
+    /// IsChild filter behavior:
+    /// - When IsChild=true: Returns only child items (items with a parent)
+    /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+    /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+    /// </remarks>
+    public async Task<(IEnumerable<GetAllConstructionItemResponse> data, int total)> GetAllConstructionItemsAsync(GetAllConstructionItemFilterRequest filter, Guid? projectId = null)
+    {
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Create a combined filter expression
+        var predicate = PredicateBuilder.New<ConstructionItem>(true);
+        
+        // Only filter by ParentId if IsChild is not specified
+        // If IsChild is specified, the filter will handle it
+        if (!filter.IsChild.HasValue)
+        {
+            predicate = predicate.And(x => x.ParentId == null);
+        }
+        
+        // Add projectId filter if provided
+        if (projectId.HasValue)
+        {
+            predicate = predicate.And(x => x.ProjectId == projectId.Value);
+        }
+        
+        // Combine with filter expressions from the filter object
+        predicate = predicate.And(filter.GetExpressions());
+        
+        // Get parent items with count using the repository's GetWithCount method
+        var (items, total) = constructionItemRepo.GetWithCount(
+            filter: predicate,
+            orderBy: filter.GetOrder(),
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map items to response objects using the injected mapper
+        var result = _mapper.Map<List<GetAllConstructionItemResponse>>(items);
+        
+        // For each item, get and map its children (only if it's a parent item)
+        foreach (var item in result)
+        {
+            if (item.Id.HasValue && (filter.IsChild == null || filter.IsChild == false))
+            {
+                // Get child items using the repository's Get method
+                var childItems = constructionItemRepo.Get(
+                    filter: x => x.ParentId == item.Id.Value
+                );
+                
+                item.Childs = _mapper.Map<List<GetAllConstructionItemChildResponse>>(childItems);
+            }
+            else
+            {
+                // For child items, ensure Childs collection is empty
+                item.Childs = new List<GetAllConstructionItemChildResponse>();
+            }
+        }
+        
+        return (result, total);
     }
 
     private async Task CreateConstructionItemAsync(

@@ -1,10 +1,14 @@
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Pagination;
+using KPCOS.DataAccessLayer.Enums;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace KPCOS.API.Controllers;
 
@@ -139,5 +143,56 @@ public class ConstructionsController  : BaseController
     {
         await _constructionService.CreateConstructionV2Async(request);
         return Ok();
+    }
+
+    /// <summary>
+    /// Gets a paginated list of construction items with their children
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction items including:
+    /// - Search: Filters by name or description containing the search term
+    /// - IsActive: Filters by active status (true/false)
+    /// - Status: Filters by construction item status (OPENING, PROCESSING, DONE)
+    /// - IsPayment: Filters by payment status (true/false)
+    /// - IsChild: If true, returns only child items; if false, returns only parent items
+    /// - PageNumber: Page number for pagination (1-based)
+    /// - PageSize: Number of items per page
+    /// - SortColumn: Column to sort by (default: CreatedAt)
+    /// - SortDir: Sort direction (Asc or Desc, default: Desc)
+    /// </param>
+    /// <remarks>
+    /// Sample request:
+    /// 
+    ///     GET /api/constructions/items?Search=foundation&amp;IsActive=true&amp;Status=OPENING&amp;IsPayment=true&amp;PageNumber=1&amp;PageSize=10
+    /// 
+    /// Available status values:
+    /// - OPENING: Initial status for new construction items
+    /// - PROCESSING: Construction items that are currently in progress
+    /// - DONE: Completed construction items
+    /// 
+    /// IsChild filter behavior:
+    /// - When IsChild=true: Returns only child items (items with a parent)
+    /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+    /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+    /// </remarks>
+    /// <returns>A paginated list of construction items with their children</returns>
+    /// <response code="200">Returns the paginated list of construction items</response>
+    [HttpGet("items")]
+    [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionItemResponse>), StatusCodes.Status200OK)]
+    [SwaggerOperation(
+        Summary = "Gets a paginated list of construction items with their children",
+        Description = "Retrieves construction items based on the provided filter criteria. Parent items are returned with their child items populated in the Childs property.",
+        OperationId = "GetAllConstructionItems",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<PagedApiResponse<GetAllConstructionItemResponse>> GetAllConstructionItemsAsync(
+        [FromQuery] 
+        [SwaggerParameter(
+            Description = "Filter criteria for construction items including Search, IsActive, Status (OPENING, PROCESSING, DONE), IsPayment, IsChild, PageNumber, PageSize, SortColumn, and SortDir",
+            Required = false
+        )]
+        GetAllConstructionItemFilterRequest filter)
+    {
+        var (data, total) = await _constructionService.GetAllConstructionItemsAsync(filter);
+        return new PagedApiResponse<GetAllConstructionItemResponse>(data, filter.PageNumber, filter.PageSize, total);
     }
 }

@@ -18,6 +18,7 @@ using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 using KPCOS.BusinessLayer.DTOs.Response.Services;
 using KPCOS.BusinessLayer.DTOs.Response.Equipments;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -196,5 +197,8 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position));
+
+        CreateMap<ConstructionItem, GetAllConstructionItemResponse>();
+        CreateMap<ConstructionItem, GetAllConstructionItemChildResponse>();
     }
 }
