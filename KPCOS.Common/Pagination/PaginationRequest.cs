@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Linq.Dynamic.Core;
 using LinqKit;
+using System.ComponentModel.DataAnnotations;
 
 namespace KPCOS.Common.Pagination;
 
@@ -10,6 +11,10 @@ public abstract class PaginationRequest<T> where T : class
 
     private int _pageSize = PaginationConstants.DefaultPageSize;
 
+    /// <summary>
+    /// Page number for pagination (1-based)
+    /// </summary>
+    [Display(Name = "PageNumber", Description = "Page number for pagination (1-based)")]
     public int PageNumber
     {
         get => _pageNumber;
@@ -18,6 +23,10 @@ public abstract class PaginationRequest<T> where T : class
             : PaginationConstants.DefaultPageNumber;
     }
 
+    /// <summary>
+    /// Number of items per page
+    /// </summary>
+    [Display(Name = "PageSize", Description = "Number of items per page")]
     public int PageSize
     {
         get => _pageSize;
@@ -26,8 +35,16 @@ public abstract class PaginationRequest<T> where T : class
             : PaginationConstants.DefaultPageSize;
     }
 
+    /// <summary>
+    /// Column to sort by (default: CreatedAt)
+    /// </summary>
+    [Display(Name = "SortColumn", Description = "Column to sort by (default: CreatedAt)")]
     public string? SortColumn { get; set; } = "CreatedAt";
 
+    /// <summary>
+    /// Sort direction (Asc or Desc, default: Desc)
+    /// </summary>
+    [Display(Name = "SortDir", Description = "Sort direction (Asc or Desc, default: Desc)")]
     public SortDirection? SortDir { get; set; } = SortDirection.Desc;
 
     protected Expression<Func<T, bool>> Expression = PredicateBuilder.New<T>(true);

@@ -94,11 +94,11 @@ public class ContractService : IContractService
 
     public async Task CreateContractAsync(ContractRequest request)
     {
-        if (await IsProjectExitAsync(request.ProjectId))
+        if (!(await IsProjectExitAsync(request.ProjectId)))
         {
             throw new NotFoundException("Dự án không tồn tại");
         }
-        if (await IsQuotationExitAsync(request.QuotationId))
+        if (!(await IsQuotationExitAsync(request.QuotationId)))
         {
             throw new NotFoundException("Báo giá không tồn tại");
         }
@@ -112,6 +112,54 @@ public class ContractService : IContractService
         var contract = _mapper.Map<Contract>(request);
         contract.ContractValue = request.ContractValue is null ? contract.ContractValue = quotation.TotalPrice : contract.ContractValue = request.ContractValue.Value;
         contract.Id = Guid.NewGuid();
+        
+        // Get level 1 construction items with IsPayment=true for the project, ordered by EstimateAt
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var paymentItems = constructionItemRepo.Get(
+            filter: item => item.ProjectId == request.ProjectId && 
+                           item.IsPayment == true && 
+                           item.ParentId == null && 
+                           item.IsActive == true,
+            orderBy: query => query.OrderBy(item => item.EstimateAt),
+            includeProperties: "",
+            pageSize:3)
+            .ToList();
+        
+        // Calculate the value for each payment batch (25% of contract value for each)
+        decimal batchValue = contract.ContractValue * 0.25m;
+        
+        // Define the payment phases for all batches
+        EnumPaymentPhase[] phases = new EnumPaymentPhase[]
+        {
+            EnumPaymentPhase.DEPOSIT,
+            EnumPaymentPhase.PRE_CONSTRUCTING,
+            EnumPaymentPhase.CONSTRUCTING,
+            EnumPaymentPhase.ACCEPTANCE
+        };
+        
+        // Create all payment batches in a single loop
+        for (int i = 0; i < 4; i++)
+        {
+            var paymentBatch = new PaymentBatch
+            {
+                Id = Guid.NewGuid(),
+                Name = i == 0 ? "Thanh toán đặt cọc" : $"Đợt thanh toán {i}",
+                TotalValue = batchValue,
+                IsPaid = false,
+                ContractId = contract.Id,
+                // Only assign construction items to non-deposit batches (i > 0)
+                ConstructionItemId = (i > 0 && (i - 1) < paymentItems.Count) ? paymentItems[i - 1].Id : null,
+                PaymentPhase = phases[i].ToString(),
+                Percents = 25,
+                Status = "PENDING",
+                IsActive = true
+            };
+            
+            // Add to contract's PaymentBatches collection
+            contract.PaymentBatches.Add(paymentBatch);
+        }
+        
+        // Add contract to repository and save changes
         await repo.AddAsync(contract);
     }
 

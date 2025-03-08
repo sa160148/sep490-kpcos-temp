@@ -16,6 +16,9 @@ using KPCOS.DataAccessLayer.Enums;
 using KPCOS.WebFramework.Api;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using Swashbuckle.AspNetCore.Annotations;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 
 namespace KPCOS.API.Controllers
 {
@@ -25,7 +28,7 @@ namespace KPCOS.API.Controllers
     /// <param name="service"></param>
     /// <param name="authService"></param>
     [Route("api/[controller]")]
-    public class ProjectsController(IProjectService service, IAuthService authService) : BaseController
+    public class ProjectsController(IProjectService service, IAuthService authService, IConstructionServices constructionService) : BaseController
     {
         /// <summary>
         /// Get all project for each role of user
@@ -127,25 +130,29 @@ namespace KPCOS.API.Controllers
         }
         
         /// <summary>
-        /// Gets projects for design with standout flags based on user role: ADMINISTRATOR, MANAGER, DESIGNER, CUSTOMER
+        /// Get projects for design phase with staff information and standout flags
         /// </summary>
-        /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
-        /// <returns>Paginated list of projects with design information and standout status</returns>
+        /// <param name="filter">Pagination parameters (PageNumber and PageSize)</param>
+        /// <returns>Paginated list of projects with design information, staff details, and standout status</returns>
         /// <remarks>
-        /// This endpoint returns projects with status DESIGNING.
+        /// This endpoint returns projects with status DESIGNING and includes:
+        /// - Basic project information (name, address, area, etc.)
+        /// - Staff assigned to the project (designers, managers, etc.)
+        /// - Latest design image URL
+        /// - Standout flag based on user role
         /// 
-        /// Projects are marked as StandOut based on role:
+        /// Standout flag rules by role:
         /// 
         /// For Administrator:
         /// - Project has no manager assigned
         /// 
         /// For Manager:
-        /// - Project has no designer assigned
-        /// - OR project has any designs in OPENING status
+        /// - Project has no designer assigned, OR
+        /// - Project has designs in OPENING status
         /// 
         /// For Designer:
-        /// - Project has no designs
-        /// - OR project has designs in REJECTED/EDITING status
+        /// - Project has no designs, OR
+        /// - Project has designs in REJECTED or EDITING status
         /// 
         /// For Customer:
         /// - Project has any design in PREVIEWING status
@@ -153,15 +160,46 @@ namespace KPCOS.API.Controllers
         /// Sample request:
         /// 
         ///     GET /api/projects/design?PageNumber=1&amp;PageSize=10
+        /// 
+        /// Sample response:
+        /// ```json
+        /// {
+        ///   "data": [
+        ///     {
+        ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///       "name": "Project Name",
+        ///       "customerName": "Customer Name",
+        ///       "address": "123 Main St",
+        ///       "area": 150,
+        ///       "status": "DESIGNING",
+        ///       "imageUrl": "https://example.com/image.jpg",
+        ///       "standOut": true,
+        ///       "staffs": [
+        ///         {
+        ///           "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///           "fullName": "Staff Name",
+        ///           "email": "staff@example.com",
+        ///           "position": "DESIGNER",
+        ///           "avatar": "https://example.com/avatar.jpg"
+        ///         }
+        ///       ]
+        ///     }
+        ///   ],
+        ///   "pageNumber": 1,
+        ///   "pageSize": 10,
+        ///   "totalPages": 1,
+        ///   "totalRecords": 1
+        /// }
+        /// ```
         /// </remarks>
-        /// <response code="200">Success. Returns paginated list of projects</response>
+        /// <response code="200">Success. Returns paginated list of projects with design information and staff details</response>
         /// <response code="401">Unauthorized. User is not authenticated</response>
         /// <response code="500">Internal server error</response>
         [HttpGet("design")]
         [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectForDesignResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        /*[CustomAuthorize]*/
+        [CustomAuthorize]
         public async Task<PagedApiResponse<GetAllProjectForDesignResponse>> GetsProjectForDesignAsync(
             [FromQuery] PaginationFilter filter)
         {
@@ -395,11 +433,56 @@ namespace KPCOS.API.Controllers
             return new PagedApiResponse<GetAllDesignResponse>(design.data, filter.PageNumber, filter.PageSize, design.total);
         }
         
-        // [HttpGet("{id}/construction")]
-        // public async Task<ApiResult<ConstructionResponse>> GetConstructionByProjectAsync(Guid id)
-        // {
-        //     var construction = await service.GetConstructionByProjectAsync(id);
-        //     return construction;
-        // }
+        /// <summary>
+        /// Gets a paginated list of construction items for a specific project
+        /// </summary>
+        /// <param name="id">The ID of the project</param>
+        /// <param name="filter">Filter criteria for construction items including:
+        /// - Search: Filters by name or description containing the search term
+        /// - IsActive: Filters by active status (true/false)
+        /// - Status: Filters by construction item status (OPENING, PROCESSING, DONE)
+        /// - IsPayment: Filters by payment status (true/false)
+        /// - IsChild: If true, returns only child items; if false, returns only parent items
+        /// - PageNumber: Page number for pagination (1-based)
+        /// - PageSize: Number of items per page
+        /// - SortColumn: Column to sort by (default: CreatedAt)
+        /// - SortDir: Sort direction (Asc or Desc, default: Desc)
+        /// </param>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET /api/projects/{id}/construction?Search=foundation&amp;IsActive=true&amp;Status=OPENING&amp;IsPayment=true&amp;PageNumber=1&amp;PageSize=10
+        /// 
+        /// Available status values:
+        /// - OPENING: Initial status for new construction items
+        /// - PROCESSING: Construction items that are currently in progress
+        /// - DONE: Completed construction items
+        /// 
+        /// IsChild filter behavior:
+        /// - When IsChild=true: Returns only child items (items with a parent)
+        /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+        /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+        /// </remarks>
+        /// <returns>A paginated list of construction items with their children</returns>
+        /// <response code="200">Returns the paginated list of construction items</response>
+        [HttpGet("{id}/construction")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionItemResponse>), StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "Gets a paginated list of construction items for a specific project",
+            Description = "Retrieves construction items for the specified project based on the provided filter criteria. Parent items are returned with their child items populated in the Childs property.",
+            OperationId = "GetAllConstructionItemsByProject",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<GetAllConstructionItemResponse>> GetAllConstructionItemsByProjectAsync(Guid id,
+            [FromQuery] 
+            [SwaggerParameter(
+                Description = "Filter criteria for construction items including Search, IsActive, Status (OPENING, PROCESSING, DONE), IsPayment, IsChild, PageNumber, PageSize, SortColumn, and SortDir",
+                Required = false
+            )]
+            GetAllConstructionItemFilterRequest filter)
+        {
+            var (data, total) = await constructionService.GetAllConstructionItemsAsync(filter, id);
+            return new PagedApiResponse<GetAllConstructionItemResponse>(data, filter.PageNumber, filter.PageSize, total);
+        }
     }
 }

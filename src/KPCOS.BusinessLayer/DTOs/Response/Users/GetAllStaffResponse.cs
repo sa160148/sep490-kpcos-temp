@@ -1,10 +1,17 @@
-﻿namespace KPCOS.BusinessLayer.DTOs.Response.Users;
+﻿using System.Text.Json.Serialization;
+
+namespace KPCOS.BusinessLayer.DTOs.Response.Users;
 
 public class GetAllStaffResponse
 {
-    public Guid Id { get; set; }
-    public string FullName { get; set; }
-    public string Email { get; set; }
-    public string Position { get; set; }
-    public string Avatar { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? Id { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FullName { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Email { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Position { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Avatar { get; set; }
 }

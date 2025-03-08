@@ -12,6 +12,12 @@ public interface IDesignService
     /// <param name="designerId">The ID of the user (designer) creating the design</param>
     /// <param name="request">The design creation request containing project and image information</param>
     /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// The design version is automatically incremented based on existing designs:
+    /// - Finds the highest version number for designs with the same project ID and type
+    /// - Increments that version by 1 for the new design
+    /// - 2D and 3D designs have separate version numbering
+    /// </remarks>
     Task CreateDesignAsync(Guid designerId,CreateDesignRequest request);
 
     /// <summary>

@@ -8,6 +8,7 @@ using System.Data.Entity;
 using System.Threading.Tasks;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.Common.Exceptions;
+using System.Linq;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -29,20 +30,50 @@ public class DesignService : IDesignService
     /// <param name="request">The design creation request containing project and image information</param>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="BadRequestException">Thrown when the designer ID is not found in the staff table</exception>
+    /// <remarks>
+    /// The design version is automatically incremented based on existing designs:
+    /// - Finds the highest version number for designs with the same project ID and type
+    /// - Increments that version by 1 for the new design
+    /// - 2D and 3D designs have separate version numbering
+    /// - If no previous designs exist for the project and type, starts with version 1
+    /// </remarks>
     public async Task CreateDesignAsync(
         Guid designerId, 
         CreateDesignRequest request)
     {
-        var repo = _unitOfWork.Repository<Design>();
+        var designRepo = _unitOfWork.Repository<Design>();
+        
+        // Find the staff by user ID
+        var staffRepo = _unitOfWork.Repository<Staff>();
+        var staff = await staffRepo.FirstOrDefaultAsync(s => s.UserId == designerId);
+        if (staff == null)
+        {
+            throw new BadRequestException($"Staff with user ID {designerId} not found");
+        }
+        
+        // Get the highest version number for this project and design type
+        var projectDesigns = designRepo.Get(
+            filter: d => d.ProjectId == request.ProjectId && d.Type == request.Type
+        );
+            
+        var latestVersion = projectDesigns.Any() 
+            ? projectDesigns.Max(d => d.Version) 
+            : 0;
+            
+        // Create the new design
         var design = _mapper.Map<Design>(request);
-        design.Id = Guid.NewGuid(); 
-        design.StaffId = _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(staff => staff.UserId == designerId).Result.Id;
+        design.Id = Guid.NewGuid();
+        design.StaffId = staff.Id;
+        design.Version = latestVersion + 1;
+        
+        // Set IDs for design images
         foreach (var image in design.DesignImages)
         {
             image.Id = Guid.NewGuid();
             image.DesignId = design.Id;
         }
-        await repo.AddAsync(design);
+        
+        await designRepo.AddAsync(design);
     }
 
     /// <summary>

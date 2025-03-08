@@ -27,6 +27,12 @@ public class DesignsController(IDesignService service): BaseController
     /// <returns>Success response if the design is created successfully</returns>
     /// <remarks>
     /// <para>It required to login as Designer to get staff id</para>
+    /// <para>The design version is automatically incremented based on existing designs:</para>
+    /// <list type="bullet">
+    /// <item><description>Finds the highest version number for designs with the same project ID and type</description></item>
+    /// <item><description>Increments that version by 1 for the new design</description></item>
+    /// <item><description>2D and 3D designs have separate version numbering</description></item>
+    /// </list>
     /// </remarks>
     /// <response code="200">Design created successfully</response>
     /// <response code="400">If the user is not logged in as a designer</response>

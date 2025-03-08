@@ -18,6 +18,7 @@ using KPCOS.DataAccessLayer.Enums;
 using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractRequest;
 using KPCOS.BusinessLayer.DTOs.Response.Services;
 using KPCOS.BusinessLayer.DTOs.Response.Equipments;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -152,7 +153,6 @@ public class MapperProfile : Profile
 
         CreateMap<CreateDesignRequest, Design>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumDesignStatus.OPENING.ToString()))
-            .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
             .ForMember(dest => dest.DesignImages,
                 opt => opt.MapFrom(src => 
                     src.DesignImages.Select(img => new DesignImage
@@ -197,5 +197,25 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position));
+
+        CreateMap<ConstructionItem, GetAllConstructionItemResponse>();
+        CreateMap<ConstructionItem, GetAllConstructionItemChildResponse>();
+        CreateMap<ConstructionItem, GetConstructionItemDetailResponse>();
+        CreateMap<ConstructionItem, GetConstructionItemParentDetailResponse>()
+        .ForMember(dest => dest.ConstructionTasks, 
+        opt => opt.MapFrom(src => src.ConstructionTasks ?? null))
+        ;
+
+        CreateMap<ConstructionTask, GetAllConstructionTaskResponse>()
+        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.Deadline))
+        .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
+        ;
+
+        CreateMap<ConstructionTask, GetConstructionTaskDetailResponse>()
+        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.Deadline))
+        .ForMember(dest => dest.ImageUrl, 
+        opt => opt.MapFrom(src => src.ImageUrl ?? string.Empty))
+        .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason ?? string.Empty))
+        ;
     }
 }

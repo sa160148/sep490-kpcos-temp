@@ -1,18 +1,28 @@
+using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using KPCOS.BusinessLayer.Exceptions;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
+using AutoMapper;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
 public class ConstructionService : IConstructionServices
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public ConstructionService(IUnitOfWork unitOfWork)
+    public ConstructionService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
    public async Task CreateConstructionAsync(ConstructionRequest request)
@@ -137,9 +147,9 @@ public class ConstructionService : IConstructionServices
 
         // Validate maximum number of special items
         var specialItemCount = request.Items.Count(x => x.IsPayment == true);
-        if (specialItemCount > 3)
+        if (specialItemCount != 3)
         {
-            throw new BadRequestException("Số lượng hạng mục thanh toán không được vượt quá 3");
+            throw new BadRequestException("Số lượng hạng mục thanh toán phải bằng 3");
         }
 
         // Remove existing construction items
@@ -156,6 +166,180 @@ public class ConstructionService : IConstructionServices
         }
 
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Gets a paginated list of construction items with their children
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction items</param>
+    /// <param name="projectId">Optional project ID to filter items by project</param>
+    /// <returns>A tuple containing the list of construction items and the total count</returns>
+    /// <remarks>
+    /// This method retrieves construction items based on the provided filter criteria.
+    /// Parent items are returned with their child items populated in the Childs property.
+    /// If projectId is provided, only items for that project will be returned.
+    /// 
+    /// Available status values for filtering:
+    /// - OPENING: Initial status for new construction items
+    /// - PROCESSING: Construction items that are currently in progress
+    /// - DONE: Completed construction items
+    /// 
+    /// IsChild filter behavior:
+    /// - When IsChild=true: Returns only child items (items with a parent)
+    /// - When IsChild=false: Returns only parent items (items without a parent) with their children
+    /// - When IsChild is not specified: Returns parent items with their children (default behavior)
+    /// </remarks>
+    public async Task<(IEnumerable<GetAllConstructionItemResponse> data, int total)> GetAllConstructionItemsAsync(GetAllConstructionItemFilterRequest filter, Guid? projectId = null)
+    {
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Create a combined filter expression
+        var predicate = PredicateBuilder.New<ConstructionItem>(true);
+        
+        // Only filter by ParentId if IsChild is not specified
+        // If IsChild is specified, the filter will handle it
+        if (!filter.IsChild.HasValue)
+        {
+            predicate = predicate.And(x => x.ParentId == null);
+        }
+        
+        // Add projectId filter if provided
+        if (projectId.HasValue)
+        {
+            predicate = predicate.And(x => x.ProjectId == projectId.Value);
+        }
+        
+        // Combine with filter expressions from the filter object
+        predicate = predicate.And(filter.GetExpressions());
+        
+        // Get parent items with count using the repository's GetWithCount method
+        var (items, total) = constructionItemRepo.GetWithCount(
+            filter: predicate,
+            orderBy: filter.GetOrder(),
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map items to response objects using the injected mapper
+        var result = _mapper.Map<List<GetAllConstructionItemResponse>>(items);
+        
+        // For each item, get and map its children (only if it's a parent item)
+        foreach (var item in result)
+        {
+            if (item.Id.HasValue && (filter.IsChild == null || filter.IsChild == false))
+            {
+                // Get child items using the repository's Get method
+                var childItems = constructionItemRepo.Get(
+                    filter: x => x.ParentId == item.Id.Value
+                );
+                
+                item.Childs = _mapper.Map<List<GetAllConstructionItemChildResponse>>(childItems);
+            }
+            else
+            {
+                // For child items, ensure Childs collection is empty
+                item.Childs = new List<GetAllConstructionItemChildResponse>();
+            }
+        }
+        
+        return (result, total);
+    }
+
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter)
+    {
+        // Get the repository for ConstructionTask
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        
+        // Apply the filter expression from the request
+        var filterExpression = filter.GetExpressions();
+        
+        // Get the data with count using the repository's GetWithCount method
+        var result = constructionTaskRepo.GetWithCount(
+            filter: filterExpression,
+            orderBy: filter.GetOrder(),
+            includeProperties: "Staff,Staff.User",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the entities to response DTOs
+        var mappedResult = _mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
+        
+        return (mappedResult, result.Count);
+    }
+
+    public async Task<GetConstructionTaskDetailResponse> GetConstructionTaskDetailByIdAsync(Guid id)
+    {
+        var constructionTask = _unitOfWork.Repository<ConstructionTask>()
+        .Get(filter: x => x.Id == id, includeProperties: "Staff,Staff.User")
+        .SingleOrDefault() ?? throw new NotFoundException("Công việc không tồn tại");
+        return _mapper.Map<GetConstructionTaskDetailResponse>(constructionTask);
+    }
+
+    public async Task<GetConstructionItemDetailResponse> GetConstructionItemDetailByIdAsync(Guid id)
+    {
+        // Get the construction item by ID
+        var constructionItem = _unitOfWork.Repository<ConstructionItem>()
+            .Get(
+                filter: x => x.Id == id,
+                includeProperties: "ConstructionTasks,ConstructionTasks.Staff,ConstructionTasks.Staff.User"
+            )
+            .SingleOrDefault() ?? throw new NotFoundException("Hạng mục không tồn tại");
+
+        // Map the base construction item to response
+        var response = _mapper.Map<GetConstructionItemDetailResponse>(constructionItem);
+
+        // Check if it's a parent (level 1) or child (level 2) item
+        if (constructionItem.ParentId.HasValue)
+        {
+            // It's a child item - include its parent
+            var parentItem = await _unitOfWork.Repository<ConstructionItem>()
+                .FindAsync(constructionItem.ParentId.Value);
+            
+            if (parentItem != null)
+            {
+                response.Parent = _mapper.Map<GetConstructionItemParentDetailResponse>(parentItem);
+            }
+        }
+        else
+        {
+            // It's a parent item - include its children with their construction tasks
+            var childItems = _unitOfWork.Repository<ConstructionItem>()
+                .Get(
+                    filter: x => x.ParentId == id,
+                    includeProperties: "ConstructionTasks,ConstructionTasks.Staff,ConstructionTasks.Staff.User"
+                ).ToList();
+            
+            // Map child items
+            var mappedChildItems = new List<GetAllConstructionItemChildResponse>();
+            
+            foreach (var childItem in childItems)
+            {
+                // Map the child item
+                var mappedChild = _mapper.Map<GetAllConstructionItemChildResponse>(childItem);
+                
+                // Map construction tasks for the child item
+                if (childItem.ConstructionTasks != null && childItem.ConstructionTasks.Any())
+                {
+                    mappedChild.ConstructionTasks = _mapper.Map<List<GetAllConstructionTaskResponse>>(childItem.ConstructionTasks);
+                }
+                
+                mappedChildItems.Add(mappedChild);
+            }
+            
+            response.Childs = mappedChildItems;
+            
+            // For parent items, ensure Parent is null (already null by default)
+            response.Parent = null;
+        }
+
+        // Map construction tasks for the main item
+        if (constructionItem.ConstructionTasks != null && constructionItem.ConstructionTasks.Any())
+        {
+            response.ConstructionTasks = _mapper.Map<List<GetAllConstructionTaskResponse>>(constructionItem.ConstructionTasks);
+        }
+
+        return response;
     }
 
     private async Task CreateConstructionItemAsync(
