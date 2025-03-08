@@ -52,4 +52,24 @@ public interface IConstructionServices
     /// - When IsChild is not specified: Returns parent items with their children (default behavior)
     /// </remarks>
     Task<(IEnumerable<GetAllConstructionItemResponse> data, int total)> GetAllConstructionItemsAsync(GetAllConstructionItemFilterRequest filter, Guid? projectId = null);
+
+    /// <summary>
+    /// Gets a paginated list of construction tasks based on filter criteria
+    /// </summary>
+    /// <param name="filter">Filter criteria for construction tasks</param>
+    /// <returns>A tuple containing the list of construction tasks and the total count</returns>
+    /// <remarks>
+    /// This method retrieves construction tasks based on the provided filter criteria.
+    /// 
+    /// Available filter options:
+    /// - Search: Filters tasks by name containing the search term
+    /// - IsActive: Filters tasks by their active status
+    /// - Status: Filters tasks by their status (e.g., "OPENING", "PROCESSING", "DONE")
+    /// - IsOverdue: When true, returns tasks with deadlines in the past that are not marked as DONE
+    ///             When false, returns tasks that are not overdue or are marked as DONE
+    /// - ConstructionItemId: Filters tasks by their associated construction item
+    /// 
+    /// Tasks are returned with their associated Staff information.
+    /// </remarks>
+    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter);
 }
