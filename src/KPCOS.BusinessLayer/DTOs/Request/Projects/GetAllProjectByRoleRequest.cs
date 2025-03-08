@@ -19,13 +19,14 @@ public class GetAllProjectByRoleRequest : PaginationRequest<Project>
     public Expression<Func<Project, bool>> GetExpressionsV2(Guid userId, string role)
     {       
         var customerQueryExpression = PredicateBuilder.New<Project>(true);
-        /*if (role == RoleEnum.ADMINISTRATOR.ToString())
+        if (role == RoleEnum.ADMINISTRATOR.ToString())
         {
             return Expression = Expression.And(customerQueryExpression);
-        }*/
+        }
         customerQueryExpression.Or(pro => pro.Customer.UserId == userId || 
-                                          pro.ProjectStaffs.Any(ps => ps.Staff.UserId == userId) || 
-                                          pro.ProjectStaffs.Any(ps => ps.StaffId == userId && ps.Staff.Position == RoleEnum.ADMINISTRATOR.ToString()));
+                                          pro.ProjectStaffs.Any(ps => ps.Staff.UserId == userId) 
+                                          // || pro.ProjectStaffs.Any(ps => ps.StaffId == userId && ps.Staff.Position == RoleEnum.ADMINISTRATOR.ToString())
+                                          );
         return Expression = Expression.And(customerQueryExpression);
     }
 }

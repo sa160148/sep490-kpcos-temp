@@ -127,25 +127,29 @@ namespace KPCOS.API.Controllers
         }
         
         /// <summary>
-        /// Gets projects for design with standout flags based on user role: ADMINISTRATOR, MANAGER, DESIGNER, CUSTOMER
+        /// Get projects for design phase with staff information and standout flags
         /// </summary>
-        /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
-        /// <returns>Paginated list of projects with design information and standout status</returns>
+        /// <param name="filter">Pagination parameters (PageNumber and PageSize)</param>
+        /// <returns>Paginated list of projects with design information, staff details, and standout status</returns>
         /// <remarks>
-        /// This endpoint returns projects with status DESIGNING.
+        /// This endpoint returns projects with status DESIGNING and includes:
+        /// - Basic project information (name, address, area, etc.)
+        /// - Staff assigned to the project (designers, managers, etc.)
+        /// - Latest design image URL
+        /// - Standout flag based on user role
         /// 
-        /// Projects are marked as StandOut based on role:
+        /// Standout flag rules by role:
         /// 
         /// For Administrator:
         /// - Project has no manager assigned
         /// 
         /// For Manager:
-        /// - Project has no designer assigned
-        /// - OR project has any designs in OPENING status
+        /// - Project has no designer assigned, OR
+        /// - Project has designs in OPENING status
         /// 
         /// For Designer:
-        /// - Project has no designs
-        /// - OR project has designs in REJECTED/EDITING status
+        /// - Project has no designs, OR
+        /// - Project has designs in REJECTED or EDITING status
         /// 
         /// For Customer:
         /// - Project has any design in PREVIEWING status
@@ -153,15 +157,46 @@ namespace KPCOS.API.Controllers
         /// Sample request:
         /// 
         ///     GET /api/projects/design?PageNumber=1&amp;PageSize=10
+        /// 
+        /// Sample response:
+        /// ```json
+        /// {
+        ///   "data": [
+        ///     {
+        ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///       "name": "Project Name",
+        ///       "customerName": "Customer Name",
+        ///       "address": "123 Main St",
+        ///       "area": 150,
+        ///       "status": "DESIGNING",
+        ///       "imageUrl": "https://example.com/image.jpg",
+        ///       "standOut": true,
+        ///       "staffs": [
+        ///         {
+        ///           "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///           "fullName": "Staff Name",
+        ///           "email": "staff@example.com",
+        ///           "position": "DESIGNER",
+        ///           "avatar": "https://example.com/avatar.jpg"
+        ///         }
+        ///       ]
+        ///     }
+        ///   ],
+        ///   "pageNumber": 1,
+        ///   "pageSize": 10,
+        ///   "totalPages": 1,
+        ///   "totalRecords": 1
+        /// }
+        /// ```
         /// </remarks>
-        /// <response code="200">Success. Returns paginated list of projects</response>
+        /// <response code="200">Success. Returns paginated list of projects with design information and staff details</response>
         /// <response code="401">Unauthorized. User is not authenticated</response>
         /// <response code="500">Internal server error</response>
         [HttpGet("design")]
         [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectForDesignResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        /*[CustomAuthorize]*/
+        [CustomAuthorize]
         public async Task<PagedApiResponse<GetAllProjectForDesignResponse>> GetsProjectForDesignAsync(
             [FromQuery] PaginationFilter filter)
         {
