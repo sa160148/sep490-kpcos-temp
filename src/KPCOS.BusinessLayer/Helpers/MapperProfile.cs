@@ -205,5 +205,12 @@ public class MapperProfile : Profile
         .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.Deadline))
         .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
         ;
+
+        CreateMap<ConstructionTask, GetConstructionTaskDetailResponse>()
+        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.Deadline))
+        .ForMember(dest => dest.ImageUrl, 
+        opt => opt.MapFrom(src => src.ImageUrl ?? string.Empty))
+        .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason ?? string.Empty))
+        ;
     }
 }

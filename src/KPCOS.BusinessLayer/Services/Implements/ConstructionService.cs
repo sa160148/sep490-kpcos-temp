@@ -268,6 +268,14 @@ public class ConstructionService : IConstructionServices
         return (mappedResult, result.Count);
     }
 
+    public async Task<GetConstructionTaskDetailResponse> GetConstructionTaskDetailByIdAsync(Guid id)
+    {
+        var constructionTask = _unitOfWork.Repository<ConstructionTask>()
+        .Get(filter: x => x.Id == id, includeProperties: "Staff,Staff.User")
+        .SingleOrDefault() ?? throw new NotFoundException("Công việc không tồn tại");
+        return _mapper.Map<GetConstructionTaskDetailResponse>(constructionTask);
+    }
+
     private async Task CreateConstructionItemAsync(
         CreateConstructionItemRequest request,
         Guid projectId,
