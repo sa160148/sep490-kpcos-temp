@@ -75,8 +75,12 @@ public interface IProjectService
     Task<int> CountAsync();
     int CountProjectByUserIdAsync(Guid userId);
 
-    Task CreateAsync(ProjectRequest request, Guid userId);
-    Task<IEnumerable<StaffResponse>> GetsConsultantAsync(PaginationFilter filter, Guid projectId);
+    Task CreateAsync(
+        ProjectRequest request, 
+        Guid userId);
+    Task<IEnumerable<StaffResponse>> GetsConsultantAsync(
+        PaginationFilter filter, 
+        Guid projectId);
     
     
     /// <summary>
@@ -139,10 +143,14 @@ public interface IProjectService
     /// </list>
     /// </exception>
     /// <returns>A task that represents the asynchronous operation</returns>
-    Task AssignStaffAsync(Guid projectId, Guid userId);
+    Task AssignStaffAsync(
+        Guid projectId, 
+        Guid userId);
 
     int CountQuotationByProject(Guid id);
-    Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(Guid id, GetAllQuotationFilterRequest filter);
+    Task<(IEnumerable<QuotationForProjectResponse> data, int total)> GetQuotationsByProjectAsync(
+        Guid id, 
+        GetAllQuotationFilterRequest filter);
 
     /// <summary>
     /// Gets all projects for design purposes with design-related information and standout status
@@ -219,7 +227,9 @@ public interface IProjectService
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
-    Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(Guid id, GetAllContractFilterRequest filter);
+    Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(
+        Guid id, 
+        GetAllContractFilterRequest filter);
 
     /// <summary>
     /// Gets all designs associated with a specific project with pagination
@@ -237,5 +247,9 @@ public interface IProjectService
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
-    Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(Guid id, GetAllDesignFilterRequest filter);
+    Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(
+        Guid id, 
+        GetAllDesignFilterRequest filter);
+
+    Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id);
 }

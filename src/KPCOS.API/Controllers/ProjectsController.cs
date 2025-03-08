@@ -484,5 +484,21 @@ namespace KPCOS.API.Controllers
             var (data, total) = await constructionService.GetAllConstructionItemsAsync(filter, id);
             return new PagedApiResponse<GetAllConstructionItemResponse>(data, filter.PageNumber, filter.PageSize, total);
         }
+
+        [HttpGet("{id}/design/3d-confirmed")]
+        [ProducesResponseType(typeof(ApiResult<IsDesignExitByProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Checks if a project has any confirmed 3D designs",
+            Description = "Determines whether the specified project has any designs with type '3D' and status 'CONFIRMED'",
+            OperationId = "IsDesign3DConfirmedAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<ApiResult<IsDesignExitByProjectResponse>> IsDesign3DConfirmedAsync(Guid id)
+        {
+            var designs = await service.IsDesign3DConfirmedAsync(id);
+            return Ok(designs);
+        }
     }
 }

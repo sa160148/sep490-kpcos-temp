@@ -627,6 +627,24 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (designResponses, total);
     }
 
+    public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
+    {
+        var expression = PredicateBuilder.New<Design>();
+        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
+        expression = expression.And(design => design.ProjectId == id);
+        expression = expression.And(design => design.Type == "3D");
+        
+        // Check if any designs match the criteria instead of trying to get a single one
+        var exists = unitOfWork.Repository<Design>()
+            .Get(filter: expression)
+            .Any();
+            
+        return new IsDesignExitByProjectResponse
+        {
+            IsExit3DConfirmed = exists
+        };
+    }
+
     /// <summary>
     /// Maps a project entity to a design response with standout status and latest design image
     /// </summary>
