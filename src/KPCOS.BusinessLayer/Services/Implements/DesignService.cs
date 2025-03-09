@@ -170,6 +170,11 @@ public class DesignService : IDesignService
         {
             throw new NotFoundException("Không tìm thấy Design");
         }
+        if (design.Status != EnumDesignStatus.PREVIEWING.ToString())
+        {
+            throw new BadRequestException("Design đang không ở trạng thái xem trước");
+        }
+
         design.Status = EnumDesignStatus.EDITING.ToString();
         design.Reason = request.Reason;
         await repo.UpdateAsync(design);
