@@ -71,4 +71,35 @@ public static class GlobalUtility
 
         return "127.0.0.1";
     }
+
+    public static DateTime GetCurrentSEATime()
+    {
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        DateTime localTime = DateTime.Now;
+        DateTime utcTime = TimeZoneInfo.ConvertTime(localTime, TimeZoneInfo.Local, tz);
+        return utcTime;
+    }
+
+    public static DateTime ConvertToSEATime(DateTime value)
+    {
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        DateTime convertedTime = TimeZoneInfo.ConvertTime(value, tz);
+        return convertedTime;
+    }
+    
+    public static TimeZoneInfo GetSEATimeZone()
+    {
+        TimeZoneInfo tz;
+        try
+        {
+            // Try using Windows time zone
+            tz = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // Fallback to IANA time zone for Linux/Docker
+            tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+        }
+        return tz;
+    }
 }
