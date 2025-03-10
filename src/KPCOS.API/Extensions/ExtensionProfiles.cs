@@ -14,6 +14,7 @@ public static class ExtensionProfiles
         services.AddSwaggerServices();
         services.AddBackgroundServices();
         services.AddServices();
+        services.AddVnpay(configuration);
         services.AddFirebase(configuration);
 
         return services;

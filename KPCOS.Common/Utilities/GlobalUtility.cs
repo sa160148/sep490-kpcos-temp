@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
+using System.Net;
+using System.Net.Sockets;
 
 namespace KPCOS.Common.Utilities;
 
@@ -27,5 +30,45 @@ public static class GlobalUtility
             finalConnectionString = configurationRoot.GetConnectionString("Default");
         }
         return finalConnectionString;
+    }
+
+    /// <summary>
+    /// Generate a server URL with HTTPS scheme.
+    /// </summary>
+    /// <param name="httpContextAccessor">The IHttpContextAccessor instance.</param>
+    /// <param name="httpContextAccessor">The IHttpContextAccessor instance.</param>
+    /// <returns>The server URL with HTTPS scheme.</returns>
+    public static string GetSecureServerUrl(IHttpContextAccessor httpContextAccessor)
+    {
+        if (httpContextAccessor?.HttpContext == null)
+        {
+             throw new Exception("HttpContext is null.");
+        }
+
+        var host = httpContextAccessor.HttpContext.Request.Host.ToUriComponent();
+
+        if (string.IsNullOrEmpty(host))
+        {
+            throw new Exception("Host is not available.");
+        }
+
+        // Always force HTTPS scheme
+        return $"https://{host}";
+    } 
+
+    public static string GetIpAddress()
+    {
+        var host = Dns.GetHostEntry(Dns.GetHostName());
+
+        foreach (var ip in host.AddressList)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                Console.WriteLine(ip.ToString());
+                return ip.ToString();
+            }
+        }
+
+        return "127.0.0.1";
     }
 }
