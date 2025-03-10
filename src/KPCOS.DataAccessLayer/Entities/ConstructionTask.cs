@@ -20,7 +20,7 @@ public partial class ConstructionTask
 
     public Guid? StaffId { get; set; }
 
-    public DateTime? Deadline { get; set; }
+    public DateTime? DeadlineAt { get; set; }
 
     public string? Status { get; set; }
 
