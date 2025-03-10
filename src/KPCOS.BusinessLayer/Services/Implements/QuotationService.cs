@@ -170,6 +170,7 @@ public class QuotationService : IQuotationService
             if (request.Reason == null || request.Reason == "") {
                 throw new BadRequestException("Lý do từ chối không được để trống");
             }
+            quotation.Reason = request.Reason;
         }
         await _unitOfWork.SaveChangesAsync();
     }
@@ -191,6 +192,7 @@ public class QuotationService : IQuotationService
             if (request.Reason == null || request.Reason == "") {
                 throw new BadRequestException("Lý do từ chối không được để trống");
             }
+            quotation.Reason = request.Reason;
         }
         await _unitOfWork.SaveChangesAsync();
     }
