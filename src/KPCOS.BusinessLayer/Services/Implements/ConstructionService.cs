@@ -11,6 +11,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using LinqKit;
+using KPCOS.Common.Utilities;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -340,6 +341,109 @@ public class ConstructionService : IConstructionServices
         }
 
         return response;
+    }
+
+    public async Task CreateConstructionTaskAsync(List<CreateConstructionTaskRequest> request, Guid id)
+    {
+        // Validate request
+        if (id == Guid.Empty)
+        {
+            throw new BadRequestException("ID của hạng mục xây dựng là bắt buộc");
+        }
+
+        // Get repositories
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+
+        // Find the construction item with its parent
+        var constructionItems = constructionItemRepo.Get(
+            filter: ci => ci.Id == id && ci.IsActive == true,
+            includeProperties: "ConstructionTasks"
+        );
+        
+        var constructionItem = constructionItems.FirstOrDefault();
+        if (constructionItem == null)
+        {
+            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {id}");
+        }
+
+        // Validate that the construction item is a level 2 (child) item
+        if (!constructionItem.ParentId.HasValue)
+        {
+            throw new BadRequestException("Chỉ có thể tạo công việc cho hạng mục con (cấp 2)");
+        }
+
+        // Get existing task names for this construction item
+        var existingTasks = constructionTaskRepo.Where(t => 
+            t.ConstructionItemId == id && 
+            t.IsActive == true);
+            
+        // Convert to HashSet for efficient lookups (case-insensitive)
+        var existingTaskNames = new HashSet<string>(
+            existingTasks.Select(t => t.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        // Keep track of task names we're adding in this batch to prevent duplicates
+        var batchTaskNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        // Create a list to hold all new tasks
+        var newTasks = new List<ConstructionTask>();
+
+        // Process each task request
+        foreach (var taskRequest in request)
+        {
+            // Validate task name
+            if (string.IsNullOrWhiteSpace(taskRequest.Name))
+            {
+                throw new BadRequestException("Tên công việc là bắt buộc");
+            }
+
+            // Check for duplicates in the current batch
+            if (batchTaskNames.Contains(taskRequest.Name))
+            {
+                throw new BadRequestException($"Công việc với tên '{taskRequest.Name}' bị trùng lặp trong yêu cầu");
+            }
+
+            // Check for existing tasks with the same name
+            if (existingTaskNames.Contains(taskRequest.Name))
+            {
+                throw new BadRequestException($"Công việc với tên '{taskRequest.Name}' đã tồn tại trong hạng mục xây dựng này");
+            }
+
+            // Create new task using mapper
+            var newTask = _mapper.Map<ConstructionTask>(taskRequest);
+            newTask.ConstructionItemId = id;
+            
+            // Add to our list of new tasks
+            newTasks.Add(newTask);
+            
+            // Add to our batch tracking set
+            batchTaskNames.Add(taskRequest.Name);
+        }
+
+        // Add all tasks directly to the task repository
+        await constructionTaskRepo.AddRangeAsync(newTasks, false);
+        
+        // Update the status of the level 2 (child) construction item to PROCESSING if it's currently OPENING
+        if (constructionItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+        {
+            constructionItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
+            await constructionItemRepo.UpdateAsync(constructionItem, false);
+            
+            // Update the parent (level 1) construction item status to PROCESSING if it's currently OPENING
+            if (constructionItem.ParentId.HasValue)
+            {
+                var parentItem = await constructionItemRepo.FindAsync(constructionItem.ParentId.Value);
+                if (parentItem != null && parentItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+                {
+                    parentItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
+                    await constructionItemRepo.UpdateAsync(parentItem, false);
+                }
+            }
+        }
+        
+        // Save all changes at once
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private async Task CreateConstructionItemAsync(

@@ -48,8 +48,8 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
             (!IsActive.HasValue || task.IsActive == IsActive) &&
             (string.IsNullOrEmpty(Status) || task.Status == Status) &&
             (!IsOverdue.HasValue || 
-                (IsOverdue.Value && task.Deadline.HasValue && task.Deadline.Value < DateTime.UtcNow && task.Status != "DONE") || 
-                (!IsOverdue.Value && (!task.Deadline.HasValue || task.Deadline.Value >= DateTime.UtcNow || task.Status == "DONE"))) &&
+                (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < DateTime.Now && task.Status != "DONE") || 
+                (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= DateTime.Now || task.Status == "DONE"))) &&
             (!ConstructionItemId.HasValue || task.ConstructionItemId == ConstructionItemId);
     }
 }
