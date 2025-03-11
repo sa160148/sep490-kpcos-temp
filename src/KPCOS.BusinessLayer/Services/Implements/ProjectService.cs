@@ -650,6 +650,28 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     }
 
     /// <summary>
+    /// Checks if a project has any active contracts
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any active contracts</returns>
+    public async Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id)
+    {
+        var expression = PredicateBuilder.New<Contract>();
+        expression = expression.And(contract => contract.Status == EnumContractStatus.ACTIVE.ToString());
+        expression = expression.And(contract => contract.ProjectId == id);
+        
+        // Check if any contracts match the criteria
+        var exists = unitOfWork.Repository<Contract>()
+            .Get(filter: expression)
+            .Any();
+            
+        return new IsContractApprovedByProjectResponse
+        {
+            IsExitActive = exists
+        };
+    }
+
+    /// <summary>
     /// Maps a project entity to a design response with standout status and latest design image
     /// </summary>
     /// <param name="project">The project entity to map</param>

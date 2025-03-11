@@ -526,5 +526,26 @@ namespace KPCOS.API.Controllers
             var isQuotationApproved = await service.IsQuotationApprovedByProjectAsync(id);
             return Ok(isQuotationApproved);
         }
+
+        [HttpGet("{id}/contract/active")]
+        [ProducesResponseType(typeof(ApiResult<IsContractApprovedByProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Checks if a project has any active contracts",
+            Description = "Determines whether the specified project has any contracts with status 'ACTIVE'",
+            OperationId = "IsContractApprovedByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<ApiResult<IsContractApprovedByProjectResponse>> IsContractApprovedByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for active contracts",
+                Required = true
+            )]
+            Guid id)
+        {
+            var isContractApproved = await service.IsContractApprovedByProjectAsync(id);
+            return Ok(isContractApproved);
+        }
     }
 }

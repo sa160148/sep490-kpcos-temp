@@ -263,4 +263,15 @@ public interface IProjectService
     /// <para>Used to determine if a project can proceed to the next stage in the workflow</para>
     /// </remarks>
     Task<IsQuotationApprovedByProjectResponse> IsQuotationApprovedByProjectAsync(Guid id);
+
+    /// <summary>
+    /// Checks if a project has any active contracts
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any active contracts</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any contracts with status 'ACTIVE' for the specified project</para>
+    /// <para>Used to determine if a project has progressed to the active contract stage in the workflow</para>
+    /// </remarks>
+    Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id);
 }
