@@ -23,7 +23,7 @@ public interface IProjectService
     /// <param name="filter">Filter and pagination parameters including optional status filtering</param>
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user (ADMINISTRATOR, CONSULTANT, etc.)</param>
-    /// <returns>Collection of projects with quotation information and standout status</returns>
+    /// <returns>Tuple containing collection of projects with quotation information and the total count</returns>
     /// <remarks>
     /// <para>Access Rules:</para>
     /// <list type="bullet">
@@ -66,7 +66,7 @@ public interface IProjectService
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
+    Task<(IEnumerable<GetAllProjectForQuotationResponse> Data, int Count)> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null);
@@ -158,7 +158,7 @@ public interface IProjectService
     /// <param name="advandcedFilter">Filter and pagination parameters including optional status filtering</param>
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user (ADMINISTRATOR, MANAGER, DESIGNER, etc.)</param>
-    /// <returns>Collection of projects with design information and standout status</returns>
+    /// <returns>Tuple containing collection of projects with design information and the total count</returns>
     /// <remarks>
     /// <para>Access Rules:</para>
     /// <list type="bullet">
@@ -207,7 +207,7 @@ public interface IProjectService
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+    Task<(IEnumerable<GetAllProjectForDesignResponse> Data, int Count)> GetAllProjectForDesignByUserIdAsync(
         GetAllProjectByUserIdRequest advandcedFilter, 
         string userId, 
         string? role = null);

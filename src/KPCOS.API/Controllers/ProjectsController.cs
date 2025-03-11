@@ -108,7 +108,6 @@ namespace KPCOS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
-            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
@@ -121,7 +120,18 @@ namespace KPCOS.API.Controllers
                 },
             };
             
-            var projects = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
+            // Get projects and count in a single query
+            var (projects, count) = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
+            
+            if (count == 0)
+            {
+                return new PagedApiResponse<GetAllProjectForQuotationResponse>(
+                    new List<GetAllProjectForQuotationResponse>(),
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: 0);
+            }
+            
             return new PagedApiResponse<GetAllProjectForQuotationResponse>(
                 projects,
                 pageNumber: filter.PageNumber,
@@ -205,7 +215,6 @@ namespace KPCOS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
-            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
@@ -217,7 +226,18 @@ namespace KPCOS.API.Controllers
                 },
             };
             
-            var projects = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
+            // Get projects and count in a single query
+            var (projects, count) = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
+            
+            if (count == 0)
+            {
+                return new PagedApiResponse<GetAllProjectForDesignResponse>(
+                    new List<GetAllProjectForDesignResponse>(),
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: 0);
+            }
+            
             return new PagedApiResponse<GetAllProjectForDesignResponse>(
                 projects,
                 pageNumber: filter.PageNumber,
