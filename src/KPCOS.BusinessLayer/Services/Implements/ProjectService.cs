@@ -62,14 +62,26 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user</param>
     /// <returns>Collection of projects with quotation information and standout status</returns>
-    public async Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
+    public async Task<(IEnumerable<GetAllProjectForQuotationResponse> Data, int Count)> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null)
     {
         ValidateRequest(filter);
-        var projects = GetFilteredProjects(filter, "Quotation",userId, role);
-        return MapProjectsForQuotationToResponse(projects, userId, role);
+        
+        // Get projects and count in a single query using GetWithCount
+        var (projects, count) = unitOfWork.Repository<Project>().GetWithCount(
+            filter: BuildProjectFilter(filter, userId, role),
+            includeProperties: GetQuotationRequiredIncludes,
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the projects to response objects
+        var mappedProjects = MapProjectsForQuotationToResponse(projects, userId, role);
+        
+        return (mappedProjects, count);
     }
 
     /// <summary>
@@ -348,6 +360,19 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return repo.Get(filter: p => p.Customer.UserId == userId).Count();
     }
 
+    /// <summary>
+    /// Counts projects with filters applied for accurate pagination
+    /// </summary>
+    /// <param name="filter">The filter criteria to apply</param>
+    /// <param name="userId">The user ID</param>
+    /// <param name="role">The user role</param>
+    /// <returns>Count of projects matching the filter criteria</returns>
+    public int CountProjectsWithFiltersAsync(GetAllProjectByUserIdRequest filter, string userId, string role)
+    {
+        var repo = unitOfWork.Repository<Project>();
+        return repo.Get(filter: BuildProjectFilter(filter, userId, role)).Count();
+    }
+
     public async Task CreateAsync(
         ProjectRequest request, 
         Guid userId)
@@ -535,14 +560,26 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    public async Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+    public async Task<(IEnumerable<GetAllProjectForDesignResponse> Data, int Count)> GetAllProjectForDesignByUserIdAsync(
         GetAllProjectByUserIdRequest advandcedFilter, 
         string userId,
         string? role = null)
     {
         ValidateRequest(advandcedFilter);
-        var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
-        return projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+        
+        // Get projects and count in a single query using GetWithCount
+        var (projects, count) = unitOfWork.Repository<Project>().GetWithCount(
+            filter: BuildProjectFilter(advandcedFilter, userId, role),
+            includeProperties: GetDesignRequiredIncludes,
+            orderBy: null,
+            pageIndex: advandcedFilter.PageNumber,
+            pageSize: advandcedFilter.PageSize
+        );
+        
+        // Map the projects to response objects
+        var mappedProjects = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+        
+        return (mappedProjects, count);
     }
 
     /// <summary>
