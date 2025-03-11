@@ -252,4 +252,15 @@ public interface IProjectService
         GetAllDesignFilterRequest filter);
 
     Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id);
+
+    /// <summary>
+    /// Checks if a project has any approved quotations
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any approved quotations</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any quotations with status 'APPROVED' for the specified project</para>
+    /// <para>Used to determine if a project can proceed to the next stage in the workflow</para>
+    /// </remarks>
+    Task<IsQuotationApprovedByProjectResponse> IsQuotationApprovedByProjectAsync(Guid id);
 }
