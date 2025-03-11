@@ -126,17 +126,17 @@ public class QuotationService : IQuotationService
     {
         var repoQuotation = _unitOfWork.Repository<Quotation>();
         
-        var pageData =  repoQuotation.Get(
+        var pageData =  repoQuotation.GetWithCount(
             filter.GetExpressions(),
             null,
             "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment",
             filter.PageNumber,
             filter.PageSize
-        ).ToList();
+        );
         
-        var data = _mapper.Map<IEnumerable<QuotationResponse>>(pageData);
+        var data = _mapper.Map<IEnumerable<QuotationResponse>>(pageData.Data);
         
-        return (data, data.Count());
+        return (data, pageData.Count);
     }
 
     public async Task<QuotationResponse> GetQuotationByIdAsync(Guid id)

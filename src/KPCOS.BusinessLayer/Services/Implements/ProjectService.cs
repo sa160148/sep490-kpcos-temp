@@ -467,17 +467,17 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
 
         // Get data with all conditions using repository's features
         var query = unitOfWork.Repository<Quotation>()
-            .Get(
+            .GetWithCount(
                 filter: builder,
                 orderBy: filter.GetOrder(),
                 includeProperties: "QuotationDetails.Service,QuotationEquipments.Equipment,Project.ProjectStaffs.Staff.User",
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            ).ToList();
+            );
 
-        var quotations = mapper.Map<List<QuotationForProjectResponse>>(query);
+        var quotations = mapper.Map<List<QuotationForProjectResponse>>(query.Data);
 
-        return (quotations, quotations.Count);
+        return (quotations, query.Count);
     }
 
     /// <summary>
@@ -576,20 +576,20 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         advancedFilter.And(c => c.ProjectId == id);
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
-            .Get(
+            .GetWithCount(
                 filter: c => c.ProjectId == id && c.IsActive == true,
                 includeProperties: "Project.Quotations",
                 orderBy: q => q.OrderByDescending(c => c.CreatedAt),
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            ).ToList();
+            );
         
-        if (!contracts.Any())
+        if (!contracts.Data.Any())
         {
             return (Enumerable.Empty<GetAllContractResponse>(), 0);
         }
 
-        var contractResponses = contracts.Select(contract =>
+        var contractResponses = contracts.Data.Select(contract =>
         {
             var response = mapper.Map<GetAllContractResponse>(contract);
             
@@ -599,7 +599,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             return response;
         }).ToList();
 
-        return (contractResponses, contracts.Count());
+        return (contractResponses, contracts.Count);
     }
 
     public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(
