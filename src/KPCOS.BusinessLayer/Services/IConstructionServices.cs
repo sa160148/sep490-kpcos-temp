@@ -111,4 +111,37 @@ public interface IConstructionServices
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task<GetConstructionItemDetailResponse> GetConstructionItemDetailByIdAsync(Guid id);
+
+    /// <summary>
+    /// Creates new construction tasks for a specific level 2 (child) construction item
+    /// </summary>
+    /// <param name="request">List of tasks to create</param>
+    /// <param name="id">ID of the construction item</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method creates new construction tasks for a specified level 2 (child) construction item:
+    /// - Validates that the construction item exists and is a level 2 (child) item
+    /// - Ensures task names are unique within the construction item
+    /// - All tasks are created with status OPENING
+    /// - Handles deadline dates with proper time zone conversion for PostgreSQL compatibility
+    /// - Changes the status of the level 2 (child) construction item from OPENING to PROCESSING
+    /// - If the parent (level 1) construction item has status OPENING, changes it to PROCESSING as well
+    /// 
+    /// Validation rules:
+    /// - Construction item ID must be valid
+    /// - Construction item must be a level 2 (child) item
+    /// - Task name is required for each task
+    /// - Task names must be unique within the construction item
+    /// - Task names must be unique within the current request batch
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - Construction item ID is invalid
+    /// - Construction item is not a level 2 (child) item
+    /// - Task name is missing
+    /// - Task name is duplicated in the request
+    /// - Task with the same name already exists in the construction item
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task CreateConstructionTaskAsync(List<CreateConstructionTaskRequest> request, Guid id);
 }

@@ -19,6 +19,8 @@ using ContractRequest = KPCOS.BusinessLayer.DTOs.Request.Contracts.ContractReque
 using KPCOS.BusinessLayer.DTOs.Response.Services;
 using KPCOS.BusinessLayer.DTOs.Response.Equipments;
 using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.Common.Utilities;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -198,24 +200,37 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.Position, opt => opt.MapFrom(src => src.Position));
 
-        CreateMap<ConstructionItem, GetAllConstructionItemResponse>();
-        CreateMap<ConstructionItem, GetAllConstructionItemChildResponse>();
-        CreateMap<ConstructionItem, GetConstructionItemDetailResponse>();
+        CreateMap<ConstructionItem, GetAllConstructionItemResponse>()
+        .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description ?? string.Empty))
+        ;
+        CreateMap<ConstructionItem, GetAllConstructionItemChildResponse>()
+        .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description ?? string.Empty))
+        ;
+        CreateMap<ConstructionItem, GetConstructionItemDetailResponse>()
+        .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description ?? string.Empty))
+        ;
         CreateMap<ConstructionItem, GetConstructionItemParentDetailResponse>()
+        .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description ?? string.Empty))
         .ForMember(dest => dest.ConstructionTasks, 
         opt => opt.MapFrom(src => src.ConstructionTasks ?? null))
         ;
 
         CreateMap<ConstructionTask, GetAllConstructionTaskResponse>()
-        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.DeadlineAt))
         .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
         ;
 
         CreateMap<ConstructionTask, GetConstructionTaskDetailResponse>()
-        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => src.DeadlineAt))    
         .ForMember(dest => dest.ImageUrl, 
         opt => opt.MapFrom(src => src.ImageUrl ?? string.Empty))
         .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason ?? string.Empty))
+        ;
+
+        // Mapping for construction task creation
+        CreateMap<CreateConstructionTaskRequest, ConstructionTask>()
+        .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+        .ForMember(dest => dest.Status, opt => opt.MapFrom(src => EnumConstructionTaskStatus.OPENING.ToString()))
+        .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => 
+            GlobalUtility.ConvertToSEATimeForPostgres(src.DeadlineAt)))
         ;
     }
 }

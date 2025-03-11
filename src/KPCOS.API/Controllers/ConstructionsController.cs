@@ -286,4 +286,57 @@ public class ConstructionsController  : BaseController
         var result = await _constructionService.GetConstructionItemDetailByIdAsync(id);
         return Ok(result);
     }
+    
+    [HttpPost("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Tạo các công việc mới cho hạng mục xây dựng(construction item) cấp 2 (con)",
+        Description = 
+            "API này cho phép tạo nhiều công việc cho một hạng mục xây dựng(construction item) cấp 2 (con) cụ thể. " +
+            "Các quy tắc và hành vi:\n\n" +
+            "- Chỉ có thể tạo công việc cho hạng mục xây dựng(construction item) cấp 2 (con), không thể tạo cho hạng mục xây dựng(construction item) cấp 1 (cha)\n" +
+            "- Tất cả công việc được tạo với trạng thái OPENING\n" +
+            "- Tên công việc phải là duy nhất trong hạng mục xây dựng\n" +
+            "- Khi tạo công việc, trạng thái của hạng mục xây dựng(construction item) cấp 2 sẽ được chuyển từ OPENING sang PROCESSING\n" +
+            "- Nếu hạng mục xây dựng(construction item) cấp 1 (cha) có trạng thái OPENING, nó cũng sẽ được chuyển sang PROCESSING\n" +
+            "- Thời hạn (deadline) được tự động chuyển đổi sang múi giờ Việt Nam và định dạng phù hợp với PostgreSQL\n\n" +
+            "Lỗi có thể xảy ra:\n" +
+            "- 400 Bad Request: ID hạng mục không hợp lệ, hạng mục không phải cấp 2, tên công việc trống, " +
+            "tên công việc trùng lặp trong yêu cầu, hoặc tên công việc đã tồn tại trong hạng mục\n" +
+            "- 404 Not Found: Không tìm thấy hạng mục xây dựng(construction item) với ID được cung cấp",
+        OperationId = "CreateConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> CreateConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = 
+                "Danh sách các công việc cần tạo. Mỗi công việc yêu cầu có tên (bắt buộc) và có thể bao gồm thời hạn (tùy chọn).\n\n" +
+                "Ví dụ:\n" +
+                "```json\n" +
+                "[\n" +
+                "  {\n" +
+                "    \"name\": \"Công việc 1\",\n" +
+                "    \"deadlineAt\": \"2023-12-31T17:00:00\"\n" +
+                "  },\n" +
+                "  {\n" +
+                "    \"name\": \"Công việc 2\"\n" +
+                "  }\n" +
+                "]\n" +
+                "```",
+            Required = true
+        )]
+        List<CreateConstructionTaskRequest> request,
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng(construction item) cấp 2 (con)",
+            Required = true
+        )]
+        Guid id
+        )
+    {
+        await _constructionService.CreateConstructionTaskAsync(request, id);
+        return Ok();
+    }
+
 }

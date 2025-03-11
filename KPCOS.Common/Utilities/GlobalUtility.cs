@@ -102,4 +102,25 @@ public static class GlobalUtility
         }
         return tz;
     }
+
+    /// <summary>
+    /// Converts a DateTime to SEA time zone and specifies the kind as Unspecified for PostgreSQL compatibility.
+    /// This is useful when working with PostgreSQL timestamp without time zone columns.
+    /// </summary>
+    /// <param name="dateTime">The DateTime to convert</param>
+    /// <returns>A DateTime in SEA time zone with DateTimeKind.Unspecified</returns>
+    public static DateTime? ConvertToSEATimeForPostgres(DateTime? dateTime)
+    {
+        if (!dateTime.HasValue)
+        {
+            return null;
+        }
+
+        // Convert to SEA time zone
+        var seaTimeZone = GetSEATimeZone();
+        var seaTime = TimeZoneInfo.ConvertTime(dateTime.Value, seaTimeZone);
+        
+        // Specify kind as Unspecified for PostgreSQL compatibility
+        return DateTime.SpecifyKind(seaTime, DateTimeKind.Unspecified);
+    }
 }
