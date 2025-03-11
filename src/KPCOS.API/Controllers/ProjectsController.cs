@@ -495,10 +495,36 @@ namespace KPCOS.API.Controllers
             OperationId = "IsDesign3DConfirmedAsync",
             Tags = new[] { "Projects" }
         )]
-        public async Task<ApiResult<IsDesignExitByProjectResponse>> IsDesign3DConfirmedAsync(Guid id)
+        public async Task<ApiResult<IsDesignExitByProjectResponse>> IsDesign3DConfirmedAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for confirmed 3D designs",
+                Required = true
+            )]
+            Guid id)
         {
             var designs = await service.IsDesign3DConfirmedAsync(id);
             return Ok(designs);
+        }
+
+        [HttpGet("{id}/quotation/approved")]
+        [ProducesResponseType(typeof(ApiResult<IsQuotationApprovedByProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Checks if a project has any approved quotations",
+            Description = "Determines whether the specified project has any quotations with status 'APPROVED'",
+            OperationId = "IsQuotationApprovedByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<ApiResult<IsQuotationApprovedByProjectResponse>> IsQuotationApprovedByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for approved quotations",
+                Required = true
+            )]
+            Guid id)
+        {
+            var isQuotationApproved = await service.IsQuotationApprovedByProjectAsync(id);
+            return Ok(isQuotationApproved);
         }
     }
 }

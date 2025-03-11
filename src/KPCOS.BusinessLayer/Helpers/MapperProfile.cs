@@ -99,6 +99,8 @@ public class MapperProfile : Profile
                 opt => opt.MapFrom(src => src.Project.ProjectStaffs.Select(ps => ps.Staff)))
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => "Báo giá " + src.Version))
+            .ForMember(dest => dest.Reason,
+                opt => opt.MapFrom(src => src.Reason ?? string.Empty))
             ;
 
         CreateMap<Staff, GetAllStaffResponse>()
@@ -127,6 +129,10 @@ public class MapperProfile : Profile
             opt => opt.MapFrom(src => src.Service.Description))
             .ForMember(dest => dest.Price, 
             opt => opt.MapFrom(src => src.Service.Price))
+            .ForMember(dest => dest.Unit,
+            opt => opt.MapFrom(src => src.Service.Unit))
+            .ForMember(dest => dest.Type,
+            opt => opt.MapFrom(src => src.Service.Type))
         ;
         CreateMap<QuotationEquipment, GetAllEquipmentResponse>()
             .ForMember(dest => dest.Id, 

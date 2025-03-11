@@ -627,21 +627,25 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (designResponses, total);
     }
 
-    public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
+    /// <summary>
+    /// Checks if a project has any approved quotations
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any approved quotations</returns>
+    public async Task<IsQuotationApprovedByProjectResponse> IsQuotationApprovedByProjectAsync(Guid id)
     {
-        var expression = PredicateBuilder.New<Design>();
-        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
-        expression = expression.And(design => design.ProjectId == id);
-        expression = expression.And(design => design.Type == "3D");
+        var expression = PredicateBuilder.New<Quotation>();
+        expression = expression.And(quotation => quotation.Status == EnumQuotationStatus.APPROVED.ToString());
+        expression = expression.And(quotation => quotation.ProjectId == id);
         
-        // Check if any designs match the criteria instead of trying to get a single one
-        var exists = unitOfWork.Repository<Design>()
+        // Check if any quotations match the criteria
+        var exists = unitOfWork.Repository<Quotation>()
             .Get(filter: expression)
             .Any();
             
-        return new IsDesignExitByProjectResponse
+        return new IsQuotationApprovedByProjectResponse
         {
-            IsExit3DConfirmed = exists
+            IsExitApproved = exists
         };
     }
 
@@ -1004,5 +1008,32 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             throw new BadRequestException(
                 $"Dự án đã có {positionMessages[staff.Position.ToUpper()]} {existingStaff.Staff.User.Email}");
         }
+    }
+
+    /// <summary>
+    /// Checks if a project has any confirmed 3D designs
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any confirmed 3D designs</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any designs with type '3D' and status 'CONFIRMED' for the specified project</para>
+    /// <para>Used to determine if a project can proceed to the next stage in the workflow</para>
+    /// </remarks>
+    public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
+    {
+        var expression = PredicateBuilder.New<Design>();
+        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
+        expression = expression.And(design => design.ProjectId == id);
+        expression = expression.And(design => design.Type == "3D");
+        
+        // Check if any designs match the criteria instead of trying to get a single one
+        var exists = unitOfWork.Repository<Design>()
+            .Get(filter: expression)
+            .Any();
+            
+        return new IsDesignExitByProjectResponse
+        {
+            IsExit3DConfirmed = exists
+        };
     }
 }
