@@ -23,7 +23,7 @@ public interface IProjectService
     /// <param name="filter">Filter and pagination parameters including optional status filtering</param>
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user (ADMINISTRATOR, CONSULTANT, etc.)</param>
-    /// <returns>Collection of projects with quotation information and standout status</returns>
+    /// <returns>Tuple containing collection of projects with quotation information and the total count</returns>
     /// <remarks>
     /// <para>Access Rules:</para>
     /// <list type="bullet">
@@ -66,7 +66,7 @@ public interface IProjectService
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
+    Task<(IEnumerable<GetAllProjectForQuotationResponse> Data, int Count)> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null);
@@ -158,7 +158,7 @@ public interface IProjectService
     /// <param name="advandcedFilter">Filter and pagination parameters including optional status filtering</param>
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user (ADMINISTRATOR, MANAGER, DESIGNER, etc.)</param>
-    /// <returns>Collection of projects with design information and standout status</returns>
+    /// <returns>Tuple containing collection of projects with design information and the total count</returns>
     /// <remarks>
     /// <para>Access Rules:</para>
     /// <list type="bullet">
@@ -207,7 +207,7 @@ public interface IProjectService
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+    Task<(IEnumerable<GetAllProjectForDesignResponse> Data, int Count)> GetAllProjectForDesignByUserIdAsync(
         GetAllProjectByUserIdRequest advandcedFilter, 
         string userId, 
         string? role = null);
@@ -252,4 +252,26 @@ public interface IProjectService
         GetAllDesignFilterRequest filter);
 
     Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id);
+
+    /// <summary>
+    /// Checks if a project has any approved quotations
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any approved quotations</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any quotations with status 'APPROVED' for the specified project</para>
+    /// <para>Used to determine if a project can proceed to the next stage in the workflow</para>
+    /// </remarks>
+    Task<IsQuotationApprovedByProjectResponse> IsQuotationApprovedByProjectAsync(Guid id);
+
+    /// <summary>
+    /// Checks if a project has any active contracts
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any active contracts</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any contracts with status 'ACTIVE' for the specified project</para>
+    /// <para>Used to determine if a project has progressed to the active contract stage in the workflow</para>
+    /// </remarks>
+    Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id);
 }

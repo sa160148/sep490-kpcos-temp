@@ -6,6 +6,7 @@ using KPCOS.BusinessLayer.Helpers;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.BusinessLayer.Services.Implements;
 using KPCOS.Common;
+using KPCOS.Common.Constants;
 using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using MailKit.Net.Smtp;
@@ -60,4 +61,20 @@ public static class AddServiceCollection
         services.AddHangfireServer();
         return services;
     }
+
+    public static IServiceCollection AddVnpay(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Register HttpContextAccessor
+            services.AddHttpContextAccessor();
+            
+            // Bind VnPaySettings configuration from appsettings.json and register it as a singleton
+            var vnPaySettings = new VnpaySetting();
+            configuration.GetSection("Vnpay").Bind(vnPaySettings);
+            services.AddSingleton(vnPaySettings);
+
+            // Register the VnPayService, which depends on VnPaySettings
+            services.AddScoped<IPaymentService, PaymentService>();
+
+            return services;
+        }
 }

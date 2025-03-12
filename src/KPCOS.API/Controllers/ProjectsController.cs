@@ -108,7 +108,6 @@ namespace KPCOS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
-            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
@@ -121,7 +120,18 @@ namespace KPCOS.API.Controllers
                 },
             };
             
-            var projects = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
+            // Get projects and count in a single query
+            var (projects, count) = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
+            
+            if (count == 0)
+            {
+                return new PagedApiResponse<GetAllProjectForQuotationResponse>(
+                    new List<GetAllProjectForQuotationResponse>(),
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: 0);
+            }
+            
             return new PagedApiResponse<GetAllProjectForQuotationResponse>(
                 projects,
                 pageNumber: filter.PageNumber,
@@ -205,7 +215,6 @@ namespace KPCOS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
-            var count = service.CountProjectByUserIdAsync(Guid.Parse(userId));
             
             var advandcedFilter = new GetAllProjectByUserIdRequest
             {
@@ -217,7 +226,18 @@ namespace KPCOS.API.Controllers
                 },
             };
             
-            var projects = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
+            // Get projects and count in a single query
+            var (projects, count) = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
+            
+            if (count == 0)
+            {
+                return new PagedApiResponse<GetAllProjectForDesignResponse>(
+                    new List<GetAllProjectForDesignResponse>(),
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: 0);
+            }
+            
             return new PagedApiResponse<GetAllProjectForDesignResponse>(
                 projects,
                 pageNumber: filter.PageNumber,
@@ -495,10 +515,57 @@ namespace KPCOS.API.Controllers
             OperationId = "IsDesign3DConfirmedAsync",
             Tags = new[] { "Projects" }
         )]
-        public async Task<ApiResult<IsDesignExitByProjectResponse>> IsDesign3DConfirmedAsync(Guid id)
+        public async Task<ApiResult<IsDesignExitByProjectResponse>> IsDesign3DConfirmedAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for confirmed 3D designs",
+                Required = true
+            )]
+            Guid id)
         {
             var designs = await service.IsDesign3DConfirmedAsync(id);
             return Ok(designs);
+        }
+
+        [HttpGet("{id}/quotation/approved")]
+        [ProducesResponseType(typeof(ApiResult<IsQuotationApprovedByProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Checks if a project has any approved quotations",
+            Description = "Determines whether the specified project has any quotations with status 'APPROVED'",
+            OperationId = "IsQuotationApprovedByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<ApiResult<IsQuotationApprovedByProjectResponse>> IsQuotationApprovedByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for approved quotations",
+                Required = true
+            )]
+            Guid id)
+        {
+            var isQuotationApproved = await service.IsQuotationApprovedByProjectAsync(id);
+            return Ok(isQuotationApproved);
+        }
+
+        [HttpGet("{id}/contract/active")]
+        [ProducesResponseType(typeof(ApiResult<IsContractApprovedByProjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Checks if a project has any active contracts",
+            Description = "Determines whether the specified project has any contracts with status 'ACTIVE'",
+            OperationId = "IsContractApprovedByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<ApiResult<IsContractApprovedByProjectResponse>> IsContractApprovedByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to check for active contracts",
+                Required = true
+            )]
+            Guid id)
+        {
+            var isContractApproved = await service.IsContractApprovedByProjectAsync(id);
+            return Ok(isContractApproved);
         }
     }
 }

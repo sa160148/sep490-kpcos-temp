@@ -25,6 +25,7 @@ public partial class PaymentBatch
     public int? Percents { get; set; }
 
     public string? Status { get; set; }
+    public DateTime? PaymentAt { get; set; }
 
     public virtual Contract Contract { get; set; } = null!;
 }

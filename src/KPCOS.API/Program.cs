@@ -30,6 +30,9 @@ builder.Services.AddSwaggerGen(c =>
     c.CustomSchemaIds(type => type.FullName);
 });
 
+// Add HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddExtensionProfiles(builder.Configuration);
 
 var app = builder.Build();

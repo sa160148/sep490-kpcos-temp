@@ -62,14 +62,26 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// <param name="userId">The ID of the user requesting projects</param>
     /// <param name="role">The role of the user</param>
     /// <returns>Collection of projects with quotation information and standout status</returns>
-    public async Task<IEnumerable<GetAllProjectForQuotationResponse>> GetAllProjectForQuotationByUserIdAsync(
+    public async Task<(IEnumerable<GetAllProjectForQuotationResponse> Data, int Count)> GetAllProjectForQuotationByUserIdAsync(
         GetAllProjectByUserIdRequest filter, 
         string? userId, 
         string? role = null)
     {
         ValidateRequest(filter);
-        var projects = GetFilteredProjects(filter, "Quotation",userId, role);
-        return MapProjectsForQuotationToResponse(projects, userId, role);
+        
+        // Get projects and count in a single query using GetWithCount
+        var (projects, count) = unitOfWork.Repository<Project>().GetWithCount(
+            filter: BuildProjectFilter(filter, userId, role),
+            includeProperties: GetQuotationRequiredIncludes,
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the projects to response objects
+        var mappedProjects = MapProjectsForQuotationToResponse(projects, userId, role);
+        
+        return (mappedProjects, count);
     }
 
     /// <summary>
@@ -348,6 +360,19 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return repo.Get(filter: p => p.Customer.UserId == userId).Count();
     }
 
+    /// <summary>
+    /// Counts projects with filters applied for accurate pagination
+    /// </summary>
+    /// <param name="filter">The filter criteria to apply</param>
+    /// <param name="userId">The user ID</param>
+    /// <param name="role">The user role</param>
+    /// <returns>Count of projects matching the filter criteria</returns>
+    public int CountProjectsWithFiltersAsync(GetAllProjectByUserIdRequest filter, string userId, string role)
+    {
+        var repo = unitOfWork.Repository<Project>();
+        return repo.Get(filter: BuildProjectFilter(filter, userId, role)).Count();
+    }
+
     public async Task CreateAsync(
         ProjectRequest request, 
         Guid userId)
@@ -467,17 +492,17 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
 
         // Get data with all conditions using repository's features
         var query = unitOfWork.Repository<Quotation>()
-            .Get(
+            .GetWithCount(
                 filter: builder,
                 orderBy: filter.GetOrder(),
                 includeProperties: "QuotationDetails.Service,QuotationEquipments.Equipment,Project.ProjectStaffs.Staff.User",
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            ).ToList();
+            );
 
-        var quotations = mapper.Map<List<QuotationForProjectResponse>>(query);
+        var quotations = mapper.Map<List<QuotationForProjectResponse>>(query.Data);
 
-        return (quotations, quotations.Count);
+        return (quotations, query.Count);
     }
 
     /// <summary>
@@ -535,14 +560,26 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     ///     <item><description>UserId is null or invalid</description></item>
     /// </list>
     /// </exception>
-    public async Task<IEnumerable<GetAllProjectForDesignResponse>> GetAllProjectForDesignByUserIdAsync(
+    public async Task<(IEnumerable<GetAllProjectForDesignResponse> Data, int Count)> GetAllProjectForDesignByUserIdAsync(
         GetAllProjectByUserIdRequest advandcedFilter, 
         string userId,
         string? role = null)
     {
         ValidateRequest(advandcedFilter);
-        var projects = GetFilteredProjects(advandcedFilter, "Design", userId, role);
-        return projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+        
+        // Get projects and count in a single query using GetWithCount
+        var (projects, count) = unitOfWork.Repository<Project>().GetWithCount(
+            filter: BuildProjectFilter(advandcedFilter, userId, role),
+            includeProperties: GetDesignRequiredIncludes,
+            orderBy: null,
+            pageIndex: advandcedFilter.PageNumber,
+            pageSize: advandcedFilter.PageSize
+        );
+        
+        // Map the projects to response objects
+        var mappedProjects = projects.Select(project => MapProjectForDesignToResponse(project, userId, role));
+        
+        return (mappedProjects, count);
     }
 
     /// <summary>
@@ -576,20 +613,20 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         advancedFilter.And(c => c.ProjectId == id);
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
-            .Get(
+            .GetWithCount(
                 filter: c => c.ProjectId == id && c.IsActive == true,
                 includeProperties: "Project.Quotations",
                 orderBy: q => q.OrderByDescending(c => c.CreatedAt),
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
-            ).ToList();
+            );
         
-        if (!contracts.Any())
+        if (!contracts.Data.Any())
         {
             return (Enumerable.Empty<GetAllContractResponse>(), 0);
         }
 
-        var contractResponses = contracts.Select(contract =>
+        var contractResponses = contracts.Data.Select(contract =>
         {
             var response = mapper.Map<GetAllContractResponse>(contract);
             
@@ -599,7 +636,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             return response;
         }).ToList();
 
-        return (contractResponses, contracts.Count());
+        return (contractResponses, contracts.Count);
     }
 
     public async Task<(IEnumerable<GetAllDesignResponse> data, int total)> GetAllDesignByProjectAsync(
@@ -627,21 +664,47 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         return (designResponses, total);
     }
 
-    public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
+    /// <summary>
+    /// Checks if a project has any approved quotations
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any approved quotations</returns>
+    public async Task<IsQuotationApprovedByProjectResponse> IsQuotationApprovedByProjectAsync(Guid id)
     {
-        var expression = PredicateBuilder.New<Design>();
-        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
-        expression = expression.And(design => design.ProjectId == id);
-        expression = expression.And(design => design.Type == "3D");
+        var expression = PredicateBuilder.New<Quotation>();
+        expression = expression.And(quotation => quotation.Status == EnumQuotationStatus.APPROVED.ToString());
+        expression = expression.And(quotation => quotation.ProjectId == id);
         
-        // Check if any designs match the criteria instead of trying to get a single one
-        var exists = unitOfWork.Repository<Design>()
+        // Check if any quotations match the criteria
+        var exists = unitOfWork.Repository<Quotation>()
             .Get(filter: expression)
             .Any();
             
-        return new IsDesignExitByProjectResponse
+        return new IsQuotationApprovedByProjectResponse
         {
-            IsExit3DConfirmed = exists
+            IsExitApproved = exists
+        };
+    }
+
+    /// <summary>
+    /// Checks if a project has any active contracts
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any active contracts</returns>
+    public async Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id)
+    {
+        var expression = PredicateBuilder.New<Contract>();
+        expression = expression.And(contract => contract.Status == EnumContractStatus.ACTIVE.ToString());
+        expression = expression.And(contract => contract.ProjectId == id);
+        
+        // Check if any contracts match the criteria
+        var exists = unitOfWork.Repository<Contract>()
+            .Get(filter: expression)
+            .Any();
+            
+        return new IsContractApprovedByProjectResponse
+        {
+            IsExitActive = exists
         };
     }
 
@@ -1004,5 +1067,32 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             throw new BadRequestException(
                 $"Dự án đã có {positionMessages[staff.Position.ToUpper()]} {existingStaff.Staff.User.Email}");
         }
+    }
+
+    /// <summary>
+    /// Checks if a project has any confirmed 3D designs
+    /// </summary>
+    /// <param name="id">The project ID to check</param>
+    /// <returns>Response indicating whether the project has any confirmed 3D designs</returns>
+    /// <remarks>
+    /// <para>This method checks if there are any designs with type '3D' and status 'CONFIRMED' for the specified project</para>
+    /// <para>Used to determine if a project can proceed to the next stage in the workflow</para>
+    /// </remarks>
+    public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
+    {
+        var expression = PredicateBuilder.New<Design>();
+        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
+        expression = expression.And(design => design.ProjectId == id);
+        expression = expression.And(design => design.Type == "3D");
+        
+        // Check if any designs match the criteria instead of trying to get a single one
+        var exists = unitOfWork.Repository<Design>()
+            .Get(filter: expression)
+            .Any();
+            
+        return new IsDesignExitByProjectResponse
+        {
+            IsExit3DConfirmed = exists
+        };
     }
 }

@@ -133,7 +133,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Deadline).HasColumnName("deadline");
+            entity.Property(e => e.DeadlineAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("deadline_at");
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(255)
                 .HasColumnName("image_url");
@@ -744,6 +746,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
+            entity.Property(e => e.PaymentAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("payment_at");
             entity.Property(e => e.TotalValue).HasColumnName("total_value");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
