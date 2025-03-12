@@ -4,25 +4,25 @@ namespace KPCOS.Common
 {
     public enum ApiResultStatusCode
     {
-        [Display(Name = "The operation was completed successfully")]
+        [Display(Name = "Thao tác đã hoàn thành thành công")]
         Success = 0,
 
-        [Display(Name = "An error occurred on the server")]
+        [Display(Name = "Đã xảy ra lỗi trên máy chủ")]
         ServerError = 1,
 
-        [Display(Name = "The provided parameters are not valid")]
+        [Display(Name = "Các tham số được cung cấp không hợp lệ")]
         BadRequest = 2,
 
-        [Display(Name = "Not found")]
+        [Display(Name = "Không tìm thấy")]
         NotFound = 3,
 
-        [Display(Name = "The list is empty")]
+        [Display(Name = "Danh sách trống")]
         ListEmpty = 4,
 
-        [Display(Name = "An error occurred during processing")]
+        [Display(Name = "Đã xảy ra lỗi trong quá trình xử lý")]
         LogicError = 5,
 
-        [Display(Name = "Authentication error")]
+        [Display(Name = "Lỗi xác thực")]
         UnAuthorized = 6
     }
 
