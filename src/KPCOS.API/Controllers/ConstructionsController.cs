@@ -512,4 +512,62 @@ public class ConstructionsController  : BaseController
         return Ok();
     }
 
+    [HttpPut("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Cập nhật công việc xây dựng(construction task)",
+        Description = 
+            "API này cho phép cập nhật thông tin của công việc xây dựng(construction task).\n\n" +
+            "**Quy tắc và hành vi:**\n" +
+            "- Tên công việc phải là duy nhất trong hạng mục xây dựng(construction item lv2).\n" +
+            "- Khi gán nhân viên cho công việc, trạng thái sẽ chuyển từ OPENING sang PROCESSING.\n" +
+            "- Khi cập nhật URL hình ảnh(imageUrl), trạng thái sẽ chuyển từ PROCESSING sang PREVIEWING.\n" +
+            "- Khi cập nhật lý do(reason), trạng thái sẽ chuyển từ PREVIEWING sang PROCESSING.\n" +
+            "- Nhân viên được gán phải thuộc dự án(project staff).\n" +
+            "- Nhân viên được gán phải có vị trí là 'constructor'.\n" +
+            "- Không thể cập nhật lý do(reason) khi URL hình ảnh(imageUrl) chưa được cung cấp.\n" +
+            "- Các field khi update có thể null hoặc không khai báo sẽ không cập nhật.\n\n" +
+            "**Lưu ý quan trọng:**\n" +
+            "- staffId trong request là UserId của nhân viên (từ bảng User), không phải Id của nhân viên (từ bảng Staff).\n\n" +
+            "**Lỗi có thể xảy ra:**\n" +
+            "- 400 Bad Request: Tên công việc đã tồn tại trong hạng mục, nhân viên không thuộc dự án, nhân viên không có vị trí 'constructor', hoặc cố gắng cập nhật lý do khi chưa có URL hình ảnh.\n" +
+            "- 404 Not Found: Không tìm thấy công việc hoặc nhân viên với ID được cung cấp.\n\n" +
+            "**Ví dụ yêu cầu:**\n\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"name\": \"Kiểm tra chất lượng ngói (tùy chọn)\",\n" +
+            "  \"deadlineAt\": \"2024-08-15T17:00:00 (tùy chọn)\",\n" +
+            "  \"staffId\": \"7e7a3d26-2c0b-4ad2-a95b-bf62838d5e32 (tùy chọn, đây là UserId từ bảng User)\",\n" +
+            "  \"reason\": \"Cần kiểm tra kỹ lưỡng chất lượng ngói trước khi lắp đặt (tùy chọn, yêu cầu imageUrl đã tồn tại)\",\n" +
+            "  \"imageUrl\": \"https://example.com/images/roof-inspection.jpg (tùy chọn)\"\n" +
+            "}\n" +
+            "```",
+        OperationId = "UpdateConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> UpdateConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = "ID của công việc xây dựng(construction task) cần cập nhật",
+            Required = true
+        )]
+        Guid id,
+        [FromBody]
+        [SwaggerParameter(
+            Description = 
+                "Thông tin cập nhật cho công việc(construction task) xây dựng(construction). Các trường có thể bao gồm:\n" +
+                "- name: Tên mới của công việc (tùy chọn)\n" +
+                "- deadlineAt: Thời hạn mới của công việc (tùy chọn)\n" +
+                "- staffId: ID của người dùng (User.Id) được gán cho công việc, không phải ID của nhân viên (Staff.Id) (tùy chọn, nhân viên phải có vị trí 'constructor')\n" +
+                "- reason: Lý do hoặc ghi chú cho công việc (tùy chọn, yêu cầu imageUrl đã tồn tại)\n" +
+                "- imageUrl: URL hình ảnh cho công việc (tùy chọn)",
+            Required = true
+        )]
+        UpdateConstructionTaskRequest request
+    )
+    {   
+        await _constructionService.UpdateConstructionTaskAsync(request, id);
+        return Ok();
+    }
 }
