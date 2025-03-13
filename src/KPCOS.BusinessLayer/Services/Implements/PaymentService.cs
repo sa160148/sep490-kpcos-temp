@@ -35,7 +35,8 @@ public class PaymentService : IPaymentService
     /// <returns>Response containing the VNPAY payment URL to redirect the user to</returns>
     public async Task<CreateTransactionPaymentResponse> CreateTransactionPaymentAsync(CreatePaymentRequest request)
     {
-        var time = DateTime.Now;
+        // Use SEA time instead of local time to ensure consistency
+        var time = GlobalUtility.GetCurrentSEATime();
         var paymentBatch = await GetPaymentBatchAsync(request.BatchPaymentId);
         var paymentInfo = GeneratePaymentInfo(paymentBatch);
 
@@ -50,7 +51,8 @@ public class PaymentService : IPaymentService
         vnpayLibrary.AddRequestData("vnp_IpAddr", GlobalUtility.GetIpAddress());
         vnpayLibrary.AddRequestData("vnp_OrderInfo", paymentInfo);
         vnpayLibrary.AddRequestData("vnp_OrderType", EnumBillType.HOA_DON_THANH_TOAN + "");
-        vnpayLibrary.AddRequestData("vnp_ExpireDate", time.AddSeconds(180).ToString("yyyyMMddHHmmss"));
+        // Use SEA time for expire date to ensure consistency with the create date
+        vnpayLibrary.AddRequestData("vnp_ExpireDate", time.AddSeconds(300).ToString("yyyyMMddHHmmss"));
         vnpayLibrary.AddRequestData("vnp_TxnRef", Guid.NewGuid().ToString());
         
         // Generate the VnpayUrl
