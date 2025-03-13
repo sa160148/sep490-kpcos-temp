@@ -477,7 +477,7 @@ public class ConstructionService : IConstructionServices
                 Name = templateItem.Name,
                 Description = templateItem.Description,
                 Status = status,
-                EstimateAt = request.EstimateAt,
+                EstimateAt = request.EstimateAt!.Value,
                 IsPayment = isPayment,
                 ProjectId = projectId,
                 ParentId = parentId
@@ -492,7 +492,7 @@ public class ConstructionService : IConstructionServices
                 Name = request.Name,
                 Description = request.Description,
                 Status = status,
-                EstimateAt = request.EstimateAt,
+                EstimateAt = request.EstimateAt!.Value,
                 IsPayment = isPayment,
                 ProjectId = projectId,
                 ParentId = parentId
@@ -509,5 +509,122 @@ public class ConstructionService : IConstructionServices
                 await CreateConstructionItemAsync(child, projectId, constructionItem.Id, constructionItemRepo, templateItemRepo, isParent: false);
             }
         }
+    }
+
+    public async Task UpdateConstructionItemLv1Async(CreateConstructionItemRequest request, Guid id)
+    {
+        // Get repositories
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Find the construction item
+        var constructionItem = await constructionItemRepo.FindAsync(id);
+        if (constructionItem == null)
+        {
+            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {id}");
+        }
+
+        // Validate that the construction item is a level 1 (parent) item
+        if (constructionItem.ParentId.HasValue)
+        {
+            throw new BadRequestException("Chỉ có thể cập nhật hạng mục cha (cấp 1)");
+        }
+
+        // Validate unique name for level 1 (parent) item if name is being updated
+        if (!string.IsNullOrWhiteSpace(request.Name) && request.Name != constructionItem.Name)
+        {
+            // Check if there's another level 1 item with the same name in the same project
+            var existingItemWithSameName = constructionItemRepo.FirstOrDefault(
+                x => x.ProjectId == constructionItem.ProjectId && 
+                     x.ParentId == null && 
+                     x.Id != constructionItem.Id && 
+                     x.Name.ToLower() == request.Name.ToLower() &&
+                     x.IsActive == true);
+                     
+            if (existingItemWithSameName != null)
+            {
+                throw new BadRequestException($"Đã tồn tại hạng mục cha với tên '{request.Name}' trong dự án này");
+            }
+        }
+
+        // Update the construction item properties using ReflectionUtil
+        // Only include name and description, exclude all other properties
+        var excludeProperties = new List<string> 
+        { 
+            "Id", "Childs", "EstimateAt", "IsPayment", "TemplateItemId", 
+            "ProjectId", "ParentId", "Status", "CreatedAt", "UpdatedAt", "IsActive" 
+        };
+        ReflectionUtil.UpdateProperties(request, constructionItem, excludeProperties);
+
+        // Update the parent item
+        await constructionItemRepo.UpdateAsync(constructionItem, false);
+
+        // Add new child items if provided
+        if (request.Childs != null && request.Childs.Any())
+        {
+            // Get existing child items to check for duplicate names
+            var existingChildItems = constructionItemRepo.Get(
+                x => x.ParentId == constructionItem.Id && x.IsActive == true).ToList();
+                
+            // Create a HashSet of existing child item names (case-insensitive) for efficient lookups
+            var existingChildNames = new HashSet<string>(
+                existingChildItems.Select(x => x.Name.ToLower()),
+                StringComparer.OrdinalIgnoreCase);
+                
+            // Create a HashSet to track names in the current batch to prevent duplicates within the request
+            var batchChildNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            
+            // Create a list to hold all new child items
+            var childItems = new List<ConstructionItem>();
+            
+            foreach (var childRequest in request.Childs)
+            {
+                // Validate child name is provided
+                if (string.IsNullOrWhiteSpace(childRequest.Name))
+                {
+                    throw new BadRequestException("Tên hạng mục con là bắt buộc");
+                }
+                
+                // Check for duplicate names within the current batch
+                if (batchChildNames.Contains(childRequest.Name))
+                {
+                    throw new BadRequestException($"Hạng mục con với tên '{childRequest.Name}' bị trùng lặp trong yêu cầu");
+                }
+                
+                // Check for duplicate names with existing child items
+                if (existingChildNames.Contains(childRequest.Name.ToLower()))
+                {
+                    throw new BadRequestException($"Đã tồn tại hạng mục con với tên '{childRequest.Name}' trong hạng mục cha này");
+                }
+                
+                // Add to batch tracking set
+                batchChildNames.Add(childRequest.Name);
+                
+                // Create new child item with required properties
+                var childItem = new ConstructionItem
+                {
+                    Name = childRequest.Name, // Name is required and validated above
+                    Description = childRequest.Description, // Description from request
+                    EstimateAt = childRequest.EstimateAt ?? DateOnly.FromDateTime(DateTime.Now), // EstimateAt from request or default
+                    Status = EnumConstructionItemStatus.OPENING.ToString(), // Status is always OPENING for new items
+                    IsPayment = false, // Child items always have isPayment=false
+                    ProjectId = constructionItem.ProjectId, // Same project as parent
+                    ParentId = constructionItem.Id // Parent is the level 1 item
+                    // CreatedAt, UpdatedAt, and IsActive are handled automatically by the database
+                };
+                
+                // No need to use ReflectionUtil here since we're explicitly setting only the fields we want
+                // and we've already validated the name
+
+                // Add to our list of child items
+                childItems.Add(childItem);
+            }
+            
+            // Add all child items at once using AddRangeAsync
+            // This only adds new items and doesn't modify existing ones
+            await constructionItemRepo.AddRangeAsync(childItems, false);
+        }
+
+        // Save all changes
+        await _unitOfWork.SaveChangesAsync();
     }
 }

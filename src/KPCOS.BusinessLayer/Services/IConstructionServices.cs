@@ -144,4 +144,34 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task CreateConstructionTaskAsync(List<CreateConstructionTaskRequest> request, Guid id);
+    
+    /// <summary>
+    /// Updates a level 1 (parent) construction item and optionally adds new child items
+    /// </summary>
+    /// <param name="request">The request containing name, description, and optional child items to add</param>
+    /// <param name="id">ID of the level 1 (parent) construction item to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates only the name and description of a level 1 (parent) construction item if provided
+    /// - Validates that the name is unique among level 1 items in the same project
+    /// - Adds new child items if the Childs collection is not empty or null
+    /// - Validates that each child item has a name and the name is unique among existing child items and within the request
+    /// - All new child items are created with status OPENING
+    /// - For level 2 (child) items, name, description, and estimateAt are used from the request
+    /// - For level 2 (child) items, is_payment is always set to false regardless of request
+    /// - For level 2 (child) items, template_item_id and childs properties are ignored
+    /// - CreatedAt, UpdatedAt, and IsActive fields are handled automatically by the database
+    /// - Does not modify existing child items
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The construction item is not a level 1 (parent) item
+    /// - A level 1 item with the same name already exists in the project
+    /// - A child item name is missing
+    /// - A child item name is duplicated in the request
+    /// - A child item name already exists among the existing child items
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task UpdateConstructionItemLv1Async(CreateConstructionItemRequest request, Guid id);
 }

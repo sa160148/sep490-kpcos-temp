@@ -339,4 +339,66 @@ public class ConstructionsController  : BaseController
         return Ok();
     }
 
+    /// <summary>
+    /// Cập nhật hạng mục xây dựng cấp 1 (cha) và thêm hạng mục con mới
+    /// </summary>
+    /// <remarks>
+    /// API này cho phép cập nhật thông tin của hạng mục xây dựng cấp 1 (cha) và thêm các hạng mục con mới.
+    /// 
+    /// Ví dụ yêu cầu:
+    /// 
+    ///     {
+    ///       "name": "Xây dựng mái che",
+    ///       "description": "Mô tả cập nhật cho hạng mục mái che",
+    ///       "childs": [
+    ///         {
+    ///           "name": "Lợp tôn mái che phía Bắc",
+    ///           "description": "Lợp tôn cho phần mái phía Bắc của công trình",
+    ///           "estimateAt": "2024-07-15"
+    ///         },
+    ///         {
+    ///           "name": "Lợp tôn mái che phía Nam",
+    ///           "description": "Lợp tôn cho phần mái phía Nam của công trình",
+    ///           "estimateAt": "2024-07-30"
+    ///         }
+    ///       ]
+    ///     }
+    /// 
+    /// </remarks>
+    /// <param name="id">ID của hạng mục xây dựng cấp 1 (cha) cần cập nhật</param>
+    /// <param name="request">Thông tin cập nhật cho hạng mục xây dựng cấp 1 (cha) và danh sách hạng mục con mới (nếu có)</param>
+    /// <returns>Kết quả cập nhật hạng mục xây dựng</returns>
+    /// <response code="200">Cập nhật hạng mục xây dựng thành công</response>
+    /// <response code="400">ID hạng mục không hợp lệ, hạng mục không phải cấp 1 (cha), tên hạng mục cha đã tồn tại, tên hạng mục con trống, tên hạng mục con trùng lặp trong yêu cầu, hoặc tên hạng mục con đã tồn tại</response>
+    /// <response code="404">Không tìm thấy hạng mục xây dựng với ID được cung cấp</response>
+    [HttpPut("item/{id}/lv1")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Cập nhật hạng mục xây dựng cấp 1 (cha) và thêm hạng mục con mới",
+        Description = 
+            "API này cho phép cập nhật thông tin của hạng mục xây dựng cấp 1 (cha) và thêm các hạng mục con mới. " +
+            "Đối với hạng mục cấp 1, chỉ cập nhật name và description. " +
+            "Đối với hạng mục con, sử dụng name, description và estimateAt.",
+        OperationId = "UpdateConstructionItemLv1",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> UpdateConstructionItemLv1Async(
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng cấp 1 (cha) cần cập nhật",
+            Required = true
+        )]
+        Guid id,
+        [FromBody]
+        [SwaggerParameter(
+            Description = "Thông tin cập nhật cho hạng mục xây dựng cấp 1 (cha) và danh sách hạng mục con mới (nếu có)",
+            Required = true
+        )]
+        CreateConstructionItemRequest request
+    )
+    {
+        await _constructionService.UpdateConstructionItemLv1Async(request, id);
+        return Ok();
+    }
 }
