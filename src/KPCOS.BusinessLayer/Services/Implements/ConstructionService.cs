@@ -744,4 +744,128 @@ public class ConstructionService : IConstructionServices
         // Save all changes at once
         await _unitOfWork.SaveChangesAsync();
     }
+
+    public async Task UpdateConstructionTaskAsync(UpdateConstructionTaskRequest request, Guid id)
+    {
+        // Get repositories
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var staffRepo = _unitOfWork.Repository<Staff>();
+        var projectStaffRepo = _unitOfWork.Repository<ProjectStaff>();
+        
+        // Find the construction task with its construction item
+        var constructionTask = constructionTaskRepo.Get(
+            filter: x => x.Id == id && x.IsActive == true,
+            includeProperties: "ConstructionItem"
+        ).FirstOrDefault();
+        
+        if (constructionTask == null)
+        {
+            throw new NotFoundException($"Không tìm thấy công việc xây dựng với ID {id}");
+        }
+        
+        // Get the construction item
+        var constructionItem = constructionTask.ConstructionItem;
+        
+        // Check for unique name if name is being updated
+        if (!string.IsNullOrWhiteSpace(request.Name) && request.Name != constructionTask.Name)
+        {
+            // Check if there's another task with the same name in the same construction item
+            var existingTaskWithSameName = constructionTaskRepo.FirstOrDefault(
+                x => x.ConstructionItemId == constructionTask.ConstructionItemId && 
+                     x.Id != constructionTask.Id && 
+                     x.Name.ToLower() == request.Name.ToLower() &&
+                     x.IsActive == true);
+                     
+            if (existingTaskWithSameName != null)
+            {
+                throw new BadRequestException($"Đã tồn tại công việc với tên '{request.Name}' trong hạng mục xây dựng này");
+            }
+            
+            // Update the name
+            constructionTask.Name = request.Name;
+        }
+        
+        // Update deadline if provided
+        if (request.DeadlineAt.HasValue)
+        {
+            constructionTask.DeadlineAt = GlobalUtility.ConvertToSEATimeForPostgres(request.DeadlineAt.Value);
+        }
+        
+        // Handle staff assignment
+        if (request.StaffId.HasValue)
+        {
+            // Find the staff by UserId (not by Staff.Id)
+            var staff = staffRepo.FirstOrDefault(
+                x => x.UserId == request.StaffId.Value && x.IsActive == true);
+                
+            if (staff == null)
+            {
+                throw new NotFoundException($"Không tìm thấy nhân viên với User ID {request.StaffId.Value}");
+            }
+            
+            // Validate that the staff has the position "constructor"
+            if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
+            {
+                throw new BadRequestException($"Nhân viên phải có vị trí là 'constructor' để được gán vào công việc xây dựng");
+            }
+            
+            // Get the project ID from the construction item
+            var projectId = constructionItem.ProjectId;
+            
+            // Check if the staff is assigned to the project
+            var projectStaff = projectStaffRepo.FirstOrDefault(
+                x => x.ProjectId == projectId && x.StaffId == staff.Id);
+                
+            if (projectStaff == null)
+            {
+                throw new BadRequestException($"Nhân viên không thuộc dự án này");
+            }
+            
+            // Assign the staff to the task
+            constructionTask.StaffId = staff.Id;
+            
+            // Change status from OPENING to PROCESSING if current status is OPENING
+            if (constructionTask.Status == EnumConstructionTaskStatus.OPENING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PROCESSING.ToString();
+            }
+        }
+        
+        // Handle image URL update
+        if (!string.IsNullOrWhiteSpace(request.ImageUrl))
+        {
+            constructionTask.ImageUrl = request.ImageUrl;
+            
+            // Change status from PROCESSING to PREVIEWING if current status is PROCESSING
+            if (constructionTask.Status == EnumConstructionTaskStatus.PROCESSING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PREVIEWING.ToString();
+            }
+        }
+        
+        // Handle reason update
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            // Cannot update reason while image URL is null
+            if (string.IsNullOrWhiteSpace(constructionTask.ImageUrl) && string.IsNullOrWhiteSpace(request.ImageUrl))
+            {
+                throw new BadRequestException($"Không thể cập nhật lý do khi URL hình ảnh chưa được cung cấp");
+            }
+            
+            constructionTask.Reason = request.Reason;
+            
+            // Change status from PREVIEWING to PROCESSING if current status is PREVIEWING
+            if (constructionTask.Status == EnumConstructionTaskStatus.PREVIEWING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PROCESSING.ToString();
+            }
+        }
+        
+        // Update the task
+        await constructionTaskRepo.UpdateAsync(constructionTask, false);
+        
+        // Save all changes
+        await _unitOfWork.SaveChangesAsync();
+    }
 }

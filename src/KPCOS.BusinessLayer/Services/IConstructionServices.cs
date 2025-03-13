@@ -202,4 +202,33 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task UpdateConstructionItemLv2Async(UpdateConstructionItemLv2Request request, Guid id);
+
+    /// <summary>
+    /// Updates a construction task with the provided information
+    /// </summary>
+    /// <param name="request">The request containing updated task information</param>
+    /// <param name="id">ID of the construction task to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates the construction task with the provided information
+    /// - Validates that the task name is unique within the construction item if changed
+    /// - Changes task status based on specific field updates:
+    ///   - When assigning a staff: Changes status from OPENING to PROCESSING
+    ///   - When updating image URL: Changes status from PROCESSING to PREVIEWING
+    ///   - When updating reason: Changes status from PREVIEWING to PROCESSING
+    /// - Validates that the assigned staff is part of the project staff
+    /// - Validates that the assigned staff has the position "constructor"
+    /// - Prevents updating reason when image URL is null
+    /// - Ignores null fields in the request (keeps existing values)
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The task name is already used by another task in the same construction item
+    /// - The assigned staff is not part of the project staff
+    /// - The assigned staff does not have the position "constructor"
+    /// - Attempting to update reason when image URL is null
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    Task UpdateConstructionTaskAsync(UpdateConstructionTaskRequest request, Guid id);
 }
