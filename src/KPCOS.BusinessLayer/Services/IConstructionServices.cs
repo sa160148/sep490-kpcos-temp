@@ -174,4 +174,32 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task UpdateConstructionItemLv1Async(CreateConstructionItemRequest request, Guid id);
+
+    /// <summary>
+    /// Updates a level 2 (child) construction item and optionally creates new construction tasks
+    /// </summary>
+    /// <param name="request">The request containing name, description, and optional construction tasks to create</param>
+    /// <param name="id">ID of the level 2 (child) construction item to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates only the name and description of a level 2 (child) construction item if provided
+    /// - Validates that the construction item is a level 2 (child) item with a parent ID
+    /// - Creates new construction tasks if the ConstructionTasks collection is not empty or null
+    /// - Validates that each construction task has a unique name within the construction item
+    /// - All new construction tasks are created with status OPENING
+    /// - Handles deadline dates with proper time zone conversion for PostgreSQL compatibility
+    /// - If the construction item has status OPENING or DONE, it will be changed to PROCESSING when adding new tasks
+    /// - If the parent construction item has status OPENING or DONE, it will also be changed to PROCESSING
+    /// - Does not modify existing construction tasks
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The construction item is not a level 2 (child) item
+    /// - A construction task name is missing
+    /// - A construction task name is duplicated in the request
+    /// - A construction task name already exists in the construction item
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task UpdateConstructionItemLv2Async(UpdateConstructionItemLv2Request request, Guid id);
 }

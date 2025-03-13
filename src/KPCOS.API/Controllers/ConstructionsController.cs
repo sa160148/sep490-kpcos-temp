@@ -344,6 +344,8 @@ public class ConstructionsController  : BaseController
     /// </summary>
     /// <remarks>
     /// API này cho phép cập nhật thông tin của hạng mục xây dựng cấp 1 (cha) và thêm các hạng mục con mới.
+    /// "Đối với hạng mục cấp 1, chỉ cập nhật name và description.
+    /// "Đối với hạng mục con, sử dụng name, description và estimateAt.
     /// 
     /// Ví dụ yêu cầu:
     /// 
@@ -401,4 +403,113 @@ public class ConstructionsController  : BaseController
         await _constructionService.UpdateConstructionItemLv1Async(request, id);
         return Ok();
     }
+
+    /// <summary>
+    /// Cập nhật hạng mục xây dựng cấp 2 (con) và thêm công việc mới
+    /// </summary>
+    /// <remarks>
+    /// API này cho phép cập nhật thông tin của hạng mục xây dựng cấp 2 (con) và thêm các công việc mới.
+    /// 
+    /// **Quy tắc và hành vi:**
+    /// - Đối với hạng mục cấp 2, chỉ cập nhật name và description
+    /// - Đối với công việc mới, sử dụng name và deadlineAt
+    /// - Tất cả công việc mới được tạo với trạng thái OPENING
+    /// - Thời hạn (deadline) được tự động chuyển đổi sang múi giờ Việt Nam và định dạng phù hợp với PostgreSQL
+    /// - Nếu hạng mục xây dựng có trạng thái OPENING hoặc DONE, nó sẽ được chuyển sang PROCESSING khi thêm công việc mới
+    /// - Tương tự, nếu hạng mục cha có trạng thái OPENING hoặc DONE, nó cũng sẽ được chuyển sang PROCESSING
+    /// 
+    /// **Lỗi có thể xảy ra:**
+    /// - 400 Bad Request: ID hạng mục không hợp lệ, hạng mục không phải cấp 2, tên công việc trống, 
+    ///   tên công việc trùng lặp trong yêu cầu, hoặc tên công việc đã tồn tại trong hạng mục
+    /// - 404 Not Found: Không tìm thấy hạng mục xây dựng với ID được cung cấp
+    /// 
+    /// **Ví dụ yêu cầu:**
+    /// 
+    ///     {
+    ///       "name": "Lợp ngói mái nhà phía Đông",
+    ///       "description": "Cập nhật mô tả cho hạng mục lợp ngói mái nhà phía Đông",
+    ///       "constructionTasks": [
+    ///         {
+    ///           "name": "Chuẩn bị ngói",
+    ///           "deadlineAt": "2024-07-15T17:00:00"
+    ///         },
+    ///         {
+    ///           "name": "Lắp đặt ngói",
+    ///           "deadlineAt": "2024-07-20T17:00:00"
+    ///         },
+    ///         {
+    ///           "name": "Kiểm tra chất lượng",
+    ///           "deadlineAt": "2024-07-25T17:00:00"
+    ///         }
+    ///       ]
+    ///     }
+    /// 
+    /// </remarks>
+    /// <param name="id">ID của hạng mục xây dựng cấp 2 (con) cần cập nhật</param>
+    /// <param name="request">Thông tin cập nhật cho hạng mục xây dựng cấp 2 (con) và danh sách công việc mới (nếu có)</param>
+    /// <returns>Kết quả cập nhật hạng mục xây dựng</returns>
+    /// <response code="200">Cập nhật hạng mục xây dựng thành công</response>
+    /// <response code="400">ID hạng mục không hợp lệ, hạng mục không phải cấp 2, tên công việc trống, tên công việc trùng lặp trong yêu cầu, hoặc tên công việc đã tồn tại trong hạng mục</response>
+    /// <response code="404">Không tìm thấy hạng mục xây dựng với ID được cung cấp</response>
+    [HttpPut("item/{id}/lv2")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Cập nhật hạng mục xây dựng(construction item) cấp 2 (con) và thêm công việc mới",
+        Description = 
+            "API này cho phép cập nhật thông tin của hạng mục xây dựng(construction item) cấp 2 (con) và thêm các công việc mới.\n\n" +
+            "**Quy tắc và hành vi:**\n" +
+            "- Đối với hạng mục cấp 2, chỉ cập nhật name và description\n" +
+            "- Đối với công việc mới, sử dụng name và deadlineAt\n" +
+            "- Tất cả công việc mới được tạo với trạng thái OPENING\n" +
+            "- Thời hạn (deadline) được tự động chuyển đổi sang múi giờ Việt Nam và định dạng phù hợp với PostgreSQL\n" +
+            "- Nếu hạng mục xây dựng có trạng thái OPENING hoặc DONE, nó sẽ được chuyển sang PROCESSING khi thêm công việc mới\n" +
+            "- Tương tự, nếu hạng mục cha có trạng thái OPENING hoặc DONE, nó cũng sẽ được chuyển sang PROCESSING\n\n" +
+            "**Lỗi có thể xảy ra:**\n" +
+            "- 400 Bad Request: ID hạng mục không hợp lệ, hạng mục(construction item) không phải cấp 2, tên công việc(construction task) trống, " +
+            "tên công việc(construction task) trùng lặp trong yêu cầu, hoặc tên công việc(construction task) đã tồn tại trong hạng mục\n" +
+            "- 404 Not Found: Không tìm thấy hạng mục xây dựng(construction item) với ID được cung cấp\n\n" +
+            "**Ví dụ yêu cầu:**\n\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"name\": \"Lợp ngói mái nhà phía Đông\",\n" +
+            "  \"description\": \"Cập nhật mô tả cho hạng mục lợp ngói mái nhà phía Đông\",\n" +
+            "  \"constructionTasks\": [\n" +
+            "    {\n" +
+            "      \"name\": \"Chuẩn bị ngói\",\n" +
+            "      \"deadlineAt\": \"2024-07-15T17:00:00\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"name\": \"Lắp đặt ngói\",\n" +
+            "      \"deadlineAt\": \"2024-07-20T17:00:00\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"name\": \"Kiểm tra chất lượng\",\n" +
+            "      \"deadlineAt\": \"2024-07-25T17:00:00\"\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}\n" +
+            "```",
+        OperationId = "UpdateConstructionItemLv2",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> UpdateConstructionItemLv2Async(
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng(construction item) cấp 2 (con) cần cập nhật",
+            Required = true
+        )]
+        Guid id,
+        [FromBody]
+        [SwaggerParameter(
+            Description = "Thông tin cập nhật cho hạng mục xây dựng(construction item) cấp 2 (con) và danh sách công việc(construction task) mới (nếu có)",
+            Required = true
+        )]
+        UpdateConstructionItemLv2Request request
+    )
+    {   
+        await _constructionService.UpdateConstructionItemLv2Async(request, id);
+        return Ok();
+    }
+
 }
