@@ -144,4 +144,62 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task CreateConstructionTaskAsync(List<CreateConstructionTaskRequest> request, Guid id);
+    
+    /// <summary>
+    /// Updates a level 1 (parent) construction item and optionally adds new child items
+    /// </summary>
+    /// <param name="request">The request containing name, description, and optional child items to add</param>
+    /// <param name="id">ID of the level 1 (parent) construction item to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates only the name and description of a level 1 (parent) construction item if provided
+    /// - Validates that the name is unique among level 1 items in the same project
+    /// - Adds new child items if the Childs collection is not empty or null
+    /// - Validates that each child item has a name and the name is unique among existing child items and within the request
+    /// - All new child items are created with status OPENING
+    /// - For level 2 (child) items, name, description, and estimateAt are used from the request
+    /// - For level 2 (child) items, is_payment is always set to false regardless of request
+    /// - For level 2 (child) items, template_item_id and childs properties are ignored
+    /// - CreatedAt, UpdatedAt, and IsActive fields are handled automatically by the database
+    /// - Does not modify existing child items
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The construction item is not a level 1 (parent) item
+    /// - A level 1 item with the same name already exists in the project
+    /// - A child item name is missing
+    /// - A child item name is duplicated in the request
+    /// - A child item name already exists among the existing child items
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task UpdateConstructionItemLv1Async(CreateConstructionItemRequest request, Guid id);
+
+    /// <summary>
+    /// Updates a level 2 (child) construction item and optionally creates new construction tasks
+    /// </summary>
+    /// <param name="request">The request containing name, description, and optional construction tasks to create</param>
+    /// <param name="id">ID of the level 2 (child) construction item to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates only the name and description of a level 2 (child) construction item if provided
+    /// - Validates that the construction item is a level 2 (child) item with a parent ID
+    /// - Creates new construction tasks if the ConstructionTasks collection is not empty or null
+    /// - Validates that each construction task has a unique name within the construction item
+    /// - All new construction tasks are created with status OPENING
+    /// - Handles deadline dates with proper time zone conversion for PostgreSQL compatibility
+    /// - If the construction item has status OPENING or DONE, it will be changed to PROCESSING when adding new tasks
+    /// - If the parent construction item has status OPENING or DONE, it will also be changed to PROCESSING
+    /// - Does not modify existing construction tasks
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The construction item is not a level 2 (child) item
+    /// - A construction task name is missing
+    /// - A construction task name is duplicated in the request
+    /// - A construction task name already exists in the construction item
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    Task UpdateConstructionItemLv2Async(UpdateConstructionItemLv2Request request, Guid id);
 }

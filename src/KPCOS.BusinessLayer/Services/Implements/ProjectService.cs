@@ -614,9 +614,9 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
             .GetWithCount(
-                filter: c => c.ProjectId == id && c.IsActive == true,
+                filter: advancedFilter,
                 includeProperties: "Project.Quotations",
-                orderBy: q => q.OrderByDescending(c => c.CreatedAt),
+                orderBy: filter.GetOrder(),
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
             );

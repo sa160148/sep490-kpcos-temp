@@ -6,5 +6,6 @@ public class CreateConstructionTaskRequest
 {
     [Required]
     public string Name { get; set; } = default!;
+    [Required]
     public DateTime? DeadlineAt { get; set; }
 }
