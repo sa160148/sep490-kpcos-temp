@@ -220,6 +220,8 @@ public class MapperProfile : Profile
         .ForMember(dest => dest.ConstructionTasks, 
         opt => opt.MapFrom(src => src.ConstructionTasks ?? null))
         ;
+        CreateMap<ConstructionItem, GetConstructionItemForTaskResponse>()
+        ;
 
         CreateMap<ConstructionTask, GetAllConstructionTaskResponse>()
         .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
