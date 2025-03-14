@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.BusinessLayer.DTOs.Response;
@@ -202,7 +203,7 @@ public class ConstructionsController  : BaseController
     /// <param name="filter">Filter criteria for construction tasks including:
     /// - Search: Filters by name containing the search term
     /// - IsActive: Filters by active status (true/false)
-    /// - Status: Filters by task status (OPENING, PROCESSING, DONE)
+    /// - Status: Filters by task status (OPENING, PROCESSING, PREVIEWING, DONE)
     /// - IsOverdue: Filters by overdue status (true/false)
     /// - ConstructionItemId: Filters by construction item ID
     /// - PageNumber: Page number for pagination (1-based)
@@ -218,12 +219,18 @@ public class ConstructionsController  : BaseController
     /// Available status values:
     /// - OPENING: Initial status for new tasks
     /// - PROCESSING: Tasks that are currently in progress
+    /// - PREVIEWING: Tasks that have been submitted for review
     /// - DONE: Completed tasks
     /// 
     /// IsOverdue filter behavior:
     /// - When IsOverdue=true: Returns only tasks with deadlines in the past that are not marked as DONE
     /// - When IsOverdue=false: Returns only tasks that are not overdue or are marked as DONE
     /// - When IsOverdue is not specified: Returns all tasks (default behavior)
+    /// - All deadline comparisons use Southeast Asia time zone
+    /// 
+    /// User-specific filtering:
+    /// - For authenticated users with the "constructor" position, only tasks assigned to them will be returned
+    /// - For other users or unauthenticated requests, all tasks matching the filter criteria will be returned
     /// </remarks>
     /// <returns>A paginated list of construction tasks</returns>
     /// <response code="200">Returns the paginated list of construction tasks</response>
@@ -231,7 +238,7 @@ public class ConstructionsController  : BaseController
     [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionTaskResponse>), StatusCodes.Status200OK)]
     [SwaggerOperation(
         Summary = "Gets a paginated list of construction tasks",
-        Description = "Retrieves construction tasks based on the provided filter criteria including search term, active status, task status, overdue status, and construction item ID.",
+        Description = "Retrieves construction tasks based on the provided filter criteria including search term, active status, task status, overdue status, and construction item ID. For authenticated users with the 'constructor' position, only tasks assigned to them will be returned. Deadline comparisons use Southeast Asia time zone.",
         OperationId = "GetAllConstructionTasks",
         Tags = new[] { "Constructions" }
     )]
@@ -243,8 +250,16 @@ public class ConstructionsController  : BaseController
         )]
         GetAllConstructionTaskFilterRequest filter)
     {
-        var (data, total) = await _constructionService.GetAllConstructionTaskAsync(filter);
-        return new PagedApiResponse<GetAllConstructionTaskResponse>(data, filter.PageNumber, filter.PageSize, total);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        (IEnumerable<GetAllConstructionTaskResponse> data, int total) result;
+        if (userIdClaim != null)
+        {
+            var userId = Guid.Parse(userIdClaim);
+            result = await _constructionService.GetAllConstructionTaskAsync(filter, userId);
+            return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
+        }
+        result = await _constructionService.GetAllConstructionTaskAsync(filter);
+        return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
     }
 
     [HttpGet("task/{id}")]

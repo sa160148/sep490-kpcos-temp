@@ -57,6 +57,7 @@ public interface IConstructionServices
     /// Gets a paginated list of construction tasks based on filter criteria
     /// </summary>
     /// <param name="filter">Filter criteria for construction tasks</param>
+    /// <param name="userId">Optional user ID to filter tasks by staff assignment. If provided and the user is a constructor, only tasks assigned to them will be returned.</param>
     /// <returns>A tuple containing the list of construction tasks and the total count</returns>
     /// <remarks>
     /// This method retrieves construction tasks based on the provided filter criteria.
@@ -67,11 +68,17 @@ public interface IConstructionServices
     /// - Status: Filters tasks by their status (e.g., "OPENING", "PROCESSING", "DONE")
     /// - IsOverdue: When true, returns tasks with deadlines in the past that are not marked as DONE
     ///             When false, returns tasks that are not overdue or are marked as DONE
+    ///             (Deadline comparison uses Southeast Asia time zone for consistency)
     /// - ConstructionItemId: Filters tasks by their associated construction item
+    /// 
+    /// If userId is provided, the method will:
+    /// 1. Check if the user is a staff member with the "constructor" position
+    /// 2. If they are, filter tasks to only show those assigned to them
+    /// 3. If they are not a constructor or not a staff member, the userId parameter is ignored
     /// 
     /// Tasks are returned with their associated Staff information.
     /// </remarks>
-    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter);
+    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter, Guid? userId = null);
 
     /// <summary>
     /// Gets detailed information about a specific construction task by its ID

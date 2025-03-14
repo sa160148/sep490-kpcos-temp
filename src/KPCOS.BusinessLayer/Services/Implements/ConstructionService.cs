@@ -246,7 +246,7 @@ public class ConstructionService : IConstructionServices
         return (result, total);
     }
 
-    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter)
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter, Guid? userId = null)
     {
         // Get the repository for ConstructionTask
         var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
@@ -254,11 +254,25 @@ public class ConstructionService : IConstructionServices
         // Apply the filter expression from the request
         var filterExpression = filter.GetExpressions();
         
+        // If userId is provided, check if the user is a constructor and filter by their staff ID
+        if (userId.HasValue)
+        {
+            var (isConstructor, staffId) = await CheckUserIsConstructorAsync(userId.Value);
+            
+            if (isConstructor && staffId.HasValue)
+            {
+                // Create a new filter expression that includes the staff ID filter
+                Guid staffIdValue = staffId.Value;
+                var staffFilter = PredicateBuilder.New<ConstructionTask>(task => task.StaffId == staffIdValue);
+                filterExpression = filterExpression.And(staffFilter);
+            }
+        }
+        
         // Get the data with count using the repository's GetWithCount method
         var result = constructionTaskRepo.GetWithCount(
             filter: filterExpression,
             orderBy: filter.GetOrder(),
-            includeProperties: "Staff,Staff.User",
+            includeProperties: "Staff,Staff.User,ConstructionItem",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
@@ -867,5 +881,31 @@ public class ConstructionService : IConstructionServices
         
         // Save all changes
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Checks if a user is a constructor and returns their staff ID if they are
+    /// </summary>
+    /// <param name="userId">The user ID to check</param>
+    /// <returns>A tuple containing whether the user is a constructor and their staff ID if they are</returns>
+    private async Task<(bool isConstructor, Guid? staffId)> CheckUserIsConstructorAsync(Guid userId)
+    {
+        // Get the repository for Staff
+        var staffRepo = _unitOfWork.Repository<Staff>();
+        
+        // Find the staff record for the user
+        var staff = await staffRepo.FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive == true);
+        
+        // If no staff record is found, return false
+        if (staff == null)
+        {
+            return (false, null);
+        }
+        
+        // Check if the staff position is "constructor"
+        bool isConstructor = staff.Position == RoleEnum.CONSTRUCTOR.ToString();
+        
+        // Return the result and staff ID if they are a constructor
+        return (isConstructor, isConstructor ? staff.Id : null);
     }
 }
