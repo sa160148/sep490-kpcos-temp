@@ -1118,12 +1118,21 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         if (filter.IsIdle.HasValue && filter.IsIdle.Value && 
             (string.IsNullOrEmpty(filter.Position) || filter.Position == RoleEnum.CONSTRUCTOR.ToString()))
         {
-            // For constructors, idle means not assigned to any construction task
+            // For constructors, idle means either:
+            // 1. Not assigned to any construction task, OR
+            // 2. Only assigned to tasks with DONE status
             predicate = predicate.And(ps => 
                 ps.Staff.Position == RoleEnum.CONSTRUCTOR.ToString() && 
-                !ps.Staff.ConstructionTasks.Any(ct => 
-                    ct.ConstructionItem.ProjectId == id && 
-                    ct.Status != EnumConstructionTaskStatus.DONE.ToString()));
+                (
+                    // Not assigned to any construction task for this project
+                    !ps.Staff.ConstructionTasks.Any(ct => ct.ConstructionItem.ProjectId == id) ||
+                    
+                    // OR all assigned tasks for this project are in DONE status
+                    ps.Staff.ConstructionTasks
+                        .Where(ct => ct.ConstructionItem.ProjectId == id)
+                        .All(ct => ct.Status == EnumConstructionTaskStatus.DONE.ToString())
+                )
+            );
         }
         
         // Get data with count using the repository's GetWithCount method
