@@ -23,4 +23,7 @@ public class GetAllConstructionTaskResponse
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GetAllStaffResponse? Staff { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GetConstructionItemForTaskResponse? ConstructionItem { get; set; }
 }
