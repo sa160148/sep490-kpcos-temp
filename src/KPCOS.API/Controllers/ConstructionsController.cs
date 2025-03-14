@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.BusinessLayer.DTOs.Response;
@@ -202,7 +203,7 @@ public class ConstructionsController  : BaseController
     /// <param name="filter">Filter criteria for construction tasks including:
     /// - Search: Filters by name containing the search term
     /// - IsActive: Filters by active status (true/false)
-    /// - Status: Filters by task status (OPENING, PROCESSING, DONE)
+    /// - Status: Filters by task status (OPENING, PROCESSING, PREVIEWING, DONE)
     /// - IsOverdue: Filters by overdue status (true/false)
     /// - ConstructionItemId: Filters by construction item ID
     /// - PageNumber: Page number for pagination (1-based)
@@ -218,12 +219,18 @@ public class ConstructionsController  : BaseController
     /// Available status values:
     /// - OPENING: Initial status for new tasks
     /// - PROCESSING: Tasks that are currently in progress
+    /// - PREVIEWING: Tasks that have been submitted for review
     /// - DONE: Completed tasks
     /// 
     /// IsOverdue filter behavior:
     /// - When IsOverdue=true: Returns only tasks with deadlines in the past that are not marked as DONE
     /// - When IsOverdue=false: Returns only tasks that are not overdue or are marked as DONE
     /// - When IsOverdue is not specified: Returns all tasks (default behavior)
+    /// - All deadline comparisons use Southeast Asia time zone
+    /// 
+    /// User-specific filtering:
+    /// - For authenticated users with the "constructor" position, only tasks assigned to them will be returned
+    /// - For other users or unauthenticated requests, all tasks matching the filter criteria will be returned
     /// </remarks>
     /// <returns>A paginated list of construction tasks</returns>
     /// <response code="200">Returns the paginated list of construction tasks</response>
@@ -231,7 +238,7 @@ public class ConstructionsController  : BaseController
     [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionTaskResponse>), StatusCodes.Status200OK)]
     [SwaggerOperation(
         Summary = "Gets a paginated list of construction tasks",
-        Description = "Retrieves construction tasks based on the provided filter criteria including search term, active status, task status, overdue status, and construction item ID.",
+        Description = "Retrieves construction tasks based on the provided filter criteria including search term, active status, task status, overdue status, and construction item ID. For authenticated users with the 'constructor' position, only tasks assigned to them will be returned. Deadline comparisons use Southeast Asia time zone.",
         OperationId = "GetAllConstructionTasks",
         Tags = new[] { "Constructions" }
     )]
@@ -243,8 +250,16 @@ public class ConstructionsController  : BaseController
         )]
         GetAllConstructionTaskFilterRequest filter)
     {
-        var (data, total) = await _constructionService.GetAllConstructionTaskAsync(filter);
-        return new PagedApiResponse<GetAllConstructionTaskResponse>(data, filter.PageNumber, filter.PageSize, total);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        (IEnumerable<GetAllConstructionTaskResponse> data, int total) result;
+        if (userIdClaim != null)
+        {
+            var userId = Guid.Parse(userIdClaim);
+            result = await _constructionService.GetAllConstructionTaskAsync(filter, userId);
+            return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
+        }
+        result = await _constructionService.GetAllConstructionTaskAsync(filter);
+        return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
     }
 
     [HttpGet("task/{id}")]
@@ -509,6 +524,118 @@ public class ConstructionsController  : BaseController
     )
     {   
         await _constructionService.UpdateConstructionItemLv2Async(request, id);
+        return Ok();
+    }
+
+    [HttpPut("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Cập nhật công việc xây dựng(construction task)",
+        Description = 
+            "API này cho phép cập nhật thông tin của công việc xây dựng(construction task).\n\n" +
+            "**Quy tắc và hành vi:**\n" +
+            "- Tên công việc phải là duy nhất trong hạng mục xây dựng(construction item lv2).\n" +
+            "- Khi gán nhân viên cho công việc, trạng thái sẽ chuyển từ OPENING sang PROCESSING.\n" +
+            "- Khi cập nhật URL hình ảnh(imageUrl), trạng thái sẽ chuyển từ PROCESSING sang PREVIEWING.\n" +
+            "- Khi cập nhật lý do(reason), trạng thái sẽ chuyển từ PREVIEWING sang PROCESSING.\n" +
+            "- Nhân viên được gán phải thuộc dự án(project staff).\n" +
+            "- Nhân viên được gán phải có vị trí là 'constructor'.\n" +
+            "- Không thể cập nhật lý do(reason) khi URL hình ảnh(imageUrl) chưa được cung cấp.\n" +
+            "- Các field khi update có thể null hoặc không khai báo sẽ không cập nhật.\n\n" +
+            "**Lưu ý quan trọng:**\n" +
+            "- staffId trong request là UserId của nhân viên (từ bảng User), không phải Id của nhân viên (từ bảng Staff).\n\n" +
+            "**Lỗi có thể xảy ra:**\n" +
+            "- 400 Bad Request: Tên công việc đã tồn tại trong hạng mục, nhân viên không thuộc dự án, nhân viên không có vị trí 'constructor', hoặc cố gắng cập nhật lý do khi chưa có URL hình ảnh.\n" +
+            "- 404 Not Found: Không tìm thấy công việc hoặc nhân viên với ID được cung cấp.\n\n" +
+            "**Ví dụ yêu cầu:**\n\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"name\": \"Kiểm tra chất lượng ngói (tùy chọn)\",\n" +
+            "  \"deadlineAt\": \"2024-08-15T17:00:00 (tùy chọn)\",\n" +
+            "  \"staffId\": \"7e7a3d26-2c0b-4ad2-a95b-bf62838d5e32 (tùy chọn, đây là UserId từ bảng User)\",\n" +
+            "  \"reason\": \"Cần kiểm tra kỹ lưỡng chất lượng ngói trước khi lắp đặt (tùy chọn, yêu cầu imageUrl đã tồn tại)\",\n" +
+            "  \"imageUrl\": \"https://example.com/images/roof-inspection.jpg (tùy chọn)\"\n" +
+            "}\n" +
+            "```",
+        OperationId = "UpdateConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> UpdateConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = "ID của công việc xây dựng(construction task) cần cập nhật",
+            Required = true
+        )]
+        Guid id,
+        [FromBody]
+        [SwaggerParameter(
+            Description = 
+                "Thông tin cập nhật cho công việc(construction task) xây dựng(construction). Các trường có thể bao gồm:\n" +
+                "- name: Tên mới của công việc (tùy chọn)\n" +
+                "- deadlineAt: Thời hạn mới của công việc (tùy chọn)\n" +
+                "- staffId: ID của người dùng (User.Id) được gán cho công việc, không phải ID của nhân viên (Staff.Id) (tùy chọn, nhân viên phải có vị trí 'constructor')\n" +
+                "- reason: Lý do hoặc ghi chú cho công việc (tùy chọn, yêu cầu imageUrl đã tồn tại)\n" +
+                "- imageUrl: URL hình ảnh cho công việc (tùy chọn)",
+            Required = true
+        )]
+        UpdateConstructionTaskRequest request
+    )
+    {   
+        await _constructionService.UpdateConstructionTaskAsync(request, id);
+        return Ok();
+    }
+
+    [HttpDelete("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Xóa công việc xây dựng(construction task)",
+        Description = "Xóa công việc xây dựng(construction task) dựa trên ID của công việc, **xóa khỏi hệ thống luôn**.\n"
+        + "**Lưu ý:**\n"
+        + "- Không thể xóa công việc đang được gán cho nhân viên.\n"
+        + "- Chỉ có thể xóa công việc đang ở trạng thái OPENING.\n"
+        ,
+        OperationId = "DeleteConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> DeleteConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = "ID của công việc xây dựng(construction task) cần xóa",
+            Required = true
+        )]
+        Guid id
+    )
+    {
+        await _constructionService.DeleteConstructionTaskAsync(id);
+        return Ok();    
+    }
+
+    [HttpDelete("item/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Xóa hạng mục xây dựng(construction item)",
+        Description = "Xóa hạng mục xây dựng(construction item) dựa trên ID của hạng mục, **xóa khỏi hệ thống luôn**.\n"
+        + "**Lưu ý:**\n"
+        + "- Chỉ có thể xóa hạng mục đang ở trạng thái OPENING.\n"
+        + "- Không thể xóa hạng mục(construction item) đang được gán cho công việc(construction task).\n"
+        + "- Không thể xóa hạng mục(construction item) đang được gán cho hạng mục cha(construction item lv1) hoặc ngược lại.\n"
+        ,
+        OperationId = "DeleteConstructionItem",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> DeleteConstructionItemAsync(
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng(construction item) cần xóa",
+            Required = true
+        )]
+        Guid id
+    )
+    {
+        await _constructionService.DeleteConstructionItemAsync(id);
         return Ok();
     }
 

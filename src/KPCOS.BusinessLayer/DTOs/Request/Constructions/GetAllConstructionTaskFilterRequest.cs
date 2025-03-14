@@ -1,6 +1,7 @@
 using System;
 using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
+using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Constructions;
@@ -43,13 +44,16 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     /// <returns>Expression to filter construction tasks</returns>
     public override Expression<Func<ConstructionTask, bool>> GetExpressions()
     {
+        // Get current SEA time for deadline comparison
+        var currentSEATime = GlobalUtility.GetCurrentSEATime();
+        
         return task => 
             (string.IsNullOrEmpty(Search) || task.Name.Contains(Search)) &&
             (!IsActive.HasValue || task.IsActive == IsActive) &&
             (string.IsNullOrEmpty(Status) || task.Status == Status) &&
             (!IsOverdue.HasValue || 
-                (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < DateTime.Now && task.Status != "DONE") || 
-                (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= DateTime.Now || task.Status == "DONE"))) &&
+                (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < currentSEATime && task.Status != "DONE") || 
+                (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= currentSEATime || task.Status == "DONE"))) &&
             (!ConstructionItemId.HasValue || task.ConstructionItemId == ConstructionItemId);
     }
 }

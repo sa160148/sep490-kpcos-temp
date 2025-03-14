@@ -19,6 +19,8 @@ using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using Swashbuckle.AspNetCore.Annotations;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 
 namespace KPCOS.API.Controllers
 {
@@ -566,6 +568,79 @@ namespace KPCOS.API.Controllers
         {
             var isContractApproved = await service.IsContractApprovedByProjectAsync(id);
             return Ok(isContractApproved);
+        }
+
+        /// <summary>
+        /// Get all staff assigned to a specific project with filtering options
+        /// </summary>
+        /// <param name="id">The project ID to get staff for</param>
+        /// <param name="filter">Filter parameters including Position, IsIdle, and pagination</param>
+        /// <returns>A paginated list of staff assigned to the project</returns>
+        /// <remarks>
+        /// <para>This endpoint returns staff assigned to a project with filtering options:</para>
+        /// <list type="bullet">
+        ///     <item><description>Position: Filter by staff position (CONSTRUCTOR, MANAGER, CONSULTANT, etc.)</description></item>
+        ///     <item><description>IsIdle: For constructors, returns only those not assigned to any active construction tasks</description></item>
+        /// </list>
+        /// <para>Sample request:</para>
+        /// 
+        ///     GET /api/projects/{id}/staff?Position=CONSTRUCTOR&amp;IsIdle=true&amp;PageNumber=1&amp;PageSize=10
+        /// </remarks>
+        /// <response code="200">Returns the list of staff</response>
+        /// <response code="404">If the project is not found</response>
+        /// <response code="500">If there was an internal server error</response>
+        [HttpGet("{id}/staff")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllStaffResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Get all staff assigned to a specific project with filtering options",
+            Description = "Returns staff assigned to a project with filtering by position and idle status",
+            OperationId = "GetAllStaffByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<GetAllStaffResponse>> GetAllStaffByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to get staff for",
+                Required = true
+            )]
+            Guid id, 
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for staff including Position, IsIdle, and pagination parameters",
+                Required = false
+            )]
+            GetAllStaffRequest filter)
+        {
+            var staffs = await service.GetAllStaffByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllStaffResponse>(staffs.data, filter.PageNumber, filter.PageSize, staffs.total);
+        }
+
+        [HttpGet("{id}/construction-task")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllConstructionTaskResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Gets a paginated list of construction tasks for a specific project",
+            Description = "Retrieves construction tasks for the specified project based on the provided filter criteria",
+            OperationId = "GetAllConstructionTaskByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<GetAllConstructionTaskResponse>> GetAllConstructionTaskByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to get construction tasks for",
+                Required = true
+            )]
+            Guid id, 
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for construction tasks including Search, IsActive, Status, IsOverdue, and ConstructionItemId",
+                Required = false
+            )]
+            KPCOS.BusinessLayer.DTOs.Request.Constructions.GetAllConstructionTaskFilterRequest filter)
+        {
+            var constructionTasks = await service.GetAllConstructionTaskByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllConstructionTaskResponse>(constructionTasks.data, filter.PageNumber, filter.PageSize, constructionTasks.total);
         }
     }
 }

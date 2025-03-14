@@ -57,6 +57,7 @@ public interface IConstructionServices
     /// Gets a paginated list of construction tasks based on filter criteria
     /// </summary>
     /// <param name="filter">Filter criteria for construction tasks</param>
+    /// <param name="userId">Optional user ID to filter tasks by staff assignment. If provided and the user is a constructor, only tasks assigned to them will be returned.</param>
     /// <returns>A tuple containing the list of construction tasks and the total count</returns>
     /// <remarks>
     /// This method retrieves construction tasks based on the provided filter criteria.
@@ -67,11 +68,17 @@ public interface IConstructionServices
     /// - Status: Filters tasks by their status (e.g., "OPENING", "PROCESSING", "DONE")
     /// - IsOverdue: When true, returns tasks with deadlines in the past that are not marked as DONE
     ///             When false, returns tasks that are not overdue or are marked as DONE
+    ///             (Deadline comparison uses Southeast Asia time zone for consistency)
     /// - ConstructionItemId: Filters tasks by their associated construction item
+    /// 
+    /// If userId is provided, the method will:
+    /// 1. Check if the user is a staff member with the "constructor" position
+    /// 2. If they are, filter tasks to only show those assigned to them
+    /// 3. If they are not a constructor or not a staff member, the userId parameter is ignored
     /// 
     /// Tasks are returned with their associated Staff information.
     /// </remarks>
-    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter);
+    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter, Guid? userId = null);
 
     /// <summary>
     /// Gets detailed information about a specific construction task by its ID
@@ -202,4 +209,70 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
     Task UpdateConstructionItemLv2Async(UpdateConstructionItemLv2Request request, Guid id);
+
+    /// <summary>
+    /// Updates a construction task with the provided information
+    /// </summary>
+    /// <param name="request">The request containing updated task information</param>
+    /// <param name="id">ID of the construction task to update</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Updates the construction task with the provided information
+    /// - Validates that the task name is unique within the construction item if changed
+    /// - Changes task status based on specific field updates:
+    ///   - When assigning a staff: Changes status from OPENING to PROCESSING
+    ///   - When updating image URL: Changes status from PROCESSING to PREVIEWING
+    ///   - When updating reason: Changes status from PREVIEWING to PROCESSING
+    /// - Validates that the assigned staff is part of the project staff
+    /// - Validates that the assigned staff has the position "constructor"
+    /// - Prevents updating reason when image URL is null
+    /// - Ignores null fields in the request (keeps existing values)
+    /// </remarks>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The task name is already used by another task in the same construction item
+    /// - The assigned staff is not part of the project staff
+    /// - The assigned staff does not have the position "constructor"
+    /// - Attempting to update reason when image URL is null
+    /// </exception>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    Task UpdateConstructionTaskAsync(UpdateConstructionTaskRequest request, Guid id);
+
+    /// <summary>
+    /// Permanently deletes a construction task from the system
+    /// </summary>
+    /// <param name="id">ID of the construction task to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the construction task exists
+    /// - Checks if the task is in OPENING status (only OPENING tasks can be deleted)
+    /// - Permanently removes the task from the database
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
+    Task DeleteConstructionTaskAsync(Guid id);
+
+    /// <summary>
+    /// Permanently deletes a construction item from the system
+    /// </summary>
+    /// <param name="id">ID of the construction item to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the construction item exists
+    /// - Checks if the item is in OPENING status (only OPENING items can be deleted)
+    /// - Ensures the item does not have any child items (construction item lv2)
+    /// - Ensures the item does not have isPayment set to true
+    /// - Permanently removes the item from the database
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The item is not in OPENING status
+    /// - The item has child items
+    /// - The item has isPayment set to true
+    /// </exception>
+    Task DeleteConstructionItemAsync(Guid id);
 }

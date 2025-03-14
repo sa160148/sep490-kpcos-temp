@@ -1,10 +1,13 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Quotations;
@@ -274,4 +277,36 @@ public interface IProjectService
     /// <para>Used to determine if a project has progressed to the active contract stage in the workflow</para>
     /// </remarks>
     Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id);
+
+    Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetAllStaffByProjectAsync(
+        Guid id, 
+        GetAllStaffRequest filter);
+
+    /// <summary>
+    /// Gets all construction tasks associated with a specific project with pagination and filtering
+    /// </summary>
+    /// <param name="id">The project ID to get construction tasks for</param>
+    /// <param name="filter">Filter criteria for construction tasks including search, status, overdue status, etc.</param>
+    /// <returns>Tuple containing the list of construction tasks and total count</returns>
+    /// <remarks>
+    /// <para>Returns construction tasks for a project with:</para>
+    /// <list type="bullet">
+    ///     <item><description>Basic task information (ID, name, status, deadlines, etc.)</description></item>
+    ///     <item><description>Associated staff information (if assigned)</description></item>
+    ///     <item><description>Parent construction item information</description></item>
+    /// </list>
+    /// <para>Tasks can be filtered by:</para>
+    /// <list type="bullet">
+    ///     <item><description>Search term (matches against task name)</description></item>
+    ///     <item><description>Active status</description></item>
+    ///     <item><description>Task status (OPENING, PROCESSING, PREVIEWING, DONE)</description></item>
+    ///     <item><description>Overdue status (tasks with deadlines in the past that are not DONE)</description></item>
+    ///     <item><description>Construction item ID (to get tasks for a specific construction item)</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
+    Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
+        Guid id, 
+        GetAllConstructionTaskFilterRequest filter);
 }

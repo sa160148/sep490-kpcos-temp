@@ -246,7 +246,7 @@ public class ConstructionService : IConstructionServices
         return (result, total);
     }
 
-    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter)
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter, Guid? userId = null)
     {
         // Get the repository for ConstructionTask
         var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
@@ -254,11 +254,25 @@ public class ConstructionService : IConstructionServices
         // Apply the filter expression from the request
         var filterExpression = filter.GetExpressions();
         
+        // If userId is provided, check if the user is a constructor and filter by their staff ID
+        if (userId.HasValue)
+        {
+            var (isConstructor, staffId) = await CheckUserIsConstructorAsync(userId.Value);
+            
+            if (isConstructor && staffId.HasValue)
+            {
+                // Create a new filter expression that includes the staff ID filter
+                Guid staffIdValue = staffId.Value;
+                var staffFilter = PredicateBuilder.New<ConstructionTask>(task => task.StaffId == staffIdValue);
+                filterExpression = filterExpression.And(staffFilter);
+            }
+        }
+        
         // Get the data with count using the repository's GetWithCount method
         var result = constructionTaskRepo.GetWithCount(
             filter: filterExpression,
             orderBy: filter.GetOrder(),
-            includeProperties: "Staff,Staff.User",
+            includeProperties: "Staff,Staff.User,ConstructionItem",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
@@ -742,6 +756,255 @@ public class ConstructionService : IConstructionServices
         }
         
         // Save all changes at once
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task UpdateConstructionTaskAsync(UpdateConstructionTaskRequest request, Guid id)
+    {
+        // Get repositories
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var staffRepo = _unitOfWork.Repository<Staff>();
+        var projectStaffRepo = _unitOfWork.Repository<ProjectStaff>();
+        
+        // Find the construction task with its construction item
+        var constructionTask = constructionTaskRepo.Get(
+            filter: x => x.Id == id && x.IsActive == true,
+            includeProperties: "ConstructionItem"
+        ).FirstOrDefault();
+        
+        if (constructionTask == null)
+        {
+            throw new NotFoundException($"Không tìm thấy công việc xây dựng với ID {id}");
+        }
+        
+        // Get the construction item
+        var constructionItem = constructionTask.ConstructionItem;
+        
+        // Check for unique name if name is being updated
+        if (!string.IsNullOrWhiteSpace(request.Name) && request.Name != constructionTask.Name)
+        {
+            // Check if there's another task with the same name in the same construction item
+            var existingTaskWithSameName = constructionTaskRepo.FirstOrDefault(
+                x => x.ConstructionItemId == constructionTask.ConstructionItemId && 
+                     x.Id != constructionTask.Id && 
+                     x.Name.ToLower() == request.Name.ToLower() &&
+                     x.IsActive == true);
+                     
+            if (existingTaskWithSameName != null)
+            {
+                throw new BadRequestException($"Đã tồn tại công việc với tên '{request.Name}' trong hạng mục xây dựng này");
+            }
+            
+            // Update the name
+            constructionTask.Name = request.Name;
+        }
+        
+        // Update deadline if provided
+        if (request.DeadlineAt.HasValue)
+        {
+            constructionTask.DeadlineAt = GlobalUtility.ConvertToSEATimeForPostgres(request.DeadlineAt.Value);
+        }
+        
+        // Handle staff assignment
+        if (request.StaffId.HasValue)
+        {
+            // Find the staff by UserId (not by Staff.Id)
+            var staff = staffRepo.FirstOrDefault(
+                x => x.UserId == request.StaffId.Value && x.IsActive == true);
+                
+            if (staff == null)
+            {
+                throw new NotFoundException($"Không tìm thấy nhân viên với User ID {request.StaffId.Value}");
+            }
+            
+            // Validate that the staff has the position "constructor"
+            if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
+            {
+                throw new BadRequestException($"Nhân viên phải có vị trí là 'constructor' để được gán vào công việc xây dựng");
+            }
+            
+            // Get the project ID from the construction item
+            var projectId = constructionItem.ProjectId;
+            
+            // Check if the staff is assigned to the project
+            var projectStaff = projectStaffRepo.FirstOrDefault(
+                x => x.ProjectId == projectId && x.StaffId == staff.Id);
+                
+            if (projectStaff == null)
+            {
+                throw new BadRequestException($"Nhân viên không thuộc dự án này");
+            }
+            
+            // Assign the staff to the task
+            constructionTask.StaffId = staff.Id;
+            
+            // Change status from OPENING to PROCESSING if current status is OPENING
+            if (constructionTask.Status == EnumConstructionTaskStatus.OPENING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PROCESSING.ToString();
+            }
+        }
+        
+        // Handle image URL update
+        if (!string.IsNullOrWhiteSpace(request.ImageUrl))
+        {
+            constructionTask.ImageUrl = request.ImageUrl;
+            
+            // Change status from PROCESSING to PREVIEWING if current status is PROCESSING
+            if (constructionTask.Status == EnumConstructionTaskStatus.PROCESSING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PREVIEWING.ToString();
+            }
+        }
+        
+        // Handle reason update
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            // Cannot update reason while image URL is null
+            if (string.IsNullOrWhiteSpace(constructionTask.ImageUrl) && string.IsNullOrWhiteSpace(request.ImageUrl))
+            {
+                throw new BadRequestException($"Không thể cập nhật lý do khi URL hình ảnh chưa được cung cấp");
+            }
+            
+            constructionTask.Reason = request.Reason;
+            
+            // Change status from PREVIEWING to PROCESSING if current status is PREVIEWING
+            if (constructionTask.Status == EnumConstructionTaskStatus.PREVIEWING.ToString())
+            {
+                constructionTask.Status = EnumConstructionTaskStatus.PROCESSING.ToString();
+            }
+        }
+        
+        // Update the task
+        await constructionTaskRepo.UpdateAsync(constructionTask, false);
+        
+        // Save all changes
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Checks if a user is a constructor and returns their staff ID if they are
+    /// </summary>
+    /// <param name="userId">The user ID to check</param>
+    /// <returns>A tuple containing whether the user is a constructor and their staff ID if they are</returns>
+    private async Task<(bool isConstructor, Guid? staffId)> CheckUserIsConstructorAsync(Guid userId)
+    {
+        // Get the repository for Staff
+        var staffRepo = _unitOfWork.Repository<Staff>();
+        
+        // Find the staff record for the user
+        var staff = await staffRepo.FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive == true);
+        
+        // If no staff record is found, return false
+        if (staff == null)
+        {
+            return (false, null);
+        }
+        
+        // Check if the staff position is "constructor"
+        bool isConstructor = staff.Position == RoleEnum.CONSTRUCTOR.ToString();
+        
+        return (isConstructor, staff.Id);
+    }
+
+    /// <summary>
+    /// Permanently deletes a construction task from the system
+    /// </summary>
+    /// <param name="id">ID of the construction task to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
+    public async Task DeleteConstructionTaskAsync(Guid id)
+    {
+        // Get the repository for ConstructionTask
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        
+        // Find the construction task by ID
+        var constructionTask = await constructionTaskRepo.SingleOrDefaultAsync(t => t.Id == id);
+        
+        // If the task doesn't exist, throw NotFoundException
+        if (constructionTask == null)
+        {
+            throw new NotFoundException($"Construction task with ID {id} not found");
+        }
+        
+        // Check if the task is in OPENING status
+        if (constructionTask.Status != EnumConstructionTaskStatus.OPENING.ToString())
+        {
+            throw new BadRequestException($"Only construction tasks with OPENING status can be deleted. Current status: {constructionTask.Status}");
+        }
+        
+        // Check if the task is assigned to a staff member
+        if (constructionTask.StaffId != null)
+        {
+            throw new BadRequestException("Cannot delete a construction task that is assigned to a staff member");
+        }
+        
+        // Delete the construction task
+        await constructionTaskRepo.RemoveAsync(constructionTask, false);
+        
+        // Save changes to the database
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Permanently deletes a construction item from the system
+    /// </summary>
+    /// <param name="id">ID of the construction item to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The item is not in OPENING status
+    /// - The item has child items
+    /// - The item has isPayment set to true
+    /// </exception>
+    public async Task DeleteConstructionItemAsync(Guid id)
+    {
+        // Get the repository for ConstructionItem
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Find the construction item by ID
+        var constructionItem = await constructionItemRepo.SingleOrDefaultAsync(i => i.Id == id);
+        
+        // If the item doesn't exist, throw NotFoundException
+        if (constructionItem == null)
+        {
+            throw new NotFoundException($"Construction item with ID {id} not found");
+        }
+        
+        // Check if the item is in OPENING status
+        if (constructionItem.Status != EnumConstructionItemStatus.OPENING.ToString())
+        {
+            throw new BadRequestException($"Only construction items with OPENING status can be deleted. Current status: {constructionItem.Status}");
+        }
+        
+        // Check if the item has isPayment set to true
+        if (constructionItem.IsPayment == true)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has payment status (isPayment = true)");
+        }
+        
+        // Check if the item has any child items (level 2)
+        var hasChildItems = await constructionItemRepo.SingleOrDefaultAsync(i => i.ParentId == id) != null;
+        if (hasChildItems)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has child items (level 2)");
+        }
+        
+        // Check if the item has any associated construction tasks
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var hasConstructionTasks = await constructionTaskRepo.SingleOrDefaultAsync(t => t.ConstructionItemId == id) != null;
+        if (hasConstructionTasks)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has associated construction tasks");
+        }
+        
+        // Delete the construction item
+        await constructionItemRepo.RemoveAsync(constructionItem, false);
+        
+        // Save changes to the database
         await _unitOfWork.SaveChangesAsync();
     }
 }

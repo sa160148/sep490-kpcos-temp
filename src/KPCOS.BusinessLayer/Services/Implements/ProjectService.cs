@@ -1,30 +1,33 @@
 ﻿using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Request.Constructions;
+using KPCOS.BusinessLayer.DTOs.Request.Designs;
+using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Request.Quotations;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Constructions;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Designs;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Quotations;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
+using KPCOS.BusinessLayer.Exceptions;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Linq.Expressions;
-using KPCOS.BusinessLayer.DTOs.Request.Projects;
-using KPCOS.BusinessLayer.DTOs.Response.Projects;
-using System.Linq;
-using KPCOS.BusinessLayer.DTOs.Response.Contracts;
-using KPCOS.BusinessLayer.DTOs.Response.Users;
 using LinqKit;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using KPCOS.BusinessLayer.DTOs.Request.Designs;
-using KPCOS.BusinessLayer.DTOs.Response.Designs;
-using KPCOS.BusinessLayer.DTOs.Response.Quotations;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
-using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using Google.Cloud.Firestore;
-using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -1094,5 +1097,110 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         {
             IsExit3DConfirmed = exists
         };
+    }
+
+    public async Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetAllStaffByProjectAsync(
+        Guid id, 
+        GetAllStaffRequest filter)
+    {
+        // Validate project exists
+        await ValidateAndGetProject(id);
+        
+        // Create a predicate for filtering ProjectStaff by project ID
+        var predicate = PredicateBuilder.New<ProjectStaff>(true);
+        predicate = predicate.And(ps => ps.ProjectId == id);
+        
+        // Apply position filter if specified
+        if (!string.IsNullOrEmpty(filter.Position))
+        {
+            predicate = predicate.And(ps => ps.Staff.Position == filter.Position);
+        }
+        
+        // Apply idle filter for constructors if specified
+        if (filter.IsIdle.HasValue && filter.IsIdle.Value && 
+            (string.IsNullOrEmpty(filter.Position) || filter.Position == RoleEnum.CONSTRUCTOR.ToString()))
+        {
+            // For constructors, idle means either:
+            // 1. Not assigned to any construction task, OR
+            // 2. Only assigned to tasks with DONE status
+            predicate = predicate.And(ps => 
+                ps.Staff.Position == RoleEnum.CONSTRUCTOR.ToString() && 
+                (
+                    // Not assigned to any construction task for this project
+                    !ps.Staff.ConstructionTasks.Any(ct => ct.ConstructionItem.ProjectId == id) ||
+                    
+                    // OR all assigned tasks for this project are in DONE status
+                    ps.Staff.ConstructionTasks
+                        .Where(ct => ct.ConstructionItem.ProjectId == id)
+                        .All(ct => ct.Status == EnumConstructionTaskStatus.DONE.ToString())
+                )
+            );
+        }
+        
+        // Get data with count using the repository's GetWithCount method
+        var result = unitOfWork.Repository<ProjectStaff>().GetWithCount(
+            filter: predicate,
+            includeProperties: "Staff.User,Staff.ConstructionTasks.ConstructionItem",
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the staff entities to response DTOs using AutoMapper
+        var staffResponses = result.Data
+            .Select(ps => mapper.Map<GetAllStaffResponse>(ps.Staff))
+            .ToList();
+        
+        return (staffResponses, result.Count);
+    }
+
+    /// <summary>
+    /// Gets all construction tasks associated with a specific project with pagination and filtering
+    /// </summary>
+    /// <param name="id">The project ID to get construction tasks for</param>
+    /// <param name="filter">Filter criteria for construction tasks</param>
+    /// <returns>Tuple containing the list of construction tasks and total count</returns>
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
+        Guid id, 
+        GetAllConstructionTaskFilterRequest filter)
+    {
+        // Validate and get the project
+        var project = await ValidateAndGetProject(id);
+        
+        // Get repositories
+        var constructionItemRepo = unitOfWork.Repository<ConstructionItem>();
+        var constructionTaskRepo = unitOfWork.Repository<ConstructionTask>();
+        
+        // Get all construction items for this project
+        var constructionItems = constructionItemRepo.Get(
+            filter: ci => ci.ProjectId == id && ci.IsActive == true
+        ).Select(ci => ci.Id).ToList();
+        
+        if (!constructionItems.Any())
+        {
+            return (new List<GetAllConstructionTaskResponse>(), 0);
+        }
+        
+        // Create a combined filter expression that includes the project's construction items
+        var baseFilter = filter.GetExpressions();
+        var projectFilter = PredicateBuilder.New<ConstructionTask>(true)
+            .And(task => constructionItems.Contains(task.ConstructionItemId));
+        
+        // Combine with the filter from the request
+        var combinedFilter = baseFilter.And(projectFilter);
+        
+        // Get the data with count using the repository's GetWithCount method
+        var result = constructionTaskRepo.GetWithCount(
+            filter: combinedFilter,
+            orderBy: filter.GetOrder(),
+            includeProperties: "Staff,Staff.User,ConstructionItem",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the entities to response DTOs
+        var mappedResult = mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
+        
+        return (mappedResult, result.Count);
     }
 }
