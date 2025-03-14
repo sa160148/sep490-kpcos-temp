@@ -20,8 +20,6 @@ public partial class PaymentBatch
 
     public Guid? ConstructionItemId { get; set; }
 
-    public string? PaymentPhase { get; set; }
-
     public int? Percents { get; set; }
 
     public string? Status { get; set; }

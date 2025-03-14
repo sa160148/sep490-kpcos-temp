@@ -739,9 +739,6 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
-            entity.Property(e => e.PaymentPhase)
-                .HasMaxLength(255)
-                .HasColumnName("payment_phase");
             entity.Property(e => e.Percents).HasColumnName("percents");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)

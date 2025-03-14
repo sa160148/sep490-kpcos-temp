@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace KPCOS.DataAccessLayer.Enums;
 
 [DataContract]
-public enum EnumPaymentPhase
+public enum EnumPaymentStatus
 {
     [EnumMember(Value = "DEPOSIT")]
     DEPOSIT,

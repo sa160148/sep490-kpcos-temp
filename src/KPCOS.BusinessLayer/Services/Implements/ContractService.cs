@@ -129,12 +129,12 @@ public class ContractService : IContractService
         decimal batchValue = contract.ContractValue * 0.25m;
         
         // Define the payment phases for all batches
-        EnumPaymentPhase[] phases = new EnumPaymentPhase[]
+        EnumPaymentStatus[] phases = new EnumPaymentStatus[]
         {
-            EnumPaymentPhase.DEPOSIT,
-            EnumPaymentPhase.PRE_CONSTRUCTING,
-            EnumPaymentPhase.CONSTRUCTING,
-            EnumPaymentPhase.ACCEPTANCE
+            EnumPaymentStatus.DEPOSIT,
+            EnumPaymentStatus.PRE_CONSTRUCTING,
+            EnumPaymentStatus.CONSTRUCTING,
+            EnumPaymentStatus.ACCEPTANCE
         };
         
         // Create all payment batches in a single loop
@@ -149,9 +149,8 @@ public class ContractService : IContractService
                 ContractId = contract.Id,
                 // Only assign construction items to non-deposit batches (i > 0)
                 ConstructionItemId = (i > 0 && (i - 1) < paymentItems.Count) ? paymentItems[i - 1].Id : null,
-                PaymentPhase = phases[i].ToString(),
+                Status = phases[i].ToString(),
                 Percents = 25,
-                Status = "PENDING",
                 IsActive = true
             };
             
