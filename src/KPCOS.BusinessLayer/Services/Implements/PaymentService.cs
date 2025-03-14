@@ -90,14 +90,14 @@ public class PaymentService : IPaymentService
     private string GeneratePaymentInfo(PaymentBatch paymentBatch)
     {
         // Try to parse the string to enum
-        if (Enum.TryParse<EnumPaymentPhase>(paymentBatch.PaymentPhase, out var paymentPhaseEnum))
+        if (Enum.TryParse<EnumPaymentStatus>(paymentBatch.Status, out var paymentStatusEnum))
         {
-            string paymentInfo = paymentPhaseEnum switch 
+            string paymentInfo = paymentStatusEnum switch 
             {
-                EnumPaymentPhase.DEPOSIT => "Thanh toan coc ",
-                EnumPaymentPhase.PRE_CONSTRUCTING => "Thanh toan 1 ",
-                EnumPaymentPhase.CONSTRUCTING => "Thanh toan 2 ",
-                EnumPaymentPhase.ACCEPTANCE => "Thanh toan 3 ",
+                EnumPaymentStatus.DEPOSIT => "Thanh toan coc ",
+                EnumPaymentStatus.PRE_CONSTRUCTING => "Thanh toan 1 ",
+                EnumPaymentStatus.CONSTRUCTING => "Thanh toan 2 ",
+                EnumPaymentStatus.ACCEPTANCE => "Thanh toan 3 ",
                 _ => "Thanh toan "
             };
             
@@ -141,21 +141,24 @@ public class PaymentService : IPaymentService
             return $"{returnUrl}?success=failed&message=PaymentBatchNotFound";
         }
         
-        // Update payment batch status
+        var time = GlobalUtility.GetCurrentSEATime();
+
+        // Update payment batch status - keep the existing status (payment phase) and just mark as paid
         paymentBatch.IsPaid = true;
-        paymentBatch.PaymentAt = DateTime.Now;
-        paymentBatch.Status = "PAID";
+        paymentBatch.PaymentAt = time;
+        // Status field already contains the payment phase (DEPOSIT, PRE_CONSTRUCTING, etc.)
+        // No need to change it to "PAID" as it should maintain the payment phase information
         
         // Generate Vietnamese document name based on payment phase enum
         string docNamePrefix;
-        if (Enum.TryParse<EnumPaymentPhase>(paymentBatch.PaymentPhase, out var paymentPhaseEnum))
+        if (Enum.TryParse<EnumPaymentStatus>(paymentBatch.Status, out var paymentStatusEnum))
         {
-            docNamePrefix = paymentPhaseEnum switch
+            docNamePrefix = paymentStatusEnum switch
             {
-                EnumPaymentPhase.DEPOSIT => "Biên lai thanh toán cọc",
-                EnumPaymentPhase.PRE_CONSTRUCTING => "Biên lai thanh toán đợt 1",
-                EnumPaymentPhase.CONSTRUCTING => "Biên lai thanh toán đợt 2",
-                EnumPaymentPhase.ACCEPTANCE => "Biên lai thanh toán đợt 3",
+                EnumPaymentStatus.DEPOSIT => "Biên lai thanh toán cọc",
+                EnumPaymentStatus.PRE_CONSTRUCTING => "Biên lai thanh toán đợt 1",
+                EnumPaymentStatus.CONSTRUCTING => "Biên lai thanh toán đợt 2",
+                EnumPaymentStatus.ACCEPTANCE => "Biên lai thanh toán đợt 3",
                 _ => "Biên lai thanh toán"
             };
         }
