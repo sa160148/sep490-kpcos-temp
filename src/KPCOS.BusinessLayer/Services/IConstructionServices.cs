@@ -238,4 +238,41 @@ public interface IConstructionServices
     /// </exception>
     /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
     Task UpdateConstructionTaskAsync(UpdateConstructionTaskRequest request, Guid id);
+
+    /// <summary>
+    /// Permanently deletes a construction task from the system
+    /// </summary>
+    /// <param name="id">ID of the construction task to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the construction task exists
+    /// - Checks if the task is in OPENING status (only OPENING tasks can be deleted)
+    /// - Permanently removes the task from the database
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
+    Task DeleteConstructionTaskAsync(Guid id);
+
+    /// <summary>
+    /// Permanently deletes a construction item from the system
+    /// </summary>
+    /// <param name="id">ID of the construction item to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the construction item exists
+    /// - Checks if the item is in OPENING status (only OPENING items can be deleted)
+    /// - Ensures the item does not have any child items (construction item lv2)
+    /// - Ensures the item does not have isPayment set to true
+    /// - Permanently removes the item from the database
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The item is not in OPENING status
+    /// - The item has child items
+    /// - The item has isPayment set to true
+    /// </exception>
+    Task DeleteConstructionItemAsync(Guid id);
 }

@@ -905,7 +905,106 @@ public class ConstructionService : IConstructionServices
         // Check if the staff position is "constructor"
         bool isConstructor = staff.Position == RoleEnum.CONSTRUCTOR.ToString();
         
-        // Return the result and staff ID if they are a constructor
-        return (isConstructor, isConstructor ? staff.Id : null);
+        return (isConstructor, staff.Id);
+    }
+
+    /// <summary>
+    /// Permanently deletes a construction task from the system
+    /// </summary>
+    /// <param name="id">ID of the construction task to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
+    public async Task DeleteConstructionTaskAsync(Guid id)
+    {
+        // Get the repository for ConstructionTask
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        
+        // Find the construction task by ID
+        var constructionTask = await constructionTaskRepo.SingleOrDefaultAsync(t => t.Id == id);
+        
+        // If the task doesn't exist, throw NotFoundException
+        if (constructionTask == null)
+        {
+            throw new NotFoundException($"Construction task with ID {id} not found");
+        }
+        
+        // Check if the task is in OPENING status
+        if (constructionTask.Status != EnumConstructionTaskStatus.OPENING.ToString())
+        {
+            throw new BadRequestException($"Only construction tasks with OPENING status can be deleted. Current status: {constructionTask.Status}");
+        }
+        
+        // Check if the task is assigned to a staff member
+        if (constructionTask.StaffId != null)
+        {
+            throw new BadRequestException("Cannot delete a construction task that is assigned to a staff member");
+        }
+        
+        // Delete the construction task
+        await constructionTaskRepo.RemoveAsync(constructionTask, false);
+        
+        // Save changes to the database
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Permanently deletes a construction item from the system
+    /// </summary>
+    /// <param name="id">ID of the construction item to delete</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The item is not in OPENING status
+    /// - The item has child items
+    /// - The item has isPayment set to true
+    /// </exception>
+    public async Task DeleteConstructionItemAsync(Guid id)
+    {
+        // Get the repository for ConstructionItem
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Find the construction item by ID
+        var constructionItem = await constructionItemRepo.SingleOrDefaultAsync(i => i.Id == id);
+        
+        // If the item doesn't exist, throw NotFoundException
+        if (constructionItem == null)
+        {
+            throw new NotFoundException($"Construction item with ID {id} not found");
+        }
+        
+        // Check if the item is in OPENING status
+        if (constructionItem.Status != EnumConstructionItemStatus.OPENING.ToString())
+        {
+            throw new BadRequestException($"Only construction items with OPENING status can be deleted. Current status: {constructionItem.Status}");
+        }
+        
+        // Check if the item has isPayment set to true
+        if (constructionItem.IsPayment == true)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has payment status (isPayment = true)");
+        }
+        
+        // Check if the item has any child items (level 2)
+        var hasChildItems = await constructionItemRepo.SingleOrDefaultAsync(i => i.ParentId == id) != null;
+        if (hasChildItems)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has child items (level 2)");
+        }
+        
+        // Check if the item has any associated construction tasks
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var hasConstructionTasks = await constructionTaskRepo.SingleOrDefaultAsync(t => t.ConstructionItemId == id) != null;
+        if (hasConstructionTasks)
+        {
+            throw new BadRequestException("Cannot delete a construction item that has associated construction tasks");
+        }
+        
+        // Delete the construction item
+        await constructionItemRepo.RemoveAsync(constructionItem, false);
+        
+        // Save changes to the database
+        await _unitOfWork.SaveChangesAsync();
     }
 }

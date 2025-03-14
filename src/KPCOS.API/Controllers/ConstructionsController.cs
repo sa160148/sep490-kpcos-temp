@@ -585,4 +585,58 @@ public class ConstructionsController  : BaseController
         await _constructionService.UpdateConstructionTaskAsync(request, id);
         return Ok();
     }
+
+    [HttpDelete("task/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Xóa công việc xây dựng(construction task)",
+        Description = "Xóa công việc xây dựng(construction task) dựa trên ID của công việc, **xóa khỏi hệ thống luôn**.\n"
+        + "**Lưu ý:**\n"
+        + "- Không thể xóa công việc đang được gán cho nhân viên.\n"
+        + "- Chỉ có thể xóa công việc đang ở trạng thái OPENING.\n"
+        ,
+        OperationId = "DeleteConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> DeleteConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = "ID của công việc xây dựng(construction task) cần xóa",
+            Required = true
+        )]
+        Guid id
+    )
+    {
+        await _constructionService.DeleteConstructionTaskAsync(id);
+        return Ok();    
+    }
+
+    [HttpDelete("item/{id}")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Xóa hạng mục xây dựng(construction item)",
+        Description = "Xóa hạng mục xây dựng(construction item) dựa trên ID của hạng mục, **xóa khỏi hệ thống luôn**.\n"
+        + "**Lưu ý:**\n"
+        + "- Chỉ có thể xóa hạng mục đang ở trạng thái OPENING.\n"
+        + "- Không thể xóa hạng mục(construction item) đang được gán cho công việc(construction task).\n"
+        + "- Không thể xóa hạng mục(construction item) đang được gán cho hạng mục cha(construction item lv1) hoặc ngược lại.\n"
+        ,
+        OperationId = "DeleteConstructionItem",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> DeleteConstructionItemAsync(
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng(construction item) cần xóa",
+            Required = true
+        )]
+        Guid id
+    )
+    {
+        await _constructionService.DeleteConstructionItemAsync(id);
+        return Ok();
+    }
+
 }
