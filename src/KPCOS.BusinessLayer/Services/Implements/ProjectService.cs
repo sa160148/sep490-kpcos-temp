@@ -25,6 +25,7 @@ using System.Linq.Dynamic.Core;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using Google.Cloud.Firestore;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -1094,5 +1095,51 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         {
             IsExit3DConfirmed = exists
         };
+    }
+
+    public async Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetAllStaffByProjectAsync(
+        Guid id, 
+        GetAllStaffRequest filter)
+    {
+        // Validate project exists
+        await ValidateAndGetProject(id);
+        
+        // Create a predicate for filtering ProjectStaff by project ID
+        var predicate = PredicateBuilder.New<ProjectStaff>(true);
+        predicate = predicate.And(ps => ps.ProjectId == id);
+        
+        // Apply position filter if specified
+        if (!string.IsNullOrEmpty(filter.Position))
+        {
+            predicate = predicate.And(ps => ps.Staff.Position == filter.Position);
+        }
+        
+        // Apply idle filter for constructors if specified
+        if (filter.IsIdle.HasValue && filter.IsIdle.Value && 
+            (string.IsNullOrEmpty(filter.Position) || filter.Position == RoleEnum.CONSTRUCTOR.ToString()))
+        {
+            // For constructors, idle means not assigned to any construction task
+            predicate = predicate.And(ps => 
+                ps.Staff.Position == RoleEnum.CONSTRUCTOR.ToString() && 
+                !ps.Staff.ConstructionTasks.Any(ct => 
+                    ct.ConstructionItem.ProjectId == id && 
+                    ct.Status != EnumConstructionTaskStatus.DONE.ToString()));
+        }
+        
+        // Get data with count using the repository's GetWithCount method
+        var result = unitOfWork.Repository<ProjectStaff>().GetWithCount(
+            filter: predicate,
+            includeProperties: "Staff.User,Staff.ConstructionTasks.ConstructionItem",
+            orderBy: null,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the staff entities to response DTOs using AutoMapper
+        var staffResponses = result.Data
+            .Select(ps => mapper.Map<GetAllStaffResponse>(ps.Staff))
+            .ToList();
+        
+        return (staffResponses, result.Count);
     }
 }

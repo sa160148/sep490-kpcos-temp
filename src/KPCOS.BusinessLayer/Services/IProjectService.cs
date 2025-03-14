@@ -3,6 +3,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
@@ -274,4 +275,8 @@ public interface IProjectService
     /// <para>Used to determine if a project has progressed to the active contract stage in the workflow</para>
     /// </remarks>
     Task<IsContractApprovedByProjectResponse> IsContractApprovedByProjectAsync(Guid id);
+
+    Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetAllStaffByProjectAsync(
+        Guid id, 
+        GetAllStaffRequest filter);
 }
