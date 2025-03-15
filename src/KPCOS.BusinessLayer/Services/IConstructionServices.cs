@@ -275,4 +275,26 @@ public interface IConstructionServices
     /// - The item has isPayment set to true
     /// </exception>
     Task DeleteConstructionItemAsync(Guid id);
+
+    /// <summary>
+    /// Confirms a construction task and updates related construction items
+    /// </summary>
+    /// <param name="id">ID of the construction task to confirm</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the construction task exists
+    /// - Checks if the task is in PREVIEWING status (only PREVIEWING tasks can be confirmed)
+    /// - Ensures the task has an image URL (not null)
+    /// - Changes the task status to DONE
+    /// - If all tasks in a construction item level 2 (child) are DONE, updates the construction item level 2 status to DONE and sets actualAt to current time
+    /// - If all construction items level 2 (children) of a construction item level 1 (parent) are DONE, updates the construction item level 1 status to DONE and sets actualAt to current time
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The task is not in PREVIEWING status
+    /// - The task does not have an image URL
+    /// </exception>
+    Task ConfirmConstructionTaskAsync(Guid id);
 }

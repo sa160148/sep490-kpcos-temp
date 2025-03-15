@@ -1007,4 +1007,108 @@ public class ConstructionService : IConstructionServices
         // Save changes to the database
         await _unitOfWork.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Confirms a construction task and updates related construction items
+    /// </summary>
+    /// <param name="id">ID of the construction task to confirm</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the construction task with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The task is not in PREVIEWING status
+    /// - The task does not have an image URL
+    /// </exception>
+    public async Task ConfirmConstructionTaskAsync(Guid id)
+    {
+        // Get the repositories
+        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Find the construction task by ID
+        var constructionTask = await constructionTaskRepo.SingleOrDefaultAsync(t => t.Id == id);
+        
+        // If the task doesn't exist, throw NotFoundException
+        if (constructionTask == null)
+        {
+            throw new NotFoundException($"Construction task with ID {id} not found");
+        }
+        
+        // Check if the task is in PREVIEWING status
+        if (constructionTask.Status != EnumConstructionTaskStatus.PREVIEWING.ToString())
+        {
+            throw new BadRequestException($"Only construction tasks with PREVIEWING status can be confirmed. Current status: {constructionTask.Status}");
+        }
+        
+        // Check if the task has an image URL
+        if (string.IsNullOrEmpty(constructionTask.ImageUrl))
+        {
+            throw new BadRequestException("Cannot confirm a construction task without an image URL");
+        }
+        
+        // Update the task status to DONE
+        constructionTask.Status = EnumConstructionTaskStatus.DONE.ToString();
+        await constructionTaskRepo.UpdateAsync(constructionTask, false);
+        
+        // Get the construction item level 2 (child) that contains this task
+        // Since only level 2 items can have tasks, we know this is a level 2 item
+        var constructionItemLv2 = await constructionItemRepo.FindAsync(constructionTask.ConstructionItemId);
+        if (constructionItemLv2 == null)
+        {
+            throw new NotFoundException($"Construction item with ID {constructionTask.ConstructionItemId} not found");
+        }
+        
+        // Check if all tasks in the construction item level 2 are DONE
+        var allTasksInItemLv2 = constructionTaskRepo.Get(
+            filter: t => t.ConstructionItemId == constructionItemLv2.Id && t.IsActive == true,
+            includeProperties: ""
+        ).ToList();
+        
+        var allTasksDone = allTasksInItemLv2.All(t => t.Status == EnumConstructionTaskStatus.DONE.ToString());
+        
+        // If all tasks are DONE, update the construction item level 2 status to DONE
+        if (allTasksDone && allTasksInItemLv2.Count > 0)
+        {
+            constructionItemLv2.Status = EnumConstructionItemStatus.DONE.ToString();
+            
+            // Set the actual completion date to the current SEA time
+            var currentDate = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
+            constructionItemLv2.ActualAt = currentDate;
+            
+            await constructionItemRepo.UpdateAsync(constructionItemLv2, false);
+            
+            // Check if this level 2 item has a parent (level 1 item)
+            if (constructionItemLv2.ParentId.HasValue)
+            {
+                var parentId = constructionItemLv2.ParentId.Value;
+                var constructionItemLv1 = await constructionItemRepo.FindAsync(parentId);
+                
+                if (constructionItemLv1 != null)
+                {
+                    // Get all level 2 items that belong to this level 1 item
+                    var allChildItems = constructionItemRepo.Get(
+                        filter: i => i.ParentId == parentId && i.IsActive == true,
+                        includeProperties: ""
+                    ).ToList();
+                    
+                    // Check if all level 2 items are DONE
+                    var allChildItemsDone = allChildItems.All(i => i.Status == EnumConstructionItemStatus.DONE.ToString());
+                    
+                    // If all level 2 items are DONE, update the level 1 item status to DONE
+                    if (allChildItemsDone && allChildItems.Count > 0)
+                    {
+                        constructionItemLv1.Status = EnumConstructionItemStatus.DONE.ToString();
+                        
+                        // Set the actual completion date to the current SEA time
+                        constructionItemLv1.ActualAt = currentDate;
+                        
+                        await constructionItemRepo.UpdateAsync(constructionItemLv1, false);
+                    }
+                }
+            }
+        }
+        
+        // Save all changes to the database
+        await _unitOfWork.SaveChangesAsync();
+    }
 }
