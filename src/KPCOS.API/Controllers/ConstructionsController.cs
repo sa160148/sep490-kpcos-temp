@@ -13,8 +13,6 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace KPCOS.API.Controllers;
 
-
-[ApiController]
 [Route("api/[controller]")]
 public class ConstructionsController  : BaseController
 {
@@ -639,4 +637,34 @@ public class ConstructionsController  : BaseController
         return Ok();
     }
 
+    [HttpPut("task/{id}/confirm")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [SwaggerOperation(
+        Summary = "Xác nhận công việc xây dựng(construction task)",
+        Description = "Xác nhận công việc xây dựng(construction task) dựa trên ID của công việc.\n"
+        + "**Lưu ý:**\n"
+        + "- Chỉ có thể xác nhận công việc đang ở trạng thái PREVIEWING.\n"
+        + "- Công việc sẽ được chuyển sang trạng thái DONE.\n"
+        + "- Không thể xác nhận công việc(construction task) khi không có URL hình ảnh(imageUrl).\n"
+        + "- Khi confirm 1 công việc(construction task), hạng mục xây dựng(construction item lv2)" 
+        + " sẽ được tự động confirm khi tất cả công việc(construction task) của nó đã DONE," 
+        + " cũng như kiểm tra các hạng mục xây dựng(construction item lv2) trong hạng mục công việc cha(construction item lv1)"
+        + " đã được DONE hay chưa và tự động cập nhật trạng thái của hạng mục xây dựng(construction item lv1)"
+        + " sang trạng thái DONE.\n",
+        OperationId = "ConfirmConstructionTask",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> ConfirmConstructionTaskAsync(
+        [SwaggerParameter(
+            Description = "ID của công việc xây dựng(construction task) cần xác nhận",
+            Required = true
+        )]
+        Guid id
+    )
+    {
+        await _constructionService.ConfirmConstructionTaskAsync(id);
+        return Ok();
+    }
 }

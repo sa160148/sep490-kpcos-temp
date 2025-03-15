@@ -1159,20 +1159,18 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </summary>
     /// <param name="id">The project ID to get construction tasks for</param>
     /// <param name="filter">Filter criteria for construction tasks</param>
+    /// <param name="userId">Optional User ID to filter tasks assigned to a specific staff member</param>
     /// <returns>Tuple containing the list of construction tasks and total count</returns>
     public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
         Guid id, 
-        GetAllConstructionTaskFilterRequest filter)
+        GetAllConstructionTaskFilterRequest filter,
+        Guid? userId = null)
     {
         // Validate and get the project
         var project = await ValidateAndGetProject(id);
         
-        // Get repositories
-        var constructionItemRepo = unitOfWork.Repository<ConstructionItem>();
-        var constructionTaskRepo = unitOfWork.Repository<ConstructionTask>();
-        
         // Get all construction items for this project
-        var constructionItems = constructionItemRepo.Get(
+        var constructionItems = unitOfWork.Repository<ConstructionItem>().Get(
             filter: ci => ci.ProjectId == id && ci.IsActive == true
         ).Select(ci => ci.Id).ToList();
         
@@ -1186,11 +1184,24 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var projectFilter = PredicateBuilder.New<ConstructionTask>(true)
             .And(task => constructionItems.Contains(task.ConstructionItemId));
         
+        // If userId is provided, filter tasks assigned to the staff with that userId
+        if (userId.HasValue)
+        {
+            // Find the staff with the given userId
+            var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
+            
+            if (staff != null)
+            {
+                // Add filter to only include tasks assigned to this staff
+                projectFilter = projectFilter.And(task => task.StaffId == staff.Id);
+            }
+        }
+        
         // Combine with the filter from the request
         var combinedFilter = baseFilter.And(projectFilter);
         
         // Get the data with count using the repository's GetWithCount method
-        var result = constructionTaskRepo.GetWithCount(
+        var result = unitOfWork.Repository<ConstructionTask>().GetWithCount(
             filter: combinedFilter,
             orderBy: filter.GetOrder(),
             includeProperties: "Staff,Staff.User,ConstructionItem",
