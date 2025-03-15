@@ -921,24 +921,24 @@ public class ConstructionService : IConstructionServices
         var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
         
         // Find the construction task by ID
-        var constructionTask = await constructionTaskRepo.SingleOrDefaultAsync(t => t.Id == id);
+        var constructionTask = await constructionTaskRepo.FindAsync(id);
         
         // If the task doesn't exist, throw NotFoundException
         if (constructionTask == null)
         {
-            throw new NotFoundException($"Construction task with ID {id} not found");
+            throw new NotFoundException($"Không tìm thấy công việc xây dựng với ID {id}");
         }
         
         // Check if the task is in OPENING status
         if (constructionTask.Status != EnumConstructionTaskStatus.OPENING.ToString())
         {
-            throw new BadRequestException($"Only construction tasks with OPENING status can be deleted. Current status: {constructionTask.Status}");
+            throw new BadRequestException($"Chỉ có thể xóa công việc xây dựng có trạng thái OPENING. Trạng thái hiện tại: {constructionTask.Status}");
         }
         
         // Check if the task is assigned to a staff member
         if (constructionTask.StaffId != null)
         {
-            throw new BadRequestException("Cannot delete a construction task that is assigned to a staff member");
+            throw new BadRequestException("Không thể xóa công việc xây dựng đang được gán cho nhân viên");
         }
         
         // Delete the construction task
@@ -966,31 +966,31 @@ public class ConstructionService : IConstructionServices
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
         
         // Find the construction item by ID
-        var constructionItem = await constructionItemRepo.SingleOrDefaultAsync(i => i.Id == id);
+        var constructionItem = await constructionItemRepo.FindAsync( id);
         
         // If the item doesn't exist, throw NotFoundException
         if (constructionItem == null)
         {
-            throw new NotFoundException($"Construction item with ID {id} not found");
+            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {id}");
         }
         
         // Check if the item is in OPENING status
         if (constructionItem.Status != EnumConstructionItemStatus.OPENING.ToString())
         {
-            throw new BadRequestException($"Only construction items with OPENING status can be deleted. Current status: {constructionItem.Status}");
+            throw new BadRequestException($"Chỉ có thể xóa hạng mục xây dựng có trạng thái OPENING. Trạng thái hiện tại: {constructionItem.Status}");
         }
         
         // Check if the item has isPayment set to true
         if (constructionItem.IsPayment == true)
         {
-            throw new BadRequestException("Cannot delete a construction item that has payment status (isPayment = true)");
+            throw new BadRequestException("Không thể xóa hạng mục xây dựng có trạng thái thanh toán (isPayment = true)");
         }
         
         // Check if the item has any child items (level 2)
         var hasChildItems = await constructionItemRepo.SingleOrDefaultAsync(i => i.ParentId == id) != null;
         if (hasChildItems)
         {
-            throw new BadRequestException("Cannot delete a construction item that has child items (level 2)");
+            throw new BadRequestException("Không thể xóa hạng mục xây dựng có hạng mục con (cấp 2)");
         }
         
         // Check if the item has any associated construction tasks
@@ -998,7 +998,7 @@ public class ConstructionService : IConstructionServices
         var hasConstructionTasks = await constructionTaskRepo.SingleOrDefaultAsync(t => t.ConstructionItemId == id) != null;
         if (hasConstructionTasks)
         {
-            throw new BadRequestException("Cannot delete a construction item that has associated construction tasks");
+            throw new BadRequestException("Không thể xóa hạng mục xây dựng có công việc xây dựng liên quan");
         }
         
         // Delete the construction item
@@ -1026,24 +1026,24 @@ public class ConstructionService : IConstructionServices
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
         
         // Find the construction task by ID
-        var constructionTask = await constructionTaskRepo.SingleOrDefaultAsync(t => t.Id == id);
+        var constructionTask = await constructionTaskRepo.FindAsync(id);
         
         // If the task doesn't exist, throw NotFoundException
         if (constructionTask == null)
         {
-            throw new NotFoundException($"Construction task with ID {id} not found");
+            throw new NotFoundException($"Không tìm thấy công việc xây dựng với ID {id}");
         }
         
         // Check if the task is in PREVIEWING status
         if (constructionTask.Status != EnumConstructionTaskStatus.PREVIEWING.ToString())
         {
-            throw new BadRequestException($"Only construction tasks with PREVIEWING status can be confirmed. Current status: {constructionTask.Status}");
+            throw new BadRequestException($"Chỉ có thể xác nhận công việc đang ở trạng thái PREVIEWING. Trạng thái hiện tại: {constructionTask.Status}");
         }
         
         // Check if the task has an image URL
-        if (string.IsNullOrEmpty(constructionTask.ImageUrl))
+        if (constructionTask.ImageUrl is null)
         {
-            throw new BadRequestException("Cannot confirm a construction task without an image URL");
+            throw new BadRequestException("Không thể xác nhận công việc khi chưa có hình ảnh (URL hình ảnh trống)");
         }
         
         // Update the task status to DONE
@@ -1055,7 +1055,7 @@ public class ConstructionService : IConstructionServices
         var constructionItemLv2 = await constructionItemRepo.FindAsync(constructionTask.ConstructionItemId);
         if (constructionItemLv2 == null)
         {
-            throw new NotFoundException($"Construction item with ID {constructionTask.ConstructionItemId} not found");
+            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {constructionTask.ConstructionItemId}");
         }
         
         // Check if all tasks in the construction item level 2 are DONE

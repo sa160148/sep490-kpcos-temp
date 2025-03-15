@@ -13,8 +13,6 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace KPCOS.API.Controllers;
 
-
-[ApiController]
 [Route("api/[controller]")]
 public class ConstructionsController  : BaseController
 {
@@ -654,7 +652,9 @@ public class ConstructionsController  : BaseController
         + " sẽ được tự động confirm khi tất cả công việc(construction task) của nó đã DONE," 
         + " cũng như kiểm tra các hạng mục xây dựng(construction item lv2) trong hạng mục công việc cha(construction item lv1)"
         + " đã được DONE hay chưa và tự động cập nhật trạng thái của hạng mục xây dựng(construction item lv1)"
-        + " sang trạng thái DONE.\n"
+        + " sang trạng thái DONE.\n",
+        OperationId = "ConfirmConstructionTask",
+        Tags = new[] { "Constructions" }
     )]
     public async Task<ApiResult> ConfirmConstructionTaskAsync(
         [SwaggerParameter(
