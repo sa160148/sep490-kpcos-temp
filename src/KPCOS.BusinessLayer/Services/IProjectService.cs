@@ -308,5 +308,6 @@ public interface IProjectService
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
         Guid id, 
-        GetAllConstructionTaskFilterRequest filter);
+        GetAllConstructionTaskFilterRequest filter,
+        Guid? userId = null);
 }
