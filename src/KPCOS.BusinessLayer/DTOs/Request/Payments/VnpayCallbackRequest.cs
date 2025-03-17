@@ -32,7 +32,6 @@ public class VnpayCallbackRequest
     public string returnUrl { get; set; } = default!;
     public string customerId { get; set; } = default!;
 
-    public string batchPaymentId { get; set; } = default!;
-
+    public string? batchPaymentId { get; set; }
     public bool IsSuccess => "00".Equals(vnp_ResponseCode);
 }

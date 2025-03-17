@@ -19,6 +19,4 @@ public partial class Doc
     public Guid ProjectId { get; set; }
 
     public virtual Project Project { get; set; } = null!;
-
-    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 }

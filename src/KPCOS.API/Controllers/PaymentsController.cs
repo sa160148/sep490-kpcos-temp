@@ -99,5 +99,22 @@ namespace KPCOS.API.Controllers
             var redirectUrl = await _paymentService.PaymentVnpayCallback(request);
             return Redirect(redirectUrl);
         }
+
+        [HttpGet("{id}")]
+        [SwaggerOperation(
+            Summary = "Get payment detail",
+            Description = "Get payment detail",
+            OperationId = "GetPaymentDetail",
+            Tags = new[] { "Payments" }
+        )]
+        [SwaggerResponse(200, "Returns the payment detail", typeof(ApiResult<GetTransactionDetailResponse>))]
+        [SwaggerResponse(400, "Invalid request data", typeof(ApiResult))]
+        [SwaggerResponse(404, "Payment batch not found", typeof(ApiResult))]
+        public async Task<ApiResult<GetTransactionDetailResponse>> GetPaymentDetailAsync(Guid id)
+        {
+            var response = await _paymentService.GetPaymentDetailAsync(id);
+            return Ok(response);
+        }
+
     }
 }

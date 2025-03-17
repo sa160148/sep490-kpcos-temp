@@ -2,32 +2,27 @@ using System;
 using System.Text.Json.Serialization;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 
-namespace KPCOS.BusinessLayer.DTOs.Response.Constructions;
+namespace KPCOS.BusinessLayer.DTOs.Response.Payments;
 
-public class GetAllConstructionTaskResponse
+public class GetTransactionDetailResponse
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? Id { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Name { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ImageUrl { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Reason { get; set; }
+    public string? Note { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Status { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? IsActive { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public DateTime? DeadlineAt { get; set; }
+    public int? Amount { get; set; }
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? CreatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? UpdatedAt { get; set; }
-
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public GetAllStaffResponse? Staff { get; set; }
-
+    public GetPaymentForTransactionResponse? PaymentBatch { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public GetConstructionItemForTaskResponse? ConstructionItem { get; set; }
+    public GetDocResponse? Doc { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public UserResponse? Customer { get; set; }
 }
