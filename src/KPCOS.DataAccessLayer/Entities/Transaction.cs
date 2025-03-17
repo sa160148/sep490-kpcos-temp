@@ -20,11 +20,7 @@ public partial class Transaction
 
     public string? Note { get; set; }
 
-    public Guid? IdDocs { get; set; }
-
     public string? Status { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
-
-    public virtual Doc? IdDocsNavigation { get; set; }
 }

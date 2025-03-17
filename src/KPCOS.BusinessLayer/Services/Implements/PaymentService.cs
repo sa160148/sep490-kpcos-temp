@@ -2,8 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request.Payments;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
+using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Helpers;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Constants;
@@ -14,6 +18,7 @@ using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -22,11 +27,18 @@ public class PaymentService : IPaymentService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly VnpaySetting _vnpaySetting;
     private readonly IUnitOfWork _unitOfWork;
-    public PaymentService(IHttpContextAccessor httpContextAccessor, VnpaySetting vnpaySetting, IUnitOfWork unitOfWork)
+    private readonly IMapper _mapper;
+    
+    public PaymentService(
+        IHttpContextAccessor httpContextAccessor, 
+        VnpaySetting vnpaySetting, 
+        IUnitOfWork unitOfWork,
+        IMapper mapper)
     {
         _httpContextAccessor = httpContextAccessor;
         _vnpaySetting = vnpaySetting;
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
     /// <summary>
     /// Creates a transaction payment request to VNPAY payment gateway
@@ -188,7 +200,6 @@ public class PaymentService : IPaymentService
             CustomerId = customerId,
             No = batchPaymentId,
             Note = request.vnp_OrderInfo,
-            IdDocs = docId,
             Status = EnumTransactionStatus.SUCCESSFUL.ToString(),
             Type = EnumBillType.HOA_DON_THANH_TOAN.ToString()
         };
@@ -205,5 +216,83 @@ public class PaymentService : IPaymentService
         
         // Return success URL
         return $"{returnUrl}?success=true&transactionId={transaction.Id}";
+    }
+
+    /// <summary>
+    /// Gets the payment transaction details by ID
+    /// </summary>
+    /// <param name="id">Transaction ID</param>
+    /// <returns>Payment transaction details with related payment batch, contract and project information</returns>
+    public async Task<GetTransactionDetailResponse> GetPaymentDetailAsync(Guid id)
+    {
+        // Get transaction with related customer
+        var transaction = _unitOfWork.Repository<Transaction>()
+            .Get(
+                filter: x => x.Id == id,
+                includeProperties: "Customer.User"
+            )
+            .FirstOrDefault();
+
+        if (transaction == null)
+        {
+            throw new NotFoundException("Không tìm thấy giao dịch thanh toán với ID: " + id);
+        }
+
+        // Map transaction to response DTO using AutoMapper
+        var response = _mapper.Map<GetTransactionDetailResponse>(transaction);
+
+        // The No field in Transaction can reference either a PaymentBatch or a Doc
+        // First, try to find a PaymentBatch with this ID
+        var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
+            .Get(
+                filter: x => x.Id == transaction.No,
+                includeProperties: "Contract.Project"
+            )
+            .FirstOrDefault();
+
+        if (paymentBatch != null)
+        {
+            // This transaction is related to a payment batch
+            // Map payment batch to GetPaymentForTransactionResponse
+            var paymentBatchResponse = _mapper.Map<GetPaymentForTransactionResponse>(paymentBatch);
+            
+            // Map contract to GetContractForPaymentBatchResponse
+            var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(paymentBatch.Contract);
+            
+            // Map project to GetProjectForTransactionResponse
+            var projectResponse = _mapper.Map<GetProjectForTransactionResponse>(paymentBatch.Contract.Project);
+            
+            // Link everything together
+            contractResponse.Project = projectResponse;
+            paymentBatchResponse.Contract = contractResponse;
+            response.PaymentBatch = paymentBatchResponse;
+        }
+        else
+        {
+            // If not a payment batch, try to find a Doc with this ID
+            var doc = _unitOfWork.Repository<Doc>()
+                .Get(
+                    filter: x => x.Id == transaction.No,
+                    includeProperties: "Project"
+                )
+                .FirstOrDefault();
+
+            if (doc != null)
+            {
+                // This transaction is related to a document
+                var docResponse = _mapper.Map<GetDocResponse>(doc);
+                
+                // Map project information if available
+                if (doc.Project != null)
+                {
+                    var projectResponse = _mapper.Map<GetProjectForTransactionResponse>(doc.Project);
+                    docResponse.Project = projectResponse;
+                }
+                
+                response.Doc = docResponse;
+            }
+        }
+
+        return response;
     }
 }

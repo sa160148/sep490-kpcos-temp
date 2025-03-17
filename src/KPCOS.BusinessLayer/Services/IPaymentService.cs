@@ -20,4 +20,11 @@ public interface IPaymentService
     /// <param name="request">Callback request containing payment result and transaction details</param>
     /// <returns>Redirect URL with success or failure parameters</returns>
     Task<string> PaymentVnpayCallback(VnpayCallbackRequest request);
+
+    /// <summary>
+    /// Gets the payment transaction details by ID
+    /// </summary>
+    /// <param name="id">Transaction ID</param>
+    /// <returns>Payment transaction details with related payment batch, contract and project information</returns>
+    Task<GetTransactionDetailResponse> GetPaymentDetailAsync(Guid id);
 }

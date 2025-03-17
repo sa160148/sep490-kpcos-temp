@@ -240,5 +240,16 @@ public class MapperProfile : Profile
         .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => 
             GlobalUtility.ConvertToSEATimeForPostgres(src.DeadlineAt)))
         ;
+
+        // Add mapping for Transaction to GetPaymentDetailResponse
+        CreateMap<Transaction, GetTransactionDetailResponse>()
+            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer.User));
+
+        // Add mappings for payment-related entities
+        CreateMap<PaymentBatch, GetPaymentForTransactionResponse>()
+            .ForMember(dest => dest.TotalValue, opt => opt.MapFrom(src => (int)src.TotalValue));
+        CreateMap<Contract, GetContractForPaymentBatchResponse>();
+        CreateMap<Project, GetProjectForTransactionResponse>();
+        CreateMap<Doc, GetDocResponse>();
     }
 }
