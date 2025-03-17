@@ -46,7 +46,14 @@ public class ContractService : IContractService
         var contract = await repo.FindAsync(contractId) ?? throw new NotFoundException("Hợp đồng không tồn tại");
         await _firebaseService.UpdateContractOtpAsync(contractId.ToString());
         contract.Status = EnumContractStatus.ACTIVE.ToString();
-        await repo.UpdateAsync(contract);
+
+        var projectRepo = _unitOfWork.Repository<Project>();
+        var project = await projectRepo.FindAsync(contract.ProjectId) ?? throw new NotFoundException("Dự án không tồn tại");
+        project.Status = EnumProjectStatus.DESIGNING.ToString();
+        
+        await repo.UpdateAsync(contract, false);
+        await projectRepo.UpdateAsync(project, false);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     /// <summary>
@@ -79,6 +86,21 @@ public class ContractService : IContractService
     public async Task VerifyingContract(Guid contractId, Guid userId)
     {
         var contractRepo = _unitOfWork.Repository<Contract>();
+        var contract = await contractRepo.FindAsync(contractId) ?? throw new NotFoundException("Hợp đồng không tồn tại");
+        
+        // Check if any other contract from the same project already has ACTIVE status
+        var existingActiveContract = contractRepo.Get(
+            filter: c => c.ProjectId == contract.ProjectId && 
+                         c.Status == EnumContractStatus.ACTIVE.ToString() &&
+                         c.Id != contractId,
+            includeProperties: "")
+            .FirstOrDefault();
+            
+        if (existingActiveContract != null)
+        {
+            throw new BadRequestException("Dự án này đã có hợp đồng đang hoạt động. Chỉ được phép có một hợp đồng hoạt động cho mỗi dự án.");
+        }
+        
         var user = await _unitOfWork.Repository<User>().FindAsync(userId);
         int otpCode = new Random().Next(1000, 9999);
         

@@ -133,6 +133,18 @@ public class DesignService : IDesignService
         if (role == RoleEnum.CUSTOMER.ToString() && 
             design.Status == EnumDesignStatus.PREVIEWING.ToString())
         {
+            // Check if there's already a confirmed design of the same type for this project
+            var existingConfirmedDesign = repo.FirstOrDefault(d => 
+                d.ProjectId == design.ProjectId && 
+                d.Type == design.Type && 
+                d.Status == EnumDesignStatus.CONFIRMED.ToString());
+                
+            if (existingConfirmedDesign != null)
+            {
+                // Throw exception instead of changing the other design's status
+                throw new BadRequestException($"Đã tồn tại một Design {design.Type} được xác nhận cho dự án này");
+            }
+            
             design.Status = EnumDesignStatus.CONFIRMED.ToString();
             
             // Only update project status to CONSTRUCTING for 2D designs
