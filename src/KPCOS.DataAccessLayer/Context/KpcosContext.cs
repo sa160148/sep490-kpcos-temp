@@ -1066,7 +1066,6 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
-            entity.Property(e => e.IdDocs).HasColumnName("id_docs");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
@@ -1086,10 +1085,6 @@ public partial class KpcosContext : DbContext
                 .HasForeignKey(d => d.CustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("transaction_customer_id_fkey");
-
-            entity.HasOne(d => d.IdDocsNavigation).WithMany(p => p.Transactions)
-                .HasForeignKey(d => d.IdDocs)
-                .HasConstraintName("transaction_id_docs_fkey");
         });
 
         modelBuilder.Entity<User>(entity =>
