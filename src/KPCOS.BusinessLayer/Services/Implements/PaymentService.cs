@@ -49,14 +49,25 @@ public class PaymentService : IPaymentService
     {
         // Use SEA time instead of local time to ensure consistency
         var time = GlobalUtility.GetCurrentSEATime();
-        var paymentBatch = await GetPaymentBatchAsync(request.BatchPaymentId);
+        
+        // Validate that BatchPaymentId is provided
+        if (!request.BatchPaymentId.HasValue)
+        {
+            throw new Exception("BatchPaymentId must be provided");
+        }
+        
+        // Payment for a batch payment
+        var paymentBatch = await GetPaymentBatchAsync(request.BatchPaymentId.Value);
         var paymentInfo = GeneratePaymentInfo(paymentBatch);
+        var amount = paymentBatch.TotalValue;
+        var customerId = paymentBatch.Contract.Project.CustomerId;
+        var returnUrl = GenerateReturnUrl(request.ReturnUrl, customerId, request.BatchPaymentId.Value);
 
         var vnpayLibrary = new VnpayLibrary();
         vnpayLibrary.AddRequestData("vnp_Version", _vnpaySetting.Version);
         vnpayLibrary.AddRequestData("vnp_Command", _vnpaySetting.Command);
         vnpayLibrary.AddRequestData("vnp_TmnCode", _vnpaySetting.TmnCode);
-        vnpayLibrary.AddRequestData("vnp_Amount", ((long)paymentBatch.TotalValue * 100).ToString());
+        vnpayLibrary.AddRequestData("vnp_Amount", ((long)amount * 100).ToString());
         vnpayLibrary.AddRequestData("vnp_CurrCode", _vnpaySetting.CurrCode);
         vnpayLibrary.AddRequestData("vnp_Locale", _vnpaySetting.Locale);
         vnpayLibrary.AddRequestData("vnp_CreateDate", time.ToString("yyyyMMddHHmmss"));
@@ -68,8 +79,6 @@ public class PaymentService : IPaymentService
         vnpayLibrary.AddRequestData("vnp_TxnRef", Guid.NewGuid().ToString());
         
         // Generate the VnpayUrl
-        var customerId = paymentBatch.Contract.Project.CustomerId;
-        var returnUrl = GenerateReturnUrl(request.ReturnUrl, customerId, paymentBatch.Id);
         vnpayLibrary.AddRequestData("vnp_ReturnUrl", returnUrl);
         var vnpayUrl = vnpayLibrary
             .CreateRequestUrl(_vnpaySetting.PaymentEndpoint, _vnpaySetting.HashSecret);
@@ -87,11 +96,12 @@ public class PaymentService : IPaymentService
     private async Task<PaymentBatch> GetPaymentBatchAsync(Guid batchPaymentId)  
     {
         var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
-        .Get(
-            filter: x => x.Id == batchPaymentId,
-            includeProperties: "Contract.Project.Customer"
-        )
-        .SingleOrDefault();
+            .Get(
+                filter: x => x.Id == batchPaymentId,
+                includeProperties: "Contract.Project.Customer"
+            )
+            .FirstOrDefault();
+            
         if (paymentBatch == null)
         {
             throw new Exception("Payment batch not found");
@@ -137,7 +147,15 @@ public class PaymentService : IPaymentService
         }
         
         var customerId = Guid.Parse(request.customerId);
+        
+        // Validate that batchPaymentId is provided
+        if (string.IsNullOrEmpty(request.batchPaymentId))
+        {
+            return $"{returnUrl}?success=failed&message=BatchPaymentIdRequired";
+        }
+        
         var batchPaymentId = Guid.Parse(request.batchPaymentId);
+        var time = GlobalUtility.GetCurrentSEATime();
         
         // Get payment batch with all necessary related entities
         var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
@@ -145,7 +163,7 @@ public class PaymentService : IPaymentService
                 filter: x => x.Id == batchPaymentId,
                 includeProperties: "Contract.Project.Customer.User,Contract,Contract.Project"
             )
-            .SingleOrDefault();
+            .FirstOrDefault();
             
         if (paymentBatch == null)
         {
@@ -153,43 +171,9 @@ public class PaymentService : IPaymentService
             return $"{returnUrl}?success=failed&message=PaymentBatchNotFound";
         }
         
-        var time = GlobalUtility.GetCurrentSEATime();
-
         // Update payment batch status - keep the existing status (payment phase) and just mark as paid
         paymentBatch.IsPaid = true;
         paymentBatch.PaymentAt = time;
-        // Status field already contains the payment phase (DEPOSIT, PRE_CONSTRUCTING, etc.)
-        // No need to change it to "PAID" as it should maintain the payment phase information
-        
-        // Generate Vietnamese document name based on payment phase enum
-        string docNamePrefix;
-        if (Enum.TryParse<EnumPaymentStatus>(paymentBatch.Status, out var paymentStatusEnum))
-        {
-            docNamePrefix = paymentStatusEnum switch
-            {
-                EnumPaymentStatus.DEPOSIT => "Biên lai thanh toán cọc",
-                EnumPaymentStatus.PRE_CONSTRUCTING => "Biên lai thanh toán đợt 1",
-                EnumPaymentStatus.CONSTRUCTING => "Biên lai thanh toán đợt 2",
-                EnumPaymentStatus.ACCEPTANCE => "Biên lai thanh toán đợt 3",
-                _ => "Biên lai thanh toán"
-            };
-        }
-        else
-        {
-            docNamePrefix = "Biên lai thanh toán";
-        }
-        
-        // Create document record
-        var docId = Guid.NewGuid();
-        var doc = new Doc
-        {
-            Id = docId,
-            IsActive = true,
-            Name = $"{docNamePrefix} - {paymentBatch.Name}",
-            Url = $"payment-receipts/{docId}.pdf",
-            Type = EnumBillType.HOA_DON_THANH_TOAN.ToString(),
-            ProjectId = paymentBatch.Contract.ProjectId
-        };
         
         // Create transaction record
         var transaction = new Transaction
@@ -198,18 +182,17 @@ public class PaymentService : IPaymentService
             IsActive = true,
             Amount = (int)((request.vnp_Amount ?? 0) / 100),
             CustomerId = customerId,
-            No = batchPaymentId,
+            No = batchPaymentId, // Link transaction to the payment batch
             Note = request.vnp_OrderInfo,
             Status = EnumTransactionStatus.SUCCESSFUL.ToString(),
             Type = EnumBillType.HOA_DON_THANH_TOAN.ToString()
         };
         
-        // Add new entities to context
-        _unitOfWork.DbContext.Set<Doc>().Add(doc);
-        _unitOfWork.DbContext.Set<Transaction>().Add(transaction);
+        // Add new transaction entity to context using repository pattern
+        await _unitOfWork.Repository<Transaction>().AddAsync(transaction, false);
         
-        // Update the payment batch entity
-        _unitOfWork.DbContext.Update(paymentBatch);
+        // Update the payment batch entity using repository pattern
+        await _unitOfWork.Repository<PaymentBatch>().UpdateAsync(paymentBatch, false);
         
         // Save all changes in a single call
         await _unitOfWork.SaveChangesAsync();
