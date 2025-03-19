@@ -359,8 +359,8 @@ public class ConstructionsController  : BaseController
             "- Chỉ có thể tạo công việc cho hạng mục xây dựng(construction item) cấp 2 (con), không thể tạo cho hạng mục xây dựng(construction item) cấp 1 (cha)\n" +
             "- Tất cả công việc được tạo với trạng thái OPENING\n" +
             "- Tên công việc phải là duy nhất trong hạng mục xây dựng\n" +
-            "- Khi tạo công việc, trạng thái của hạng mục xây dựng(construction item) cấp 2 sẽ được chuyển từ OPENING sang PROCESSING\n" +
-            "- Nếu hạng mục xây dựng(construction item) cấp 1 (cha) có trạng thái OPENING, nó cũng sẽ được chuyển sang PROCESSING\n" +
+            "- Khi tạo công việc, trạng thái của hạng mục xây dựng(construction item) cấp 2 sẽ được chuyển từ OPENING hoặc DONE sang PROCESSING\n" +
+            "- Nếu hạng mục xây dựng(construction item) cấp 1 (cha) có trạng thái OPENING hoặc DONE, nó cũng sẽ được chuyển sang PROCESSING\n" +
             "- Thời hạn (deadline) được tự động chuyển đổi sang múi giờ Việt Nam và định dạng phù hợp với PostgreSQL\n\n" +
             "Lỗi có thể xảy ra:\n" +
             "- 400 Bad Request: ID hạng mục không hợp lệ, hạng mục không phải cấp 2, tên công việc trống, " +

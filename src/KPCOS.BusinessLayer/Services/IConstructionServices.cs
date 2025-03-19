@@ -138,8 +138,8 @@ public interface IConstructionServices
     /// - Ensures task names are unique within the construction item
     /// - All tasks are created with status OPENING
     /// - Handles deadline dates with proper time zone conversion for PostgreSQL compatibility
-    /// - Changes the status of the level 2 (child) construction item from OPENING to PROCESSING
-    /// - If the parent (level 1) construction item has status OPENING, changes it to PROCESSING as well
+    /// - Changes the status of the level 2 (child) construction item from OPENING or DONE to PROCESSING
+    /// - If the parent (level 1) construction item has status OPENING or DONE, changes it to PROCESSING as well
     /// 
     /// Validation rules:
     /// - Construction item ID must be valid
