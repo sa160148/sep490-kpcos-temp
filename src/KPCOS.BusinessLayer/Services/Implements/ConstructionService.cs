@@ -438,17 +438,20 @@ public class ConstructionService : IConstructionServices
         // Add all tasks directly to the task repository
         await constructionTaskRepo.AddRangeAsync(newTasks, false);
         
-        // Update the status of the level 2 (child) construction item to PROCESSING if it's currently OPENING
-        if (constructionItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+        // Update the status of the level 2 (child) construction item to PROCESSING if it's currently OPENING or DONE
+        if (constructionItem.Status == EnumConstructionItemStatus.OPENING.ToString() ||
+            constructionItem.Status == EnumConstructionItemStatus.DONE.ToString())
         {
             constructionItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
             await constructionItemRepo.UpdateAsync(constructionItem, false);
             
-            // Update the parent (level 1) construction item status to PROCESSING if it's currently OPENING
+            // Update the parent (level 1) construction item status to PROCESSING if it's currently OPENING or DONE
             if (constructionItem.ParentId.HasValue)
             {
                 var parentItem = await constructionItemRepo.FindAsync(constructionItem.ParentId.Value);
-                if (parentItem != null && parentItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+                if (parentItem != null && 
+                    (parentItem.Status == EnumConstructionItemStatus.OPENING.ToString() ||
+                     parentItem.Status == EnumConstructionItemStatus.DONE.ToString()))
                 {
                     parentItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
                     await constructionItemRepo.UpdateAsync(parentItem, false);
