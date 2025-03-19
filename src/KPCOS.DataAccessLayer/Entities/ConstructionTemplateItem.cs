@@ -12,6 +12,8 @@ public partial class ConstructionTemplateItem
 
     public string Name { get; set; } = null!;
 
+    public string? Category { get; set; }
+
     public string? Description { get; set; }
 
     public Guid? Idparent { get; set; }
