@@ -20,7 +20,7 @@ public partial class ConstructionTemplateItem
 
     public Guid Idtemplate { get; set; }
 
-    public int Esttime { get; set; }
+    public int Duration { get; set; }
 
     public string? Status { get; set; }
 
