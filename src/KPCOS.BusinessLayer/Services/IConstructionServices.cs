@@ -18,12 +18,15 @@ public interface IConstructionServices
     /// - Ensures exactly 3 parent items have payment status
     /// - Supports a 2-level hierarchy (parent and child items)
     /// - All items are created with status OPENING
-    /// - Only parent (level 1) items can have isPayment=true and category set
+    /// - Only parent (level 1) items can have isPayment=true and category field
     /// - Child (level 2) items always have isPayment=false and category=null
     /// - Checks if construction items already exist for the project and throws BadRequestException if they do
     /// - Creates new construction items based on templates or custom definitions
-    /// - When templateItemId is provided, name and description are taken from the template
-    /// - When templateItemId is null, custom name and description are used
+    /// - When templateItemId is provided:
+    ///   - Name and description are taken from the template
+    ///   - For level 1 items, category is taken from the template
+    ///   - EstimateAt is still taken from the request
+    /// - When templateItemId is null, custom name, description and category are used
     /// </remarks>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the project or template item is not found</exception>

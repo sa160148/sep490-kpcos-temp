@@ -495,8 +495,8 @@ public class ConstructionService : IConstructionServices
                 IsPayment = isPayment,
                 ProjectId = projectId,
                 ParentId = parentId,
-                // Only set category for level 1 items
-                Category = isParent ? request.Category : null
+                // For template items, use category from template for level 1, null for level 2
+                Category = isParent ? templateItem.Category : null
             };
         }
         else
