@@ -51,7 +51,7 @@ CREATE table construction_template_item(
     description TEXT,
     idParent UUID,
     idTemplate UUID NOT NULL,
-    estTime INT NOT NULL,
+    duration INT NOT NULL,
     status VARCHAR(255),
     FOREIGN KEY (idParent) REFERENCES construction_template_item(id),
     FOREIGN KEY (idTemplate) REFERENCES construction_template(id)
