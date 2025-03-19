@@ -5,6 +5,7 @@ public class CreateConstructionItemRequest
     public DateOnly? EstimateAt { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
+    public string? Category { get; set; }
     public bool? IsPayment { get; set; }
     public Guid? TemplateItemId { get; set; }
     public List<CreateConstructionItemRequest>? Childs { get; set; }
