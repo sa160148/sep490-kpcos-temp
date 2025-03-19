@@ -47,6 +47,7 @@ CREATE table construction_template_item(
     updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
+    category VARCHAR(255),
     description TEXT,
     idParent UUID,
     idTemplate UUID NOT NULL,
@@ -490,10 +491,8 @@ CREATE table transaction(
     no UUID NOT NULL,
     amount INT NOT NULL,
     note TEXT,
-    id_docs UUID,
     status VARCHAR(255),
-    FOREIGN KEY (customer_id) REFERENCES customer(id),
-    FOREIGN KEY (id_docs) REFERENCES docs(id)
+    FOREIGN KEY (customer_id) REFERENCES customer(id)
 );
 
 -- Trigger to update updated_at column when row is updated in transaction table
@@ -510,6 +509,7 @@ CREATE table construction_item(
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    category VARCHAR(255),
     estimate_at DATE NOT NULL,
     actual_at DATE,
     parent_id UUID,
@@ -536,7 +536,8 @@ CREATE table construction_task(
     image_url VARCHAR(255),
     reason TEXT,
     staff_id UUID,
-    deadline TIMESTAMPTZ,
+    deadline_at TIMESTAMP,
+    deadline_actual_at TIMESTAMP,
     status VARCHAR(255),
     FOREIGN KEY (construction_item_id) REFERENCES construction_item(id),
     FOREIGN KEY (staff_id) REFERENCES staff(id)
@@ -637,6 +638,46 @@ CREATE table maintenance_request_task(
 -- Trigger to update updated_at column when row is updated in maintenance_request_task table
 CREATE TRIGGER update_maintenance_request_task_updated_at
 BEFORE UPDATE ON maintenance_request_task
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE issue_type (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    is_active BOOLEAN DEFAULT TRUE,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TRIGGER update_issue_type_updated_at
+BEFORE UPDATE ON issue_type
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- create table project issue
+CREATE TABLE project_issue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    is_active BOOLEAN DEFAULT TRUE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    solution TEXT,
+    reason TEXT,
+    status VARCHAR(255),
+    issue_type_id UUID NOT NULL,
+    construction_task_id UUID,
+    user_id UUID NOT NULL,
+    construction_item_id UUID NOT NULL,
+    FOREIGN KEY (issue_type_id) REFERENCES issue_type(id),
+    FOREIGN KEY (construction_task_id) REFERENCES construction_task(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (construction_item_id) REFERENCES construction_item(id)
+);
+
+-- Create trigger for project_issue updated_at
+CREATE TRIGGER update_project_issue_updated_at
+BEFORE UPDATE ON project_issue
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
