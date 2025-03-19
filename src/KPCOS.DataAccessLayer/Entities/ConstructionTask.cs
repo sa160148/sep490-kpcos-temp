@@ -22,6 +22,8 @@ public partial class ConstructionTask
 
     public DateTime? DeadlineAt { get; set; }
 
+    public DateTime? DeadlineActualAt { get; set; }
+
     public string? Status { get; set; }
 
     public virtual ConstructionItem ConstructionItem { get; set; } = null!;

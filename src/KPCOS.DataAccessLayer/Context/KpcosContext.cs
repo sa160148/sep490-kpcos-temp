@@ -102,6 +102,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.Category)
+                .HasMaxLength(255)
+                .HasColumnName("category");
             entity.Property(e => e.ParentId).HasColumnName("parent_id");
             entity.Property(e => e.ProjectId).HasColumnName("project_id");
             entity.Property(e => e.IsPayment)
@@ -136,6 +139,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.DeadlineAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("deadline_at");
+            entity.Property(e => e.DeadlineActualAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("deadline_actual_at");
             entity.Property(e => e.ImageUrl)
                 .HasMaxLength(255)
                 .HasColumnName("image_url");
@@ -204,8 +210,10 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Esttime).HasColumnName("esttime");
             entity.Property(e => e.Idparent).HasColumnName("idparent");
+            entity.Property(e => e.Duration)
+                .HasDefaultValue(0)
+                .HasColumnName("duration");
             entity.Property(e => e.Idtemplate).HasColumnName("idtemplate");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
@@ -213,6 +221,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.Category)
+                .HasMaxLength(255)
+                .HasColumnName("category");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
@@ -1124,6 +1135,88 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<ProjectIssue>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("project_issue_pkey");
+
+            entity.ToTable("project_issue");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .HasColumnName("description");
+            entity.Property(e => e.Solution)
+                .HasMaxLength(255)
+                .HasColumnName("solution");
+            entity.Property(e => e.Reason)
+                .HasMaxLength(255)
+                .HasColumnName("reason");
+            entity.Property(e => e.Status)
+                .HasMaxLength(255)
+                .HasColumnName("status");
+            entity.Property(e => e.IssueTypeId)
+                .HasColumnName("issue_type_id");
+            entity.Property(e => e.ConstructionItemId)
+                .HasColumnName("construction_item_id");
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id");
+
+            entity.HasOne(d => d.IssueType)
+                .WithMany(p => p.ProjectIssues)
+                .HasForeignKey(d => d.IssueTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("project_issue_issue_type_id_fkey");
+
+            entity.HasOne(d => d.ConstructionItem)
+                .WithMany(p => p.ProjectIssues)
+                .HasForeignKey(d => d.ConstructionItemId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("project_issue_construction_item_id_fkey");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.ProjectIssues)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("project_issue_user_id_fkey");
+        });
+
+        modelBuilder.Entity<IssueType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("issue_type_pkey");
+
+            entity.ToTable("issue_type");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
         });
 
         OnModelCreatingPartial(modelBuilder);

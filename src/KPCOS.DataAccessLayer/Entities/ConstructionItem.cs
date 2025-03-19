@@ -11,6 +11,7 @@ public partial class ConstructionItem
     public bool? IsActive { get; set; }
 
     public string Name { get; set; } = null!;
+    public string? Category { get; set; }
 
     public string? Description { get; set; }
 
@@ -27,6 +28,7 @@ public partial class ConstructionItem
     public string? Status { get; set; }
 
     public virtual ICollection<ConstructionTask> ConstructionTasks { get; set; } = new List<ConstructionTask>();
+    public virtual ICollection<ProjectIssue> ProjectIssues { get; set; } = new List<ProjectIssue>();
 
     public virtual Project Project { get; set; } = null!;
 }

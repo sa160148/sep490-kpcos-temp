@@ -144,6 +144,53 @@ public class ConstructionsController  : BaseController
         return Ok();
     }
 
+    [HttpPost("item/{id}/lv2")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [SwaggerOperation(
+        Summary = "Tạo hạng mục xây dựng cấp 2 (con) cho hạng mục cấp 1",
+        Description = 
+            "API này cho phép tạo hạng mục xây dựng cấp 2 (con) cho một hạng mục cấp 1 (cha) cụ thể.\n\n" +
+            "**Quy tắc và hành vi:**\n" +
+            "- Chỉ có thể tạo hạng mục con cho hạng mục cấp 1 (cha), không thể tạo cho hạng mục cấp 2 (con) khác\n" +
+            "- Tất cả hạng mục con được tạo với trạng thái OPENING\n" +
+            "- Tên hạng mục phải là duy nhất trong cùng hạng mục cha\n" +
+            "- Hạng mục con luôn có IsPayment = false\n\n" +
+            "**Lỗi có thể xảy ra:**\n" +
+            "- 400 Bad Request: ID hạng mục không hợp lệ, hạng mục không phải cấp 1, tên hạng mục trống, " +
+            "hoặc tên hạng mục đã tồn tại trong hạng mục cha\n" +
+            "- 404 Not Found: Không tìm thấy hạng mục xây dựng cha với ID được cung cấp\n\n" +
+            "**Ví dụ yêu cầu:**\n\n" +
+            "```json\n" +
+            "{\n" +
+            "  \"name\": \"Lợp mái che phía Đông\",\n" +
+            "  \"description\": \"Hạng mục con cho việc lợp mái che phía Đông\",\n" +
+            "  \"estimateAt\": \"2024-07-15\"\n" +
+            "}\n" +
+            "```",
+        OperationId = "CreateConstructionItemLv2",
+        Tags = new[] { "Constructions" }
+    )]
+    public async Task<ApiResult> CreateConstructionItemLv2Async(
+        [SwaggerParameter(
+            Description = "ID của hạng mục xây dựng cấp 1 (cha)",
+            Required = true
+        )]
+        Guid id,
+        [SwaggerParameter(
+            Description = 
+                "Thông tin chi tiết của hạng mục xây dựng cấp 2 (con) cần tạo. " +
+                "Bao gồm tên (bắt buộc), mô tả (tùy chọn), và ngày dự kiến hoàn thành (bắt buộc)",
+            Required = true
+        )]
+        [FromBody] 
+        CreateConstructionItemRequest request)
+    {
+        await _constructionService.CreateConstructionItemLv2Async(request, id);
+        return Ok();
+    }
+
     /// <summary>
     /// Gets a paginated list of construction items with their children
     /// </summary>
@@ -312,8 +359,8 @@ public class ConstructionsController  : BaseController
             "- Chỉ có thể tạo công việc cho hạng mục xây dựng(construction item) cấp 2 (con), không thể tạo cho hạng mục xây dựng(construction item) cấp 1 (cha)\n" +
             "- Tất cả công việc được tạo với trạng thái OPENING\n" +
             "- Tên công việc phải là duy nhất trong hạng mục xây dựng\n" +
-            "- Khi tạo công việc, trạng thái của hạng mục xây dựng(construction item) cấp 2 sẽ được chuyển từ OPENING sang PROCESSING\n" +
-            "- Nếu hạng mục xây dựng(construction item) cấp 1 (cha) có trạng thái OPENING, nó cũng sẽ được chuyển sang PROCESSING\n" +
+            "- Khi tạo công việc, trạng thái của hạng mục xây dựng(construction item) cấp 2 sẽ được chuyển từ OPENING hoặc DONE sang PROCESSING\n" +
+            "- Nếu hạng mục xây dựng(construction item) cấp 1 (cha) có trạng thái OPENING hoặc DONE, nó cũng sẽ được chuyển sang PROCESSING\n" +
             "- Thời hạn (deadline) được tự động chuyển đổi sang múi giờ Việt Nam và định dạng phù hợp với PostgreSQL\n\n" +
             "Lỗi có thể xảy ra:\n" +
             "- 400 Bad Request: ID hạng mục không hợp lệ, hạng mục không phải cấp 2, tên công việc trống, " +

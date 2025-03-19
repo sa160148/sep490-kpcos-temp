@@ -153,11 +153,11 @@ public class ConstructionService : IConstructionServices
             throw new BadRequestException("Số lượng hạng mục thanh toán phải bằng 3");
         }
 
-        // Remove existing construction items
-        var existingItems = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
-        foreach (var item in existingItems)
+        // Check if construction items already exist for this project
+        var existingItems = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).Any();
+        if (existingItems)
         {
-            await constructionItemRepo.RemoveAsync(item, false);
+            throw new BadRequestException("Dự án này đã có hạng mục xây dựng. Không thể tạo mới.");
         }
 
         // Create new construction items
@@ -438,17 +438,20 @@ public class ConstructionService : IConstructionServices
         // Add all tasks directly to the task repository
         await constructionTaskRepo.AddRangeAsync(newTasks, false);
         
-        // Update the status of the level 2 (child) construction item to PROCESSING if it's currently OPENING
-        if (constructionItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+        // Update the status of the level 2 (child) construction item to PROCESSING if it's currently OPENING or DONE
+        if (constructionItem.Status == EnumConstructionItemStatus.OPENING.ToString() ||
+            constructionItem.Status == EnumConstructionItemStatus.DONE.ToString())
         {
             constructionItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
             await constructionItemRepo.UpdateAsync(constructionItem, false);
             
-            // Update the parent (level 1) construction item status to PROCESSING if it's currently OPENING
+            // Update the parent (level 1) construction item status to PROCESSING if it's currently OPENING or DONE
             if (constructionItem.ParentId.HasValue)
             {
                 var parentItem = await constructionItemRepo.FindAsync(constructionItem.ParentId.Value);
-                if (parentItem != null && parentItem.Status == EnumConstructionItemStatus.OPENING.ToString())
+                if (parentItem != null && 
+                    (parentItem.Status == EnumConstructionItemStatus.OPENING.ToString() ||
+                     parentItem.Status == EnumConstructionItemStatus.DONE.ToString()))
                 {
                     parentItem.Status = EnumConstructionItemStatus.PROCESSING.ToString();
                     await constructionItemRepo.UpdateAsync(parentItem, false);
@@ -494,7 +497,9 @@ public class ConstructionService : IConstructionServices
                 EstimateAt = request.EstimateAt!.Value,
                 IsPayment = isPayment,
                 ProjectId = projectId,
-                ParentId = parentId
+                ParentId = parentId,
+                // For template items, use category from template for level 1, null for level 2
+                Category = isParent ? templateItem.Category : null
             };
         }
         else
@@ -509,7 +514,9 @@ public class ConstructionService : IConstructionServices
                 EstimateAt = request.EstimateAt!.Value,
                 IsPayment = isPayment,
                 ProjectId = projectId,
-                ParentId = parentId
+                ParentId = parentId,
+                // Only set category for level 1 items
+                Category = isParent ? request.Category : null
             };
         }
 
@@ -1110,5 +1117,76 @@ public class ConstructionService : IConstructionServices
         
         // Save all changes to the database
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Creates a new construction item level 2 (child) for a specified parent
+    /// </summary>
+    /// <param name="request">The request containing information for the new construction item</param>
+    /// <param name="id">ID of the parent construction item (level 1)</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the parent construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The parent ID is not a level 1 (parent) construction item
+    /// - The name is empty
+    /// - The estimate date is not provided
+    /// - A child item with the same name already exists under the parent
+    /// </exception>
+    public async Task CreateConstructionItemLv2Async(CreateConstructionItemRequest request, Guid id)
+    {
+        // Get required repositories
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        
+        // Find the parent construction item (level 1)
+        var parentItem = await constructionItemRepo.FindAsync(id);
+        if (parentItem == null)
+        {
+            throw new NotFoundException("Hạng mục xây dựng cha không tồn tại");
+        }
+        
+        // Validate that this is a level 1 (parent) item
+        if (parentItem.ParentId != null)
+        {
+            throw new BadRequestException("ID không phải là hạng mục xây dựng cấp 1 (cha)");
+        }
+        
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            throw new BadRequestException("Tên hạng mục xây dựng không được để trống");
+        }
+        
+        if (!request.EstimateAt.HasValue)
+        {
+            throw new BadRequestException("Ngày dự kiến hoàn thành không được để trống");
+        }
+        
+        // Check if name is unique among siblings (other children of the same parent)
+        var existingItemWithSameName = await constructionItemRepo.FirstOrDefaultAsync(
+            item => item.ParentId == id &&
+                   item.Name.ToLower() == request.Name.ToLower() &&
+                   item.IsActive == true);
+        
+        if (existingItemWithSameName != null)
+        {
+            throw new BadRequestException($"Hạng mục xây dựng với tên '{request.Name}' đã tồn tại trong hạng mục cha");
+        }
+        
+        // Create new construction item level 2
+        var newConstructionItem = new ConstructionItem
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Description = request.Description,
+            EstimateAt = request.EstimateAt.Value,
+            ParentId = id,
+            ProjectId = parentItem.ProjectId,
+            IsPayment = false, // Child items cannot be payment items
+            Status = EnumConstructionItemStatus.OPENING.ToString() // New items always start with OPENING status
+        };
+        
+        // Save the new construction item
+        await constructionItemRepo.AddAsync(newConstructionItem, true);
     }
 }

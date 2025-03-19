@@ -12,13 +12,15 @@ public partial class ConstructionTemplateItem
 
     public string Name { get; set; } = null!;
 
+    public string? Category { get; set; }
+
     public string? Description { get; set; }
 
     public Guid? Idparent { get; set; }
 
     public Guid Idtemplate { get; set; }
 
-    public int Esttime { get; set; }
+    public int Duration { get; set; }
 
     public string? Status { get; set; }
 

@@ -9,25 +9,32 @@ public interface IConstructionServices
     Task CreateConstructionAsync(ConstructionRequest request);
     
     /// <summary>
-    /// Creates or updates construction items for a project with improved structure and validation
+    /// Creates construction items for a project with improved structure and validation
     /// </summary>
     /// <param name="request">The construction creation request containing project ID and construction items</param>
     /// <remarks>
     /// This method:
     /// - Validates that the project exists
-    /// - Ensures no more than 3 parent items have payment status
+    /// - Ensures exactly 3 parent items have payment status
     /// - Supports a 2-level hierarchy (parent and child items)
     /// - All items are created with status OPENING
-    /// - Only parent (level 1) items can have isPayment=true
-    /// - Child (level 2) items always have isPayment=false
-    /// - Removes any existing construction items for the project
+    /// - Only parent (level 1) items can have isPayment=true and category field
+    /// - Child (level 2) items always have isPayment=false and category=null
+    /// - Checks if construction items already exist for the project and throws BadRequestException if they do
     /// - Creates new construction items based on templates or custom definitions
-    /// - When templateItemId is provided, name and description are taken from the template
-    /// - When templateItemId is null, custom name and description are used
+    /// - When templateItemId is provided:
+    ///   - Name and description are taken from the template
+    ///   - For level 1 items, category is taken from the template
+    ///   - EstimateAt is still taken from the request
+    /// - When templateItemId is null, custom name, description and category are used
     /// </remarks>
     /// <returns>A task representing the asynchronous operation</returns>
     /// <exception cref="NotFoundException">Thrown when the project or template item is not found</exception>
-    /// <exception cref="BadRequestException">Thrown when more than 3 parent items have payment status</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The project already has construction items
+    /// - Exactly 3 parent items must have payment status
+    /// </exception>
     Task CreateConstructionV2Async(CreateConstructionRequest request);
     
     /// <summary>
@@ -131,8 +138,8 @@ public interface IConstructionServices
     /// - Ensures task names are unique within the construction item
     /// - All tasks are created with status OPENING
     /// - Handles deadline dates with proper time zone conversion for PostgreSQL compatibility
-    /// - Changes the status of the level 2 (child) construction item from OPENING to PROCESSING
-    /// - If the parent (level 1) construction item has status OPENING, changes it to PROCESSING as well
+    /// - Changes the status of the level 2 (child) construction item from OPENING or DONE to PROCESSING
+    /// - If the parent (level 1) construction item has status OPENING or DONE, changes it to PROCESSING as well
     /// 
     /// Validation rules:
     /// - Construction item ID must be valid
@@ -297,4 +304,28 @@ public interface IConstructionServices
     /// - The task does not have an image URL
     /// </exception>
     Task ConfirmConstructionTaskAsync(Guid id);
+
+    /// <summary>
+    /// Creates a new construction item level 2 (child) for a specified parent
+    /// </summary>
+    /// <param name="request">The request containing information for the new construction item</param>
+    /// <param name="id">ID of the parent construction item (level 1)</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// This method:
+    /// - Validates that the parent construction item exists and is a level 1 (parent) item
+    /// - Ensures the name is not empty and is unique among siblings (other children of the same parent)
+    /// - Ensures the estimate date is provided
+    /// - Creates a new construction item level 2 (child) with status OPENING
+    /// - IsPayment is always set to false for child items
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when the parent construction item with the specified ID is not found</exception>
+    /// <exception cref="BadRequestException">
+    /// Thrown when:
+    /// - The parent ID is not a level 1 (parent) construction item
+    /// - The name is empty
+    /// - The estimate date is not provided
+    /// - A child item with the same name already exists under the parent
+    /// </exception>
+    Task CreateConstructionItemLv2Async(CreateConstructionItemRequest request, Guid id);
 }
