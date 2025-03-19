@@ -219,6 +219,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.Category)
+                .HasMaxLength(255)
+                .HasColumnName("category");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
