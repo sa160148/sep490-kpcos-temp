@@ -469,6 +469,7 @@ CREATE table payment_batch(
     contract_id UUID NOT NULL,
     construction_item_id UUID,
     payment_phase VARCHAR(255),
+    payment_at TIMESTAMP,
     percents INT,
     FOREIGN KEY (contract_id) REFERENCES contract(id),
     status VARCHAR(255)
@@ -678,6 +679,22 @@ CREATE TABLE project_issue (
 -- Create trigger for project_issue updated_at
 CREATE TRIGGER update_project_issue_updated_at
 BEFORE UPDATE ON project_issue
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE issue_image (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
+    is_active BOOLEAN DEFAULT TRUE,
+    name VARCHAR(255),
+    image_url VARCHAR(255) NOT NULL,
+    project_issue_id UUID NOT NULL,
+    FOREIGN KEY (project_issue_id) REFERENCES project_issue(id)
+);
+
+CREATE TRIGGER update_issue_image_updated_at
+BEFORE UPDATE ON issue_image
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 

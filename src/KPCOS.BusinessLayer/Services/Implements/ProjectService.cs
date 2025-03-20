@@ -28,6 +28,8 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
 using Google.Cloud.Firestore;
+using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -1213,5 +1215,95 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var mappedResult = mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
         
         return (mappedResult, result.Count);
+    }
+
+    /// <summary>
+    /// Gets all project issues associated with a specific project with pagination and filtering
+    /// </summary>
+    /// <param name="id">The project ID to get issues for</param>
+    /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <returns>Tuple containing the list of project issues and total count</returns>
+    public async Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
+        Guid id, 
+        GetAllProjectIssueFilterRequest filter)
+    {
+        // Validate and get project
+        var project = await ValidateAndGetProject(id);
+        
+        // Get required includes for ProjectIssue
+        var includeProperties = "IssueType,ConstructionItem,User,User.Staff,IssueImages";
+        
+        // Get construction items related to the project
+        var constructionItems = unitOfWork.Repository<ConstructionItem>().Get(
+            filter: ci => ci.ProjectId == id && ci.IsActive == true
+        ).ToList();
+        
+        if (!constructionItems.Any())
+        {
+            return (Enumerable.Empty<GetAllProjectIssueResponse>(), 0);
+        }
+        
+        // Get the construction item IDs
+        var constructionItemIds = constructionItems.Select(ci => ci.Id).ToList();
+
+        // Build base filter expression for construction item IDs
+        var baseExpression = PredicateBuilder.New<ProjectIssue>(true);
+        baseExpression = baseExpression.And(pi => constructionItemIds.Contains(pi.ConstructionItemId));
+        
+        // Combine with the filter's expression
+        var filterExpression = filter.GetExpressions();
+        var combinedExpression = baseExpression.And(filterExpression);
+        
+        // Get project issues with filtering and pagination
+        var projectIssuesResult = unitOfWork.Repository<ProjectIssue>().GetWithCount(
+            filter: combinedExpression,
+            includeProperties: includeProperties,
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map to response DTOs using AutoMapper
+        var projectIssues = projectIssuesResult.Data.ToList();
+
+        // First use AutoMapper for the basic conversion
+        var mappedResponse = mapper.Map<List<GetAllProjectIssueResponse>>(projectIssues);
+
+        // Now manually update the User property for each response
+        for (int i = 0; i < mappedResponse.Count; i++)
+        {
+            var issue = projectIssues[i];
+            var response = mappedResponse[i];
+            
+            if (issue.User != null)
+            {
+                // We already have User in the response from AutoMapper, we just need to properly set Position
+                if (response.User != null)
+                {
+                    // Determine position based on whether the user has staff roles
+                    if (issue.User.Staff.Any())
+                    {
+                        response.User.Position = issue.User.Staff.FirstOrDefault()?.Position;
+                    }
+                    else
+                    {
+                        response.User.Position = RoleEnum.CUSTOMER.ToString();
+                    }
+                }
+            }
+        }
+
+        return (mappedResponse, projectIssuesResult.Count);
+    }
+
+    private async Task<User?> GetUserByUserId(Guid userId)
+    {
+        var user = unitOfWork.Repository<User>()
+            .Get(
+                filter: u => u.Id == userId,
+                includeProperties: "Staff,Customer"
+                )
+            .SingleOrDefault();
+        ;
+        return user;
     }
 }

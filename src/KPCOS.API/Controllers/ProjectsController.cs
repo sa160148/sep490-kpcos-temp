@@ -21,6 +21,8 @@ using Swashbuckle.AspNetCore.Annotations;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
+using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 
 namespace KPCOS.API.Controllers
 {
@@ -651,5 +653,33 @@ namespace KPCOS.API.Controllers
             constructionTasks = await service.GetAllConstructionTaskByProjectAsync(id, filter);
             return new PagedApiResponse<GetAllConstructionTaskResponse>(constructionTasks.data, filter.PageNumber, filter.PageSize, constructionTasks.total);
         }
+
+        [HttpGet("{id}/project-issue")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectIssueResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Gets a paginated list of project issues for a specific project",
+            Description = "Retrieves project issues for the specified project based on the provided filter criteria",
+            OperationId = "GetAllProjectIssueByProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<GetAllProjectIssueResponse>> GetAllProjectIssueByProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to get issues for",
+                Required = true
+            )]
+            Guid id, 
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for project issues including Search, Status, IssueTypeId, ConstructionItemId, and UserId",
+                Required = false
+            )]
+            GetAllProjectIssueFilterRequest filter)
+        {
+            var projectIssues = await service.GetAllProjectIssueByProjectAsync(id, filter);
+            return new PagedApiResponse<GetAllProjectIssueResponse>(projectIssues.data, filter.PageNumber, filter.PageSize, projectIssues.total);
+        }
+        
     }
 }

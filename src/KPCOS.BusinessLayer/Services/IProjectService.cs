@@ -13,6 +13,8 @@ using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
+using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -310,4 +312,34 @@ public interface IProjectService
         Guid id, 
         GetAllConstructionTaskFilterRequest filter,
         Guid? userId = null);
+
+    /// <summary>
+    /// Gets all project issues associated with a specific project with pagination and filtering
+    /// </summary>
+    /// <param name="id">The project ID to get issues for</param>
+    /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <returns>Tuple containing the list of project issues and total count</returns>
+    /// <remarks>
+    /// <para>Returns project issues for a project with:</para>
+    /// <list type="bullet">
+    ///     <item><description>Basic issue information (ID, name, description, status, etc.)</description></item>
+    ///     <item><description>Issue type information</description></item>
+    ///     <item><description>Associated construction item information</description></item>
+    ///     <item><description>User information who reported the issue</description></item>
+    ///     <item><description>Issue images</description></item>
+    /// </list>
+    /// <para>Issues can be filtered by:</para>
+    /// <list type="bullet">
+    ///     <item><description>Search term (matches against name, description, solution, or reason)</description></item>
+    ///     <item><description>Status</description></item>
+    ///     <item><description>Issue type ID</description></item>
+    ///     <item><description>Construction item ID</description></item>
+    ///     <item><description>User ID (who reported the issue)</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
+    Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
+        Guid id, 
+        GetAllProjectIssueFilterRequest filter);
 }

@@ -36,6 +36,7 @@ public static class AddServiceCollection
         services.AddScoped<IQuotationService, QuotationService>();
         services.AddScoped<IContractService, ContractService>();
         services.AddScoped<IDesignService, DesignService>();
+        services.AddScoped<IProjectIssueService, ProjectIssueService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBackgroundService, BackgroundService>();
         services.AddScoped<IConstructionServices, ConstructionService>();
