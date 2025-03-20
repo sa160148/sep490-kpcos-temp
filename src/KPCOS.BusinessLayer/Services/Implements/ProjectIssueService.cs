@@ -113,21 +113,40 @@ public class ProjectIssueService : IProjectIssueService
         // Save the original solution to check if it's being updated from null to non-null
         var originalSolution = projectIssue.Solution;
         
-        // Determine if this is a special "mark as solved" request
+        // Check if only solution is being updated (special case)
+        bool onlySolutionUpdate = 
+            request.Solution != null && 
+            request.Name == null && 
+            request.Description == null && 
+            request.Reason == null && 
+            request.Status == null &&
+            request.IssueTypeId == null && 
+            request.IsSolved == null &&
+            (request.IssueImages == null || !request.IssueImages.Any());
+        
+        // Determine if this is a special "mark as solved" request where only IsSolved is provided
         bool isMarkAsSolvedRequest = request.IsSolved == true && 
             (request.Name == null && 
             request.Description == null && 
             request.Reason == null && 
             request.Status == null &&
             request.IssueTypeId == null);
-        
-        // Only validate IsSolved if this is a mark-as-solved request
-        if (isMarkAsSolvedRequest)
+
+        // Solution field handling based on update type
+        if (request.Solution != null)
         {
-            // Check if solution is provided in request or already exists in database
-            if (string.IsNullOrEmpty(request.Solution) && string.IsNullOrEmpty(originalSolution))
+            // Allow updating the solution field if:
+            // 1. This is an only-solution update (special case that should update status) OR
+            // 2. This is a mark-as-solved request OR
+            // 3. The solution already exists in the database
+            bool canUpdateSolution = 
+                onlySolutionUpdate || 
+                isMarkAsSolvedRequest || 
+                !string.IsNullOrEmpty(originalSolution);
+                
+            if (!canUpdateSolution)
             {
-                throw new BadRequestException("Phải cung cấp giải pháp khi đánh dấu vấn đề là đã giải quyết.");
+                throw new BadRequestException("Không thể thêm giải pháp trong một cập nhật thông thường. Sử dụng chức năng cập nhật riêng giải pháp hoặc đánh dấu đã giải quyết.");
             }
         }
         
@@ -158,45 +177,32 @@ public class ProjectIssueService : IProjectIssueService
             }
         }
 
-        // Check if only solution is being updated
-        bool onlySolutionUpdate = 
-            request.Solution != null && 
-            request.Name == null && 
-            request.Description == null && 
-            request.Reason == null && 
-            request.Status == null &&
-            request.IssueTypeId == null && 
-            request.IsSolved == null &&
-            (request.IssueImages == null || !request.IssueImages.Any());
-
         // Create a new properties list to exclude from update
         var excludeProperties = new List<string> { "Status", "IssueImages" };
-        
-        // If this is a normal update (not mark-as-solved), exclude IsSolved
-        if (!isMarkAsSolvedRequest)
-        {
-            excludeProperties.Add("IsSolved");
-        }
         
         // Use reflection to update properties from request to projectIssue
         ReflectionUtil.UpdateProperties(request, projectIssue, excludeProperties);
 
         // Handle status updates based on business rules
         
-        // Case 1: If this is a mark-as-solved request, update status to SOLVED
-        if (isMarkAsSolvedRequest)
+        // Case 1: If IsSolved is true, update status to SOLVED
+        if (request.IsSolved == true)
         {
             projectIssue.Status = EnumProjectIssueStatus.SOLVED.ToString();
         }
-        // Case 2: If solution is being added for the first time and status is OPENING, change to PROCESSING
-        else if (string.IsNullOrEmpty(originalSolution) && 
-                !string.IsNullOrEmpty(request.Solution) && 
+        // Case 2: If this is only a solution update and status is OPENING, change to PROCESSING
+        else if (onlySolutionUpdate && projectIssue.Status == EnumProjectIssueStatus.OPENING.ToString())
+        {
+            projectIssue.Status = EnumProjectIssueStatus.PROCESSING.ToString();
+        }
+        // Case 3: If solution is being updated (not added for the first time) and status is OPENING, change to PROCESSING
+        else if (!string.IsNullOrEmpty(originalSolution) && request.Solution != null && 
                 projectIssue.Status == EnumProjectIssueStatus.OPENING.ToString())
         {
             projectIssue.Status = EnumProjectIssueStatus.PROCESSING.ToString();
         }
-        // Case 3: Only update status from request if not in the only-solution-update case
-        else if (request.Status != null && !onlySolutionUpdate)
+        // Case 4: Only update status from request if not in the only-solution-update case and IsSolved is not true
+        else if (request.Status != null && !onlySolutionUpdate && request.IsSolved != true)
         {
             projectIssue.Status = request.Status;
         }
