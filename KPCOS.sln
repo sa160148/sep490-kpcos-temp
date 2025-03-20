@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.Common", "KPCOS.Commo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.WebFramework", "KPCOS.WebFramework\KPCOS.WebFramework.csproj", "{092F8498-165D-44BA-9497-EB8C5136C9CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KPCOS.Test", "KPCOS.Test\KPCOS.Test.csproj", "{35732645-138A-49F2-87F6-26774AEB776E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,9 +41,5 @@ Global
 		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{092F8498-165D-44BA-9497-EB8C5136C9CF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35732645-138A-49F2-87F6-26774AEB776E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35732645-138A-49F2-87F6-26774AEB776E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35732645-138A-49F2-87F6-26774AEB776E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35732645-138A-49F2-87F6-26774AEB776E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
