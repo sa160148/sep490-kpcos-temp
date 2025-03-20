@@ -10,7 +10,9 @@ public interface ITemplateContructionService
     
     Task CreateTemplateContructionItemAsync(TemplateContructionItemCreateRequest request);
     
-    Task<(IEnumerable<TemplateContructionResponse> Data, int TotalRecords)> GetsAsyncPaging(PaginationFilter filter);
+    Task<(IEnumerable<TemplateContructionResponse> Data, int TotalRecords)> GetsAsyncPaging(GetAllConstructionTemplateFilterRequest filter);
     
     Task<TemplateContructionDetailResponse> GetTemplateContructionByIdAsync(Guid id);
+    
+    Task ActiveTemplateContructionAsync(Guid id);
 }
