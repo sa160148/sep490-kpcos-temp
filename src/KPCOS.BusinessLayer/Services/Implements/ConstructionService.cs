@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using LinqKit;
 using KPCOS.Common.Utilities;
+using System.Linq.Dynamic.Core;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -213,10 +214,13 @@ public class ConstructionService : IConstructionServices
         // Combine with filter expressions from the filter object
         predicate = predicate.And(filter.GetExpressions());
         
+        // Get the ordering function from the filter
+        var orderBy = filter.GetOrder();
+        
         // Get parent items with count using the repository's GetWithCount method
         var (items, total) = constructionItemRepo.GetWithCount(
             filter: predicate,
-            orderBy: filter.GetOrder(),
+            orderBy: orderBy,
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
@@ -229,12 +233,48 @@ public class ConstructionService : IConstructionServices
         {
             if (item.Id.HasValue && (filter.IsChild == null || filter.IsChild == false))
             {
-                // Get child items using the repository's Get method
-                var childItems = constructionItemRepo.Get(
-                    filter: x => x.ParentId == item.Id.Value
-                );
+                // Get child items using the repository's Get method with the same ordering as parent items
+                var childPredicate = PredicateBuilder.New<ConstructionItem>(x => x.ParentId == item.Id.Value);
                 
-                item.Childs = _mapper.Map<List<GetAllConstructionItemChildResponse>>(childItems);
+                // Apply any additional filters from the original filter that should also apply to children
+                // For example, we might want to apply Status, IsActive, or Search filters to children as well
+                if (!string.IsNullOrWhiteSpace(filter.Status))
+                {
+                    if (Enum.TryParse<EnumConstructionItemStatus>(filter.Status, out var statusEnum))
+                    {
+                        childPredicate = childPredicate.And(x => x.Status == statusEnum.ToString());
+                    }
+                    else
+                    {
+                        childPredicate = childPredicate.And(x => x.Status == filter.Status);
+                    }
+                }
+                
+                if (filter.IsActive.HasValue)
+                {
+                    childPredicate = childPredicate.And(x => x.IsActive == filter.IsActive.Value);
+                }
+                
+                if (!string.IsNullOrWhiteSpace(filter.Search))
+                {
+                    childPredicate = childPredicate.And(x => 
+                        (x.Name != null && x.Name.Contains(filter.Search)) || 
+                        (x.Description != null && x.Description.Contains(filter.Search))
+                    );
+                }
+                
+                // Manually get child items from repository to apply proper sorting
+                var childItems = constructionItemRepo.Get(filter: childPredicate);
+                
+                // Get dynamic ordering string from filter
+                string sortExpression = $"{filter.SortColumn} {filter.SortDir.ToString().ToLower()}";
+                
+                // Apply sorting using System.Linq.Dynamic.Core
+                var sortedChildItems = System.Linq.Dynamic.Core.DynamicQueryableExtensions
+                    .OrderBy(childItems.AsQueryable(), sortExpression)
+                    .ToList();
+                
+                item.Childs = _mapper.Map<List<GetAllConstructionItemChildResponse>>(sortedChildItems);
             }
             else
             {
