@@ -21,6 +21,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Equipments;
 using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.Common.Utilities;
+using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -41,7 +42,8 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Email,
                 opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.Position,
-                opt => opt.MapFrom(src => src.Position));
+                opt => opt.MapFrom(src => src.Position))
+                ;
         CreateMap<Staff, GetAllStaffForDesignResponse>()
             .ForMember(dest => dest.Avatar, 
                 opt => opt.MapFrom(src => src.User.Avatar))
@@ -52,7 +54,15 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Email,
                 opt => opt.MapFrom(src => src.User.Email))
             .ForMember(dest => dest.Position,
-                opt => opt.MapFrom(src => src.Position));
+                opt => opt.MapFrom(src => src.Position))
+                ;
+        CreateMap<Customer, GetAllStaffResponse>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => RoleEnum.CUSTOMER.ToString()))
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.User.Avatar))
+            ;
 
         CreateMap<ProjectRequest, Project>()
             .ForMember(dest => dest.Name,
@@ -251,5 +261,24 @@ public class MapperProfile : Profile
         CreateMap<Contract, GetContractForPaymentBatchResponse>();
         CreateMap<Project, GetProjectForTransactionResponse>();
         CreateMap<Doc, GetDocResponse>();
+
+        // Project Issue mappings
+        CreateMap<ProjectIssue, GetAllProjectIssueResponse>()
+            ;
+        
+        CreateMap<IssueType, GetIssueTypeResponse>()
+            ;
+        
+        CreateMap<IssueImage, GetAllIssueImageResponse>()
+            ;
+            
+        // Direct mapping from User to GetAllStaffResponse for ProjectIssue
+        CreateMap<User, GetAllStaffResponse>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.Avatar))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => 
+                src.Staff.Any() ? src.Staff.FirstOrDefault().Position : RoleEnum.CUSTOMER.ToString()));
     }
 }
