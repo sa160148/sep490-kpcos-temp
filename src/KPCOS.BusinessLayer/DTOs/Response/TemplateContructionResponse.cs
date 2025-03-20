@@ -20,5 +20,9 @@ public class TemplateContructionItemResponse
     
     public string Description { get; set; }
     
+    public int Duration { get; set; }
+    
+    public string? Category { get; set; }
+    
     public List<TemplateContructionItemResponse>? Child { get; set; }
 }

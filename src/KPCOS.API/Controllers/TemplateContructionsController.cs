@@ -3,7 +3,9 @@ using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.Common;
 using KPCOS.Common.Pagination;
+using KPCOS.DataAccessLayer.Entities;
 using KPCOS.WebFramework.Api;
+using LinqKit;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KPCOS.API.Controllers;
@@ -27,6 +29,16 @@ public class TemplateContructionsController : BaseController
         return Ok();
     }
     
+    [HttpPut("{id}/active")]
+    public async Task<ApiResult> ActiveTemplateContructionAsync(Guid id)
+    {
+        await _templateContructionService.ActiveTemplateContructionAsync(id);
+        return Ok();
+    }
+  
+    
+    
+    
     [HttpPost("items")]
     public async Task<ApiResult> CreateTemplateContructionItemAsync(TemplateContructionItemCreateRequest request)
     {
@@ -35,8 +47,9 @@ public class TemplateContructionsController : BaseController
     }
     
     [HttpGet("")]
-    public async Task<PagedApiResponse<TemplateContructionResponse>> GetsAsyncPaging([FromQuery] PaginationFilter filter)
+    public async Task<PagedApiResponse<TemplateContructionResponse>> GetsAsyncPaging([FromQuery] GetAllConstructionTemplateFilterRequest filter)
     {
+        var predicate = PredicateBuilder.New<ConstructionItem>(true);
         var result = await _templateContructionService.GetsAsyncPaging(filter);
         return new PagedApiResponse<TemplateContructionResponse>(result.Data, filter.PageNumber, filter.PageSize, result.TotalRecords);
     }
