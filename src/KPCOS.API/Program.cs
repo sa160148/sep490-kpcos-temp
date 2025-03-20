@@ -32,7 +32,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Add HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddHttpClient();
 builder.Services.AddExtensionProfiles(builder.Configuration);
 
 var app = builder.Build();
