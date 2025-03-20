@@ -8,7 +8,7 @@ public partial class ConstructionTemplate
 
     public DateTime? UpdatedAt { get; set; }
 
-    public bool? IsActive { get; set; }
+    public bool? IsActive { get; set; } = false;
 
     public string Name { get; set; } = null!;
 

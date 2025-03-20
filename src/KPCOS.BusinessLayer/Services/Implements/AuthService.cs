@@ -24,18 +24,18 @@ public class AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, I
         
         if (userRaw == null)
         {
-            throw new NotFoundException("user not found");
+            throw new NotFoundException("Không tìm thấy tài khoản");
         }
 
         if (userRaw.Password != request.Password)
         {
-            throw new BadRequestException("password is incorrect");
+            throw new BadRequestException("Sai mật khẩu");
         }
         var role = await CheckRole(userRaw.Id);
 
         if ( role == null)
         {
-            throw new NotFoundException("role not found");
+            throw new NotFoundException("Không tìm thấy role");
             
         }
         return new SigninResponse

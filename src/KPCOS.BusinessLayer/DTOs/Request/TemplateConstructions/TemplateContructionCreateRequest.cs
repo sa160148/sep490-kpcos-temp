@@ -22,6 +22,8 @@ public class TemplateContructionItemCreateRequest
     [DefaultValue("Đào đất")]
     public string Description { get; set; }
     
+    public int Duration { get; set; }
+    
     public Guid IdTemplateContruction { get; set; }
 
     public Guid? IdParent { get; set; } = null;

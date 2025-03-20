@@ -1219,6 +1219,40 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("name");
         });
 
+        modelBuilder.Entity<IssueImage>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("issue_image_pkey");
+
+            entity.ToTable("issue_image");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("image_url");
+            entity.Property(e => e.ProjectIssueId)
+                .HasColumnName("project_issue_id");
+            
+            entity.HasOne(d => d.ProjectIssue)
+                .WithMany(p => p.IssueImages)
+                .HasForeignKey(d => d.ProjectIssueId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("issue_image_project_issue_id_fkey");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

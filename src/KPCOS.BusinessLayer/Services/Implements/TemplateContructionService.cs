@@ -4,6 +4,7 @@ using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Repositories;
+using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -49,7 +50,8 @@ public class TemplateContructionService : ITemplateContructionService
         IRepository<ConstructionTemplateItem> templateContructionItemRepo = _unitOfWork.Repository<ConstructionTemplateItem>();
         
         // check template contruction item is valid
-        var templateContruction = await _unitOfWork.Repository<ConstructionTemplate>().SingleOrDefaultAsync(s => s.Id == request.IdTemplateContruction);
+        var templateContruction = await _unitOfWork.Repository<ConstructionTemplate>().
+            SingleOrDefaultAsync(s => s.Id == request.IdTemplateContruction);
         if (templateContruction == null)
         {
             throw new BadRequestException("Template không tồn tại");
@@ -61,27 +63,36 @@ public class TemplateContructionService : ITemplateContructionService
             Description = request.Description,
             Idparent = request.IdParent,
             Idtemplate = request.IdTemplateContruction,
+            Duration = request.Duration,
+            
         };
         await templateContructionItemRepo.AddAsync(templateContructionItem, false);
         await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task<(IEnumerable<TemplateContructionResponse> Data, int TotalRecords)> GetsAsyncPaging(PaginationFilter filter)
+    public async Task<(IEnumerable<TemplateContructionResponse> Data, int TotalRecords)> GetsAsyncPaging(GetAllConstructionTemplateFilterRequest filter)
     {
+        
+        var predicate = PredicateBuilder.New<ConstructionTemplate>(true);
+        
+        // Combine with filter expressions from the filter object
+        predicate = predicate.And(filter.GetExpressions());
         IRepository<ConstructionTemplate> templateContructionRepo = _unitOfWork.Repository<ConstructionTemplate>();
-        var pageData = await _unitOfWork.Repository<ConstructionTemplate>()
-            .Get()
-            .Skip((filter.PageNumber - 1) * filter.PageSize)
-            .Take(filter.PageSize)
-            .ToListAsync();
-        var totalRecords = await templateContructionRepo.Get().CountAsync();
-        return (Data: pageData.Select(templateContruction => new TemplateContructionResponse
+       
+        var (items, total) = templateContructionRepo.GetWithCount(
+            filter: predicate,
+            orderBy: filter.GetOrder(),
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        return (items.Select(x => new TemplateContructionResponse
         {
-            Id = templateContruction.Id,
-            Name = templateContruction.Name,
-            Description = templateContruction.Description,
-            IsActive = templateContruction.IsActive,
-        }), TotalRecords: totalRecords);
+            Id = x.Id,
+            Name = x.Name,
+            Description = x.Description,
+            IsActive = x.IsActive,
+        }), total);
     }
 
     public async Task<TemplateContructionDetailResponse> GetTemplateContructionByIdAsync(Guid id)
@@ -101,22 +112,70 @@ public class TemplateContructionService : ITemplateContructionService
             TemplateContructionItems = _unitOfWork.Repository<ConstructionTemplateItem>().
                 Get().
                 Where(x => x.Idtemplate == id && x.Idparent == null).
+                OrderBy(x => x.CreatedAt).
                 Select(x => new TemplateContructionItemResponse
                 {
                     Id = x.Id,
                     Name = x.Name,
                     Description = x.Description,
+                    Category = x.Category,
+                    
                     Child = _unitOfWork.Repository<ConstructionTemplateItem>().
                         Get().
                         Where(y => y.Idparent == x.Id).
+                        OrderBy(x => x.CreatedAt).
                         Select(y => new TemplateContructionItemResponse
                         { 
                             Id = y.Id,
                             Name = y.Name,
                             Description = y.Description,
+                            Duration = y.Duration
                         }).ToList(),
+                    Duration = _unitOfWork.Repository<ConstructionTemplateItem>()
+                        .Get()
+                        .Where(y => y.Idparent == x.Id)
+                        .Sum(y => y.Duration)
                 }).ToList(),
         };
         
+    }
+
+    
+    
+    public async Task ActiveTemplateContructionAsync(Guid id)
+    {
+        IRepository<ConstructionTemplate> templateContructionRepo = _unitOfWork.Repository<ConstructionTemplate>();
+        IRepository<ConstructionTemplateItem> templateContructionItemRepo = _unitOfWork.Repository<ConstructionTemplateItem>();
+        var templateContruction = await templateContructionRepo.FindAsync(id);
+        if (templateContruction == null)
+        {
+            throw new BadRequestException("Template không tồn tại");
+        }
+
+        // check current active status
+        bool currentActive = templateContruction.IsActive ?? false;
+
+        if (currentActive)
+        {
+            templateContruction.IsActive = false;
+        }
+        else
+        {
+            // cout template construction by id contruction
+            var templateContructionItems = templateContructionItemRepo.GetWithCount(
+                filter: x => x.Idtemplate == id && x.Idparent == null,
+                orderBy: x => x.OrderBy(x => x.CreatedAt),
+                pageIndex: 1,
+                pageSize: int.MaxValue
+            );
+            
+            if (templateContructionItems.Count < 3)
+            {
+                throw new BadRequestException("Template không đủ 3 item");
+            }
+            templateContruction.IsActive = true;
+        }
+        
+        await _unitOfWork.SaveChangesAsync();
     }
 }

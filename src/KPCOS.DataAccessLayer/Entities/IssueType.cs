@@ -10,7 +10,7 @@ public partial class IssueType
 
     public DateTime? UpdatedAt { get; set; }
 
-        public bool? IsActive { get; set; }
+    public bool? IsActive { get; set; }
     public string Name { get; set; } = null!;
     public virtual ICollection<ProjectIssue> ProjectIssues { get; set; } = new List<ProjectIssue>();
 }

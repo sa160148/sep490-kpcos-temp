@@ -25,4 +25,5 @@ public partial class ProjectIssue
     public virtual IssueType IssueType { get; set; } = null!;
     public virtual ConstructionItem ConstructionItem { get; set; } = null!;
     public virtual User User { get; set; } = null!;
+    public virtual ICollection<IssueImage> IssueImages { get; set; } = new List<IssueImage>();
 }

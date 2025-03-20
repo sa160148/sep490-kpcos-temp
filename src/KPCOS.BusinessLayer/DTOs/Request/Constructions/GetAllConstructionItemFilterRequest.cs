@@ -21,6 +21,12 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
     public string? Search { get; set; }
     
     /// <summary>
+    /// Filter by category
+    /// </summary>
+    [Display(Name = "Category", Description = "Filter by category")]
+    public string? Category { get; set; }
+
+    /// <summary>
     /// Filter by active status
     /// </summary>
     [Display(Name = "IsActive", Description = "Filter by active status (true/false)")]
@@ -64,6 +70,12 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
                 (x.Name != null && x.Name.Contains(Search)) || 
                 (x.Description != null && x.Description.Contains(Search))
             );
+        }
+
+        // Filter by category
+        if (!string.IsNullOrWhiteSpace(Category))
+        {
+            Expression = Expression.And(x => x.Category == Category);
         }
         
         // Filter by active status
