@@ -1212,6 +1212,10 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.ConfirmImage)
                 .HasMaxLength(255)
                 .HasColumnName("confirm_image");
+            entity.Property(e => e.ActualAt)
+                .HasColumnName("actual_at");
+            entity.Property(e => e.EstimateAt)
+                .HasColumnName("estimate_at");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");

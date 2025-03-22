@@ -345,8 +345,16 @@ public class ProjectIssueService : IProjectIssueService
             throw new BadRequestException("Chỉ có thể xác nhận hoàn thành vấn đề đang ở trạng thái PREVIEWING.");
         }
         
-        // Change issue status to DONE
+        // Change issue status to DONE and set ActualAt to current date
         projectIssue.Status = EnumProjectIssueStatus.DONE.ToString();
+        
+        // Get the current SEA time using GlobalUtility to avoid timezone issues
+        var currentDateTime = GlobalUtility.GetCurrentSEATime();
+        var currentDateOnly = DateOnly.FromDateTime(currentDateTime);
+        
+        // Set the actual completion date
+        projectIssue.ActualAt = currentDateOnly;
+        
         await projectIssueRepository.UpdateAsync(projectIssue, false);
         
         // Get the construction item (level 1) associated with this issue
@@ -371,6 +379,10 @@ public class ProjectIssueService : IProjectIssueService
         if (shouldUpdateToCompleted)
         {
             constructionItem.Status = EnumConstructionItemStatus.DONE.ToString();
+            
+            // Set the ActualAt date for the construction item using the same date variable
+            constructionItem.ActualAt = currentDateOnly;
+            
             await constructionItemRepository.UpdateAsync(constructionItem, false);
         }
         
