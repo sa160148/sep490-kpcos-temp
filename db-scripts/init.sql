@@ -686,10 +686,10 @@ CREATE TABLE project_issue (
     actual_at DATE,
     status VARCHAR(255),
     issue_type_id UUID NOT NULL,
-    user_id UUID NOT NULL,
+    staff_id UUID,
     construction_item_id UUID NOT NULL,
     FOREIGN KEY (issue_type_id) REFERENCES issue_type(id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (staff_id) REFERENCES staff(id),
     FOREIGN KEY (construction_item_id) REFERENCES construction_item(id)
 );
 

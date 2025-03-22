@@ -23,11 +23,13 @@ public partial class ProjectIssue
     public string? Status { get; set; }
     public Guid IssueTypeId { get; set; }
     public Guid ConstructionItemId { get; set; }
-    public Guid UserId { get; set; }
+    public Guid? StaffId { get; set; }
+    public DateOnly? EstimateAt { get; set; }
+    public DateOnly? ActualAt { get; set; }
     public virtual IssueType IssueType { get; set; } = null!;
     public virtual ConstructionItem ConstructionItem { get; set; } = null!;
     /// <summary>
     /// This is a staff who was assigned to solve the issue
     /// </summary>
-    public virtual User User { get; set; } = null!;
+    public virtual Staff? Staff { get; set; }
 }

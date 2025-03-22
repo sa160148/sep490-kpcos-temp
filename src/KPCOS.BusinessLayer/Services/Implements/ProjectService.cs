@@ -1231,7 +1231,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var project = await ValidateAndGetProject(id);
         
         // Get required includes for ProjectIssue
-        var includeProperties = "IssueType,ConstructionItem,User,User.Staff,IssueImages";
+        var includeProperties = "IssueType,ConstructionItem,Staff,Staff.User";
         
         // Get construction items related to the project
         var constructionItems = unitOfWork.Repository<ConstructionItem>().Get(
@@ -1263,34 +1263,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         );
         
         // Map to response DTOs using AutoMapper
-        var projectIssues = projectIssuesResult.Data.ToList();
-
-        // First use AutoMapper for the basic conversion
-        var mappedResponse = mapper.Map<List<GetAllProjectIssueResponse>>(projectIssues);
-
-        // Now manually update the User property for each response
-        for (int i = 0; i < mappedResponse.Count; i++)
-        {
-            var issue = projectIssues[i];
-            var response = mappedResponse[i];
-            
-            if (issue.User != null)
-            {
-                // We already have User in the response from AutoMapper, we just need to properly set Position
-                if (response.User != null)
-                {
-                    // Determine position based on whether the user has staff roles
-                    if (issue.User.Staff.Any())
-                    {
-                        response.User.Position = issue.User.Staff.FirstOrDefault()?.Position;
-                    }
-                    else
-                    {
-                        response.User.Position = RoleEnum.CUSTOMER.ToString();
-                    }
-                }
-            }
-        }
+        var mappedResponse = mapper.Map<List<GetAllProjectIssueResponse>>(projectIssuesResult.Data);
 
         return (mappedResponse, projectIssuesResult.Count);
     }

@@ -75,6 +75,8 @@ public partial class KpcosContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<ProjectIssue> ProjectIssues { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql(GlobalUtility.GetConnectionString());
@@ -1217,8 +1219,8 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("issue_type_id");
             entity.Property(e => e.ConstructionItemId)
                 .HasColumnName("construction_item_id");
-            entity.Property(e => e.UserId)
-                .HasColumnName("user_id");
+            entity.Property(e => e.StaffId)
+                .HasColumnName("staff_id");
 
             entity.HasOne(d => d.IssueType)
                 .WithMany(p => p.ProjectIssues)
@@ -1232,11 +1234,11 @@ public partial class KpcosContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("project_issue_construction_item_id_fkey");
 
-            entity.HasOne(d => d.User)
+            entity.HasOne(d => d.Staff)
                 .WithMany(p => p.ProjectIssues)
-                .HasForeignKey(d => d.UserId)
+                .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("project_issue_user_id_fkey");
+                .HasConstraintName("project_issue_staff_id_fkey");
         });
 
         OnModelCreatingPartial(modelBuilder);

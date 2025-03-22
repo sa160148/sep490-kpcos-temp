@@ -8,6 +8,7 @@ using System;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
+using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
@@ -263,15 +264,15 @@ public class MapperProfile : Profile
         CreateMap<Doc, GetDocResponse>();
 
         // Project Issue mappings
+        CreateMap<CommandProjectIssueRequest, ProjectIssue>()
+        ;
+            
         CreateMap<ProjectIssue, GetAllProjectIssueResponse>()
-            ;
+            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff));
         
         CreateMap<IssueType, GetIssueTypeResponse>()
             ;
         
-        CreateMap<IssueImage, GetAllIssueImageResponse>()
-            ;
-            
         // Direct mapping from User to GetAllStaffResponse for ProjectIssue
         CreateMap<User, GetAllStaffResponse>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))

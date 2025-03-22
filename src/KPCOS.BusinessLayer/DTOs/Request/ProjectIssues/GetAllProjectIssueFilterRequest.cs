@@ -11,7 +11,7 @@ public class GetAllProjectIssueFilterRequest : PaginationRequest<ProjectIssue>
     public string? Status { get; set; }
     public Guid? IssueTypeId { get; set; }
     public Guid? ConstructionItemId { get; set; }
-    public Guid? UserId { get; set; }
+    public bool? IsActive { get; set; }
     
     public override Expression<Func<ProjectIssue, bool>> GetExpressions()
     {
@@ -24,7 +24,6 @@ public class GetAllProjectIssueFilterRequest : PaginationRequest<ProjectIssue>
             (string.IsNullOrEmpty(Status) || issue.Status == Status) &&
             (!IssueTypeId.HasValue || issue.IssueTypeId == IssueTypeId.Value) &&
             (!ConstructionItemId.HasValue || issue.ConstructionItemId == ConstructionItemId.Value) &&
-            (!UserId.HasValue || issue.UserId == UserId.Value) &&
-            (issue.IsActive == true);
+            (!IsActive.HasValue || issue.IsActive == IsActive.Value);
     }
 }
