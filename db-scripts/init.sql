@@ -434,6 +434,11 @@ BEFORE UPDATE ON docs
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+CREATE table doc_type(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255)
+);
+
 -- create contract table
 CREATE table contract(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -558,7 +563,7 @@ CREATE table maintenance_package(
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    price_per_unit INT NOT NULL,
+    price INT NOT NULL,
     status VARCHAR(255)
 );
 
@@ -608,6 +613,13 @@ CREATE table maintenance_request(
     created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
     is_active BOOLEAN DEFAULT TRUE,
+    is_paid BOOLEAN DEFAULT FALSE,
+    name VARCHAR(255),
+    address VARCHAR(255),
+    area FLOAT NOT NULL,
+    depth FLOAT NOT NULL,
+    total_value BIGINT NOT NULL ,
+    type VARCHAR(255),
     customer_id UUID NOT NULL,
     maintenance_package_id UUID NOT NULL,
     status VARCHAR(255),
@@ -629,6 +641,8 @@ CREATE table maintenance_request_task(
     maintenance_request_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    reason TEXT,
+    estimate_at DATE,
     staff_id UUID NOT NULL,
     status VARCHAR(255),
     image_url VARCHAR(255),
@@ -664,14 +678,17 @@ CREATE TABLE project_issue (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     solution TEXT,
+    cause TEXT,
+    issue_image VARCHAR(255),
+    confirm_image VARCHAR(255),
     reason TEXT,
+    estimate_at DATE,
+    actual_at DATE,
     status VARCHAR(255),
     issue_type_id UUID NOT NULL,
-    construction_task_id UUID,
     user_id UUID NOT NULL,
     construction_item_id UUID NOT NULL,
     FOREIGN KEY (issue_type_id) REFERENCES issue_type(id),
-    FOREIGN KEY (construction_task_id) REFERENCES construction_task(id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (construction_item_id) REFERENCES construction_item(id)
 );
@@ -679,22 +696,6 @@ CREATE TABLE project_issue (
 -- Create trigger for project_issue updated_at
 CREATE TRIGGER update_project_issue_updated_at
 BEFORE UPDATE ON project_issue
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TABLE issue_image (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
-    updated_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'Asia/Bangkok'),
-    is_active BOOLEAN DEFAULT TRUE,
-    name VARCHAR(255),
-    image_url VARCHAR(255) NOT NULL,
-    project_issue_id UUID NOT NULL,
-    FOREIGN KEY (project_issue_id) REFERENCES project_issue(id)
-);
-
-CREATE TRIGGER update_issue_image_updated_at
-BEFORE UPDATE ON issue_image
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 

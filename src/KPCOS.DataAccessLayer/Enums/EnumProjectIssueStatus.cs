@@ -9,6 +9,8 @@ public enum EnumProjectIssueStatus
     OPENING,
     [EnumMember(Value = "PROCESSING")]
     PROCESSING,
-    [EnumMember(Value = "SOLVED")]
-    SOLVED
+    [EnumMember(Value = "PREVIEWING")]
+    PREVIEWING,
+    [EnumMember(Value = "DONE")]
+    DONE
 }

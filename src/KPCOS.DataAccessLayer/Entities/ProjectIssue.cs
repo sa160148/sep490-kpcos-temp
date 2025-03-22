@@ -15,15 +15,19 @@ public partial class ProjectIssue
     public string? Name { get; set; }
 
     public string? Description { get; set; }
-
+    public string? Cause { get; set; }
     public string? Solution { get; set; }
     public string? Reason { get; set; }
+    public string? IssueImage { get; set; }
+    public string? ConfirmImage { get; set; }
     public string? Status { get; set; }
     public Guid IssueTypeId { get; set; }
     public Guid ConstructionItemId { get; set; }
     public Guid UserId { get; set; }
     public virtual IssueType IssueType { get; set; } = null!;
     public virtual ConstructionItem ConstructionItem { get; set; } = null!;
+    /// <summary>
+    /// This is a staff who was assigned to solve the issue
+    /// </summary>
     public virtual User User { get; set; } = null!;
-    public virtual ICollection<IssueImage> IssueImages { get; set; } = new List<IssueImage>();
 }
