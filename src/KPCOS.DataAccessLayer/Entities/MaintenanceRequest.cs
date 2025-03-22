@@ -10,6 +10,13 @@ public partial class MaintenanceRequest
 
     public bool? IsActive { get; set; }
 
+    public string? Name { get; set; }
+    public double Area { get; set; }
+    public double Depth { get; set; }
+    public string? Address { get; set; }
+    public int TotalValue { get; set; }
+    public string? Type { get; set; }
+    public bool? IsPaid { get; set; }
     public Guid CustomerId { get; set; }
 
     public Guid MaintenancePackageId { get; set; }

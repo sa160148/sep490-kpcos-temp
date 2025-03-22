@@ -13,7 +13,8 @@ public partial class MaintenanceRequestTask
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
-
+    public string? Reason { get; set; }
+    public DateOnly? EstimateAt { get; set; }
     public Guid StaffId { get; set; }
 
     public string? Status { get; set; }
