@@ -348,9 +348,12 @@ public class ProjectIssueService : IProjectIssueService
         // Change issue status to DONE and set ActualAt to current date
         projectIssue.Status = EnumProjectIssueStatus.DONE.ToString();
         
-        // Set the actual completion date to current date using GlobalUtility
-        var currentDate = GlobalUtility.GetCurrentSEATime().Date;
-        projectIssue.ActualAt = DateOnly.FromDateTime(currentDate);
+        // Get the current SEA time using GlobalUtility to avoid timezone issues
+        var currentDateTime = GlobalUtility.GetCurrentSEATime();
+        var currentDateOnly = DateOnly.FromDateTime(currentDateTime);
+        
+        // Set the actual completion date
+        projectIssue.ActualAt = currentDateOnly;
         
         await projectIssueRepository.UpdateAsync(projectIssue, false);
         
@@ -376,6 +379,10 @@ public class ProjectIssueService : IProjectIssueService
         if (shouldUpdateToCompleted)
         {
             constructionItem.Status = EnumConstructionItemStatus.DONE.ToString();
+            
+            // Set the ActualAt date for the construction item using the same date variable
+            constructionItem.ActualAt = currentDateOnly;
+            
             await constructionItemRepository.UpdateAsync(constructionItem, false);
         }
         
