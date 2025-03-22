@@ -40,6 +40,7 @@ public static class AddServiceCollection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBackgroundService, BackgroundService>();
         services.AddScoped<IConstructionServices, ConstructionService>();
+        services.AddScoped<IIssueTypeService, IssueTypeService>();
 
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
