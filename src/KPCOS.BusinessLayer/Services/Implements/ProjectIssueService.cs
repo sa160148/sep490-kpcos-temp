@@ -345,8 +345,13 @@ public class ProjectIssueService : IProjectIssueService
             throw new BadRequestException("Chỉ có thể xác nhận hoàn thành vấn đề đang ở trạng thái PREVIEWING.");
         }
         
-        // Change issue status to DONE
+        // Change issue status to DONE and set ActualAt to current date
         projectIssue.Status = EnumProjectIssueStatus.DONE.ToString();
+        
+        // Set the actual completion date to current date using GlobalUtility
+        var currentDate = GlobalUtility.GetCurrentSEATime().Date;
+        projectIssue.ActualAt = DateOnly.FromDateTime(currentDate);
+        
         await projectIssueRepository.UpdateAsync(projectIssue, false);
         
         // Get the construction item (level 1) associated with this issue
