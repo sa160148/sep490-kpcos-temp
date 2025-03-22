@@ -14,7 +14,7 @@ public partial class MaintenancePackage
 
     public string? Description { get; set; }
 
-    public int PricePerUnit { get; set; }
+    public int Price { get; set; }
 
     public string? Status { get; set; }
 
