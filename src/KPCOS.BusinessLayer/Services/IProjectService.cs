@@ -15,6 +15,8 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.Docs;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -289,6 +291,7 @@ public interface IProjectService
     /// </summary>
     /// <param name="id">The project ID to get construction tasks for</param>
     /// <param name="filter">Filter criteria for construction tasks including search, status, overdue status, etc.</param>
+    /// <param name="userId">Optional user ID to filter tasks by assigned staff (only applies for CONSTRUCTOR role)</param>
     /// <returns>Tuple containing the list of construction tasks and total count</returns>
     /// <remarks>
     /// <para>Returns construction tasks for a project with:</para>
@@ -305,6 +308,8 @@ public interface IProjectService
     ///     <item><description>Overdue status (tasks with deadlines in the past that are not DONE)</description></item>
     ///     <item><description>Construction item ID (to get tasks for a specific construction item)</description></item>
     /// </list>
+    /// <para>If the user with userId is a CONSTRUCTOR, only tasks assigned to them are returned.
+    /// For all other staff roles, all tasks for the project are returned regardless of assignment.</para>
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
@@ -318,6 +323,7 @@ public interface IProjectService
     /// </summary>
     /// <param name="id">The project ID to get issues for</param>
     /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <param name="userId">Optional user ID to filter issues by assigned staff (only applies for CONSTRUCTOR role)</param>
     /// <returns>Tuple containing the list of project issues and total count</returns>
     /// <remarks>
     /// <para>Returns project issues for a project with:</para>
@@ -336,10 +342,43 @@ public interface IProjectService
     ///     <item><description>Construction item ID</description></item>
     ///     <item><description>User ID (who reported the issue)</description></item>
     /// </list>
+    /// <para>If the user with userId is a CONSTRUCTOR, only issues assigned to them are returned.
+    /// For all other staff roles, all issues for the project are returned regardless of assignment.</para>
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
         Guid id, 
-        GetAllProjectIssueFilterRequest filter);
+        GetAllProjectIssueFilterRequest filter,
+        Guid? userId = null);
+        
+    /// <summary>
+    /// Gets all documents for a specific project with filtering and pagination
+    /// </summary>
+    /// <param name="projectId">The ID of the project to get documents for</param>
+    /// <param name="filter">Filter criteria including search term, document types, pagination</param>
+    /// <returns>Tuple containing collection of documents and total count</returns>
+    /// <remarks>
+    /// <para>This method returns all documents associated with a project filtered by the specified criteria.</para>
+    /// <para>Documents can be filtered by:</para>
+    /// <list type="bullet">
+    ///     <item><description>Search term (matches against document name)</description></item>
+    ///     <item><description>Document type IDs</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(Guid projectId, GetAllDocFilterRequest filter);
+    
+    /// <summary>
+    /// Changes a project's status to FINISHED
+    /// </summary>
+    /// <param name="id">The ID of the project to finish</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// <para>This method changes a project's status to FINISHED.</para>
+    /// <para>A project can only be finished if it has reached the appropriate stage in the workflow.</para>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is not in a state that can be finished</exception>
+    Task FinishProjectAsync(Guid id);
 }

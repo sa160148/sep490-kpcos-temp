@@ -23,6 +23,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.Common.Utilities;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -268,7 +269,8 @@ public class MapperProfile : Profile
         ;
             
         CreateMap<ProjectIssue, GetAllProjectIssueResponse>()
-            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff));
+            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
+            .ForMember(dest => dest.IssueType, opt => opt.MapFrom(src => src.IssueType.Name));
         
         CreateMap<IssueType, GetIssueTypeResponse>()
             ;
@@ -281,5 +283,13 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Avatar, opt => opt.MapFrom(src => src.Avatar))
             .ForMember(dest => dest.Position, opt => opt.MapFrom(src => 
                 src.Staff.Any() ? src.Staff.FirstOrDefault().Position : RoleEnum.CUSTOMER.ToString()));
+                
+        // Document mappings
+        CreateMap<Doc, GetAllDocResponse>()
+            .ForMember(dest => dest.DocType, opt => opt.MapFrom(src => src.DocType))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt ?? DateTime.MinValue))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt ?? DateTime.MinValue));
+            
+        CreateMap<DocType, GetDocTypeResponse>();
     }
 }

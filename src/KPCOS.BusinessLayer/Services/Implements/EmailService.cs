@@ -20,7 +20,8 @@ public class EmailService : IEmailService
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("kpcos-noreply", "tongtbsa160148@fpt.edu.vn"));
         message.To.Add(new MailboxAddress("Khách Hàng", toEmail));
-
+        message.Subject = subject;
+        
         message.Body = new TextPart(TextFormat.Html)
         {
             Text = body
@@ -49,6 +50,17 @@ public class EmailService : IEmailService
         string body = $"<h1>Mã OTP xác nhận hợp đồng của bạn là: {otpCode}</h1>" +
                      $"<p>Mã OTP này sẽ hết hạn vào lúc {formattedTime} (GMT+7)</p>";
         string subject = "Xác nhận hợp đồng";
+        await SentMailAsync(userEmail, subject, body);
+    }
+
+    public async Task SendVerifyDocOtpAsync(string userEmail, string docName, int otpCode, DateTime expiresAt)
+    {
+        var vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(expiresAt, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+        string formattedTime = vietnamTime.ToString("dd/MM/yyyy HH:mm:ss");
+
+        string body = $"<h1>Mã OTP xác nhận tài liệu {docName} của bạn là: {otpCode}</h1>" +
+                     $"<p>Mã OTP này sẽ hết hạn vào lúc {formattedTime} (GMT+7)</p>";
+        string subject = "Xác nhận tài liệu";
         await SentMailAsync(userEmail, subject, body);
     }
 }

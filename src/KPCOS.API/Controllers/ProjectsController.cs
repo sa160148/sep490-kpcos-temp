@@ -23,6 +23,8 @@ using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.Docs;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 
 namespace KPCOS.API.Controllers
 {
@@ -624,7 +626,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [SwaggerOperation(
             Summary = "Gets a paginated list of construction tasks for a specific project",
-            Description = "Retrieves construction tasks for the specified project based on the provided filter criteria",
+            Description = "Retrieves construction tasks for the specified project based on the provided filter criteria. If the logged-in user is a CONSTRUCTOR, only returns tasks assigned to them. All other roles see all tasks for the project.",
             OperationId = "GetAllConstructionTaskByProjectAsync",
             Tags = new[] { "Projects" }
         )]
@@ -660,7 +662,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [SwaggerOperation(
             Summary = "Gets a paginated list of project issues for a specific project",
-            Description = "Retrieves project issues for the specified project based on the provided filter criteria",
+            Description = "Retrieves project issues for the specified project based on the provided filter criteria. If the logged-in user is a CONSTRUCTOR, only returns issues assigned to them. All other roles see all issues for the project.",
             OperationId = "GetAllProjectIssueByProjectAsync",
             Tags = new[] { "Projects" }
         )]
@@ -677,9 +679,50 @@ namespace KPCOS.API.Controllers
             )]
             GetAllProjectIssueFilterRequest filter)
         {
-            var projectIssues = await service.GetAllProjectIssueByProjectAsync(id, filter);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            (IEnumerable<GetAllProjectIssueResponse> data, int total) projectIssues;
+            
+            if (userIdClaim != null)
+            {
+                var userId = Guid.Parse(userIdClaim);
+                projectIssues = await service.GetAllProjectIssueByProjectAsync(id, filter, userId);
+                return new PagedApiResponse<GetAllProjectIssueResponse>(projectIssues.data, filter.PageNumber, filter.PageSize, projectIssues.total);
+            }
+            
+            projectIssues = await service.GetAllProjectIssueByProjectAsync(id, filter);
             return new PagedApiResponse<GetAllProjectIssueResponse>(projectIssues.data, filter.PageNumber, filter.PageSize, projectIssues.total);
         }
-        
+
+        [HttpPut("{id}/finish")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResult> FinishProjectAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to finish",
+                Required = true
+            )]
+            Guid id)
+        {
+            await service.FinishProjectAsync(id);
+            return Ok();
+        }
+
+        [HttpGet("{id}/docs")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllDocResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<PagedApiResponse<GetAllDocResponse>> GetAllDocAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to get docs for",
+                Required = true
+            )]
+            Guid id,
+            [FromQuery]
+            GetAllDocFilterRequest filter)
+        {
+            var docs = await service.GetAllDocAsync(id, filter);
+            return new PagedApiResponse<GetAllDocResponse>(docs.data, filter.PageNumber, filter.PageSize, docs.total);
+        }
     }
 }

@@ -6,6 +6,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Designs;
 using KPCOS.BusinessLayer.DTOs.Request.Projects;
 using KPCOS.BusinessLayer.DTOs.Request.Quotations;
 using KPCOS.BusinessLayer.DTOs.Request.Users;
+using KPCOS.BusinessLayer.DTOs.Request.Docs;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Constructions;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
@@ -13,6 +14,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Designs;
 using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Quotations;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.Exceptions;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
@@ -33,7 +35,7 @@ using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectService
+public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailService emailService, IFirebaseService firebaseService) : IProjectService
 {
     private string GetQuotationRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
@@ -1186,13 +1188,14 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         var projectFilter = PredicateBuilder.New<ConstructionTask>(true)
             .And(task => constructionItems.Contains(task.ConstructionItemId));
         
-        // If userId is provided, filter tasks assigned to the staff with that userId
+        // If userId is provided, check if user is a constructor
         if (userId.HasValue)
         {
             // Find the staff with the given userId
             var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
             
-            if (staff != null)
+            // Only filter by staff ID if the user is a CONSTRUCTOR
+            if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
             {
                 // Add filter to only include tasks assigned to this staff
                 projectFilter = projectFilter.And(task => task.StaffId == staff.Id);
@@ -1222,10 +1225,12 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
     /// </summary>
     /// <param name="id">The project ID to get issues for</param>
     /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <param name="userId">Optional user ID to filter issues by assigned staff (for constructor role)</param>
     /// <returns>Tuple containing the list of project issues and total count</returns>
     public async Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
         Guid id, 
-        GetAllProjectIssueFilterRequest filter)
+        GetAllProjectIssueFilterRequest filter,
+        Guid? userId = null)
     {
         // Validate and get project
         var project = await ValidateAndGetProject(id);
@@ -1249,6 +1254,20 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
         // Build base filter expression for construction item IDs
         var baseExpression = PredicateBuilder.New<ProjectIssue>(true);
         baseExpression = baseExpression.And(pi => constructionItemIds.Contains(pi.ConstructionItemId));
+        
+        // If userId is provided, check if user is a constructor
+        if (userId.HasValue)
+        {
+            // Find the staff with the given userId
+            var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
+            
+            // Only filter by staff ID if the user is a CONSTRUCTOR
+            if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
+            {
+                // Add filter to only include issues assigned to this staff
+                baseExpression = baseExpression.And(issue => issue.StaffId == staff.Id);
+            }
+        }
         
         // Combine with the filter's expression
         var filterExpression = filter.GetExpressions();
@@ -1278,5 +1297,50 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper) : IProjectSe
             .SingleOrDefault();
         ;
         return user;
+    }
+
+    /// <summary>
+    /// Gets all documents for a project with filtering
+    /// </summary>
+    /// <param name="projectId">Project ID to get documents for</param>
+    /// <param name="filter">Filter criteria</param>
+    /// <returns>Filtered documents and total count</returns>
+    public async Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(Guid projectId, GetAllDocFilterRequest filter)
+    {
+        // Validate project exists
+        await ValidateAndGetProject(projectId);
+        
+        // Set the project ID in the filter
+        filter.ProjectId = projectId;
+        
+        // Get the filter expression
+        var predicate = filter.GetExpressions();
+        
+        // Get the ordering function
+        var orderBy = filter.GetOrder();
+        
+        // Get the documents with DocType included
+        var (documents, count) = unitOfWork.Repository<Doc>().GetWithCount(
+            filter: predicate,
+            orderBy: orderBy,
+            includeProperties: "DocType",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize
+        );
+        
+        // Map the documents to DTOs
+        var result = mapper.Map<IEnumerable<GetAllDocResponse>>(documents);
+        
+        return (result, count);
+    }
+    /// <summary>
+    /// Changes a project's status to FINISHED
+    /// </summary>
+    /// <param name="id">The ID of the project to finish</param>
+    /// <returns>Task representing the operation</returns>
+    public async Task FinishProjectAsync(Guid id)
+    {
+        // This method will be implemented later
+        throw new NotImplementedException("This method will be implemented later");
     }
 }
