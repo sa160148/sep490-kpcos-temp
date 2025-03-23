@@ -23,8 +23,8 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
     /// <summary>
     /// Filter by category
     /// </summary>
-    [Display(Name = "Category", Description = "Filter by category")]
-    public string? Category { get; set; }
+    [Display(Name = "Categories", Description = "Filter by category")]
+    public List<string>? Categories { get; set; }
 
     /// <summary>
     /// Filter by active status
@@ -73,9 +73,9 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
         }
 
         // Filter by category
-        if (!string.IsNullOrWhiteSpace(Category))
+        if (Categories != null && Categories.Any())
         {
-            Expression = Expression.And(x => x.Category == Category);
+            Expression = Expression.And(x => Categories.Contains(x.Category));
         }
         
         // Filter by active status
