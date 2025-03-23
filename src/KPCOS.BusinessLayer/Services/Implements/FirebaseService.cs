@@ -3,6 +3,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using KPCOS.BusinessLayer.DTOs.Response;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
 using Microsoft.Extensions.Configuration;
@@ -59,6 +60,7 @@ public class FirebaseService : IFirebaseService
         }
     }
 
+    #region Contract
     /// <summary>
     /// Save contract otp.
     /// <para>Set a new of otp document</para>
@@ -150,10 +152,123 @@ public class FirebaseService : IFirebaseService
         throw new NotFoundException("Không tìm thấy mã OTP xác nhận trên hệ thống");
     }
 
+    /// <summary>
+    /// Check the contract otp is existed in firestore.
+    /// <para>return true when exited.</para>
+    /// </summary>
+    /// <param name="contractId"></param>
+    /// <returns></returns>
     public async Task<bool> IsContractOtpInFirestore(string contractId)
     {
         var docRef = _dbFirestore.Collection("otps").Document(contractId);
         var snapshot = await docRef.GetSnapshotAsync();
         return snapshot.Exists;
     }
+    #endregion
+
+    #region Docs
+    /// <summary>
+    /// Save doc otp.
+    /// <para>Set a new of otp document</para>
+    /// </summary>
+    /// <param name="otpResponse"></param>
+    /// <exception cref="AppException"></exception>
+    public async Task SaveDocOtpAsync(DocOtpResponse otpResponse)
+    {
+        try
+        {
+            DocumentReference docRef = _dbFirestore.Collection("docs").Document(otpResponse.DocId);
+            await docRef.SetAsync(otpResponse, SetOptions.Overwrite);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error saving document for otp: {e.Message}");
+            throw new AppException("Lỗi xảy ra khi lưu mã OTP xác nhận lên hệ thống");
+        }
+    }
+
+    /// <summary>
+    /// Delete doc otp.
+    /// <para>Delete doc when IsActive not true</para>
+    /// </summary>
+    /// <param name="docId"></param>
+    /// <exception cref="BadRequestException"></exception>
+    public async Task DeleteDocOtpAsync(string docId)
+    {
+        try
+        {
+            var snapshot = await GetDocOtpAsync(docId);
+            if (snapshot.IsActive == true)
+            {
+                return;
+            }
+            DocumentReference docRef = _dbFirestore.Collection("docs").Document(docId);
+            await docRef.DeleteAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Lỗi xảy ra khi xóa mã OTP xác nhận: {e.Message}");
+            throw new BadRequestException("Lỗi xảy ra khi xóa mã OTP xác nhận");
+        }
+    }
+
+    /// <summary>
+    /// Update doc otp.
+    /// <para>Update the doc otp with the value IsActive = true.</para>
+    /// If the doc otp have IsActive is already true, it will return.
+    /// </summary>
+    /// <param name="docId"></param>
+    /// <exception cref="BadRequestException">Lỗi xảy ra khi cập nhật mã OTP xác nhận</exception>
+    public async Task UpdateDocOtpAsync(string docId)
+    {
+        try
+        {
+            var snapshot = await GetDocOtpAsync(docId);
+            if (snapshot.IsActive)
+            {
+                return;
+            }
+            DocumentReference docRef = _dbFirestore.Collection("docs").Document(docId);
+            await docRef.UpdateAsync(new Dictionary<string, object>
+            {
+                {"IsActive", true}
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Lỗi xảy ra khi cập nhật mã OTP xác nhận: {e.Message}");
+            throw new BadRequestException("Lỗi xảy ra khi cập nhật mã OTP xác nhận");
+        }
+    }
+
+    /// <summary>
+    /// Get the doc otp from firestore.
+    /// </summary>
+    /// <param name="docId"></param>
+    /// <returns></returns>
+    /// <exception cref="NotFoundException">Không tìm thấy mã OTP xác nhận trên hệ thống</exception>
+    public async Task<DocOtpResponse> GetDocOtpAsync(string docId)
+    {
+        var docRef = _dbFirestore.Collection("docs").Document(docId);
+        var snapshot = await docRef.GetSnapshotAsync();
+        if (snapshot.Exists)
+        {
+            return snapshot.ConvertTo<DocOtpResponse>();
+        }
+        throw new NotFoundException("Không tìm thấy mã OTP xác nhận trên hệ thống");
+    }
+
+    /// <summary>
+    /// Check the doc otp is existed in firestore.
+    /// <para>return true when exited.</para>
+    /// </summary>
+    /// <param name="docId"></param>
+    /// <returns></returns>
+    public async Task<bool> IsDocOtpInFirestore(string docId)
+    {
+        var docRef = _dbFirestore.Collection("docs").Document(docId);
+        var snapshot = await docRef.GetSnapshotAsync();
+        return snapshot.Exists;
+    }
+    #endregion
 }

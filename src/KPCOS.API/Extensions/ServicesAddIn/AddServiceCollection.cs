@@ -41,7 +41,7 @@ public static class AddServiceCollection
         services.AddScoped<IBackgroundService, BackgroundService>();
         services.AddScoped<IConstructionServices, ConstructionService>();
         services.AddScoped<IIssueTypeService, IssueTypeService>();
-
+        services.AddScoped<IDocService, DocService>();
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
 

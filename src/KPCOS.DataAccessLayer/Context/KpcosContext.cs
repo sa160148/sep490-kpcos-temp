@@ -426,6 +426,20 @@ public partial class KpcosContext : DbContext
                 .HasConstraintName("design_image_design_id_fkey");
         });
 
+        modelBuilder.Entity<DocType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("doc_type_pkey");
+
+            entity.ToTable("doc_type");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+        });
+
         modelBuilder.Entity<Doc>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("docs_pkey");
@@ -445,20 +459,26 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.ProjectId).HasColumnName("project_id");
-            entity.Property(e => e.Type)
-                .HasMaxLength(255)
-                .HasColumnName("type");
+            entity.Property(e => e.DocTypeId).HasColumnName("doc_type_id");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("updated_at");
             entity.Property(e => e.Url)
                 .HasMaxLength(255)
                 .HasColumnName("url");
+            entity.Property(e => e.Status)
+                .HasMaxLength(255)
+                .HasColumnName("status");
 
             entity.HasOne(d => d.Project).WithMany(p => p.Docs)
                 .HasForeignKey(d => d.ProjectId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("docs_project_id_fkey");
+
+            entity.HasOne(d => d.DocType).WithMany(p => p.Docs)
+                .HasForeignKey(d => d.DocTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("docs_doc_type_id_fkey");
         });
 
         modelBuilder.Entity<Equipment>(entity =>
