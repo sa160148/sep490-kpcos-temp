@@ -1188,13 +1188,14 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
         var projectFilter = PredicateBuilder.New<ConstructionTask>(true)
             .And(task => constructionItems.Contains(task.ConstructionItemId));
         
-        // If userId is provided, filter tasks assigned to the staff with that userId
+        // If userId is provided, check if user is a constructor
         if (userId.HasValue)
         {
             // Find the staff with the given userId
             var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
             
-            if (staff != null)
+            // Only filter by staff ID if the user is a CONSTRUCTOR
+            if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
             {
                 // Add filter to only include tasks assigned to this staff
                 projectFilter = projectFilter.And(task => task.StaffId == staff.Id);
@@ -1224,10 +1225,12 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
     /// </summary>
     /// <param name="id">The project ID to get issues for</param>
     /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <param name="userId">Optional user ID to filter issues by assigned staff (for constructor role)</param>
     /// <returns>Tuple containing the list of project issues and total count</returns>
     public async Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
         Guid id, 
-        GetAllProjectIssueFilterRequest filter)
+        GetAllProjectIssueFilterRequest filter,
+        Guid? userId = null)
     {
         // Validate and get project
         var project = await ValidateAndGetProject(id);
@@ -1251,6 +1254,20 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
         // Build base filter expression for construction item IDs
         var baseExpression = PredicateBuilder.New<ProjectIssue>(true);
         baseExpression = baseExpression.And(pi => constructionItemIds.Contains(pi.ConstructionItemId));
+        
+        // If userId is provided, check if user is a constructor
+        if (userId.HasValue)
+        {
+            // Find the staff with the given userId
+            var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
+            
+            // Only filter by staff ID if the user is a CONSTRUCTOR
+            if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
+            {
+                // Add filter to only include issues assigned to this staff
+                baseExpression = baseExpression.And(issue => issue.StaffId == staff.Id);
+            }
+        }
         
         // Combine with the filter's expression
         var filterExpression = filter.GetExpressions();
