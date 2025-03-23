@@ -15,6 +15,8 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.Docs;
+using KPCOS.BusinessLayer.DTOs.Response.Docs;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -342,4 +344,34 @@ public interface IProjectService
     Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
         Guid id, 
         GetAllProjectIssueFilterRequest filter);
+        
+    /// <summary>
+    /// Gets all documents for a specific project with filtering and pagination
+    /// </summary>
+    /// <param name="projectId">The ID of the project to get documents for</param>
+    /// <param name="filter">Filter criteria including search term, document types, pagination</param>
+    /// <returns>Tuple containing collection of documents and total count</returns>
+    /// <remarks>
+    /// <para>This method returns all documents associated with a project filtered by the specified criteria.</para>
+    /// <para>Documents can be filtered by:</para>
+    /// <list type="bullet">
+    ///     <item><description>Search term (matches against document name)</description></item>
+    ///     <item><description>Document type IDs</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(Guid projectId, GetAllDocFilterRequest filter);
+    
+    /// <summary>
+    /// Changes a project's status to FINISHED
+    /// </summary>
+    /// <param name="id">The ID of the project to finish</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// <para>This method changes a project's status to FINISHED.</para>
+    /// <para>A project can only be finished if it has reached the appropriate stage in the workflow.</para>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when project is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when project is not in a state that can be finished</exception>
+    Task FinishProjectAsync(Guid id);
 }

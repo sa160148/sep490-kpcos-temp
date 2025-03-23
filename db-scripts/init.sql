@@ -415,6 +415,12 @@ BEFORE UPDATE ON design_image
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+-- create doc_tyoe table
+CREATE TABLE doc_type(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL
+);
+
 -- create docs table
 CREATE table docs(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -423,9 +429,11 @@ CREATE table docs(
     is_active BOOLEAN DEFAULT TRUE,
     name VARCHAR(255) NOT NULL,
     url VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
+    doc_type_id UUID NOT NULL,
+    status VARCHAR(255),
     project_id UUID NOT NULL,
-    FOREIGN KEY (project_id) REFERENCES project(id)
+    FOREIGN KEY (project_id) REFERENCES project(id),
+    FOREIGN KEY (doc_type_id) REFERENCES doc_type(id)
 );
 
 -- Trigger to update updated_at column when row is updated in docs table

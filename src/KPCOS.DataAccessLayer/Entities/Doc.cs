@@ -14,9 +14,13 @@ public partial class Doc
 
     public string Url { get; set; } = null!;
 
-    public string Type { get; set; } = null!;
+    public Guid DocTypeId { get; set; }
+
+    public virtual DocType DocType { get; set; } = null!;
 
     public Guid ProjectId { get; set; }
 
     public virtual Project Project { get; set; } = null!;
+    
+    public string? Status { get; set; }
 }

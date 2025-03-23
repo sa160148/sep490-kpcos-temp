@@ -25,4 +25,9 @@ public class BackgroundService : IBackgroundService
     { 
         _backgroundJobClient.Schedule(() => _firebaseService.DeleteContractOtpAsync(contractId), TimeSpan.FromMinutes(timespanMinutes));
     }
+    
+    public void DelayedCancelDocOtpJob(int timespanMinutes, string docId)
+    { 
+        _backgroundJobClient.Schedule(() => _firebaseService.DeleteDocOtpAsync(docId), TimeSpan.FromMinutes(timespanMinutes));
+    }
 }
