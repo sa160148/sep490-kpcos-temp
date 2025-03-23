@@ -291,6 +291,7 @@ public interface IProjectService
     /// </summary>
     /// <param name="id">The project ID to get construction tasks for</param>
     /// <param name="filter">Filter criteria for construction tasks including search, status, overdue status, etc.</param>
+    /// <param name="userId">Optional user ID to filter tasks by assigned staff (only applies for CONSTRUCTOR role)</param>
     /// <returns>Tuple containing the list of construction tasks and total count</returns>
     /// <remarks>
     /// <para>Returns construction tasks for a project with:</para>
@@ -307,6 +308,8 @@ public interface IProjectService
     ///     <item><description>Overdue status (tasks with deadlines in the past that are not DONE)</description></item>
     ///     <item><description>Construction item ID (to get tasks for a specific construction item)</description></item>
     /// </list>
+    /// <para>If the user with userId is a CONSTRUCTOR, only tasks assigned to them are returned.
+    /// For all other staff roles, all tasks for the project are returned regardless of assignment.</para>
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
@@ -320,6 +323,7 @@ public interface IProjectService
     /// </summary>
     /// <param name="id">The project ID to get issues for</param>
     /// <param name="filter">Filter criteria for project issues including search, status, issue type, etc.</param>
+    /// <param name="userId">Optional user ID to filter issues by assigned staff (only applies for CONSTRUCTOR role)</param>
     /// <returns>Tuple containing the list of project issues and total count</returns>
     /// <remarks>
     /// <para>Returns project issues for a project with:</para>
@@ -338,12 +342,15 @@ public interface IProjectService
     ///     <item><description>Construction item ID</description></item>
     ///     <item><description>User ID (who reported the issue)</description></item>
     /// </list>
+    /// <para>If the user with userId is a CONSTRUCTOR, only issues assigned to them are returned.
+    /// For all other staff roles, all issues for the project are returned regardless of assignment.</para>
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllProjectIssueResponse> data, int total)> GetAllProjectIssueByProjectAsync(
         Guid id, 
-        GetAllProjectIssueFilterRequest filter);
+        GetAllProjectIssueFilterRequest filter,
+        Guid? userId = null);
         
     /// <summary>
     /// Gets all documents for a specific project with filtering and pagination
