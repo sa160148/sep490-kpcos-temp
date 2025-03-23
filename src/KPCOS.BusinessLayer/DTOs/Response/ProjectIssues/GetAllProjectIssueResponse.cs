@@ -15,7 +15,10 @@ public class GetAllProjectIssueResponse
     public string? Status { get; set; }
     public string? IssueImage { get; set; }
     public string? ConfirmImage { get; set; }
+    public string? IssueType { get; set; }
+    /*
     public GetIssueTypeResponse? IssueType { get; set; }
+    */
     public GetConstructionItemForTaskResponse? ConstructionItem { get; set; }
     public GetAllStaffResponse? Staff { get; set; }
     public string CreatedAt { get; set; }

@@ -269,7 +269,8 @@ public class MapperProfile : Profile
         ;
             
         CreateMap<ProjectIssue, GetAllProjectIssueResponse>()
-            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff));
+            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
+            .ForMember(dest => dest.IssueType, opt => opt.MapFrom(src => src.IssueType.Name));
         
         CreateMap<IssueType, GetIssueTypeResponse>()
             ;
