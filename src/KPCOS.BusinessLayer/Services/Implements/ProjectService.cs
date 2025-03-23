@@ -1340,7 +1340,46 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
     /// <returns>Task representing the operation</returns>
     public async Task FinishProjectAsync(Guid id)
     {
-        // This method will be implemented later
-        throw new NotImplementedException("This method will be implemented later");
+        // Get the project and validate it exists
+        var project = await ValidateAndGetProject(id);
+        
+        // Check if project is in CONSTRUCTING status
+        if (project.Status != EnumProjectStatus.CONSTRUCTING.ToString())
+        {
+            throw new BadRequestException($"Dự án phải ở trạng thái CONSTRUCTING để hoàn thành, trạng thái hiện tại: {project.Status}");
+        }
+        
+        // Check if all parent construction items (no parent ID) are DONE
+        var parentConstructionItems = project.ConstructionItems
+            .Where(ci => ci.ParentId == null && ci.IsActive == true)
+            .ToList();
+        
+        if (!parentConstructionItems.Any())
+        {
+            throw new BadRequestException("Dự án không có hạng mục xây dựng");
+        }
+        
+        // Directly check if all parent construction items are in DONE status
+        if (!parentConstructionItems.All(ci => ci.Status == EnumConstructionItemStatus.DONE.ToString()))
+        {
+            throw new BadRequestException("Tất cả hạng mục xây dựng phải ở trạng thái hoàn thành");
+        }
+        
+        // Check if project has at least one active document
+        var activeDoc = project.Docs
+            .Where(d => d.IsActive == true && d.Status == EnumDocStatus.ACTIVE.ToString())
+            .FirstOrDefault();
+        
+        if (activeDoc == null)
+        {
+            throw new BadRequestException("Dự án phải có ít nhất một tài liệu với trạng thái ACTIVE");
+        }
+        
+        // Update project status to FINISHED
+        project.Status = EnumProjectStatus.FINISHED.ToString();
+        
+        // Save changes
+        var projectRepo = unitOfWork.Repository<Project>();
+        await projectRepo.UpdateAsync(project);
     }
 }
