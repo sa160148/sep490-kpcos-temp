@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using KPCOS.BusinessLayer.DTOs.Request.Payments;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
 
@@ -10,7 +11,7 @@ public interface IPaymentService
     /// <summary>
     /// Creates a transaction payment request to VNPAY payment gateway
     /// </summary>
-    /// <param name="request">Payment request containing batch payment ID and return URL</param>
+    /// <param name="request">Payment request containing batch payment ID or maintenance request ID and return URL</param>
     /// <returns>Response containing the VNPAY payment URL to redirect the user to</returns>
     Task<CreateTransactionPaymentResponse> CreateTransactionPaymentAsync(CreatePaymentRequest request);
 
@@ -27,4 +28,16 @@ public interface IPaymentService
     /// <param name="id">Transaction ID</param>
     /// <returns>Payment transaction details with related payment batch, contract and project information</returns>
     Task<GetTransactionDetailResponse> GetPaymentDetailAsync(Guid id);
+    
+    /// <summary>
+    /// Gets transactions based on filter criteria with optional filtering by customer ID and project ID
+    /// </summary>
+    /// <param name="request">Filter criteria for transactions</param>
+    /// <param name="customerId">Optional customer ID to filter transactions by customer</param>
+    /// <param name="projectId">Optional project ID to filter transactions by project</param>
+    /// <returns>List of transactions with pagination information</returns>
+    Task<(IEnumerable<GetTransactionDetailResponse> data, int total)> GetTransactionsAsync(
+        GetAllTransactionFilterRequest request, 
+        Guid? customerId = null, 
+        Guid? projectId = null);
 }

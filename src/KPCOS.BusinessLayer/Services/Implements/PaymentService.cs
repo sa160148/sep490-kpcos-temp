@@ -19,6 +19,7 @@ using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -43,25 +44,47 @@ public class PaymentService : IPaymentService
     /// <summary>
     /// Creates a transaction payment request to VNPAY payment gateway
     /// </summary>
-    /// <param name="request">Payment request containing batch payment ID and return URL</param>
+    /// <param name="request">Payment request containing batch payment ID or maintenance request ID and return URL</param>
     /// <returns>Response containing the VNPAY payment URL to redirect the user to</returns>
     public async Task<CreateTransactionPaymentResponse> CreateTransactionPaymentAsync(CreatePaymentRequest request)
     {
         // Use SEA time instead of local time to ensure consistency
         var time = GlobalUtility.GetCurrentSEATime();
+        decimal amount = 0;
+        string paymentInfo = "";
+        Guid customerId = Guid.Empty;
+        string orderType = EnumBillType.HOA_DON_THANH_TOAN.ToString();
         
-        // Validate that BatchPaymentId is provided
-        if (!request.BatchPaymentId.HasValue)
+        // Check if we have a batch payment ID or maintenance request ID
+        if (request.BatchPaymentId.HasValue)
         {
-            throw new Exception("BatchPaymentId must be provided");
+            // Payment for a batch payment
+            var paymentBatch = await GetPaymentBatchAsync(request.BatchPaymentId.Value);
+            paymentInfo = GeneratePaymentInfo(paymentBatch);
+            amount = paymentBatch.TotalValue;
+            customerId = paymentBatch.Contract.Project.CustomerId;
+        }
+        else if (request.MaintenanceRequestId.HasValue)
+        {
+            // Payment for a maintenance request
+            var maintenanceRequest = await GetMaintenanceRequestAsync(request.MaintenanceRequestId.Value);
+            paymentInfo = $"Thanh toan dich vu bao tri {maintenanceRequest.Id}";
+            amount = maintenanceRequest.TotalValue;
+            customerId = maintenanceRequest.CustomerId;
+            orderType = EnumBillType.HOA_DON_DICH_VU.ToString();
+        }
+        else
+        {
+            throw new Exception("Either BatchPaymentId or MaintenanceRequestId must be provided");
         }
         
-        // Payment for a batch payment
-        var paymentBatch = await GetPaymentBatchAsync(request.BatchPaymentId.Value);
-        var paymentInfo = GeneratePaymentInfo(paymentBatch);
-        var amount = paymentBatch.TotalValue;
-        var customerId = paymentBatch.Contract.Project.CustomerId;
-        var returnUrl = GenerateReturnUrl(request.ReturnUrl, customerId, request.BatchPaymentId.Value);
+        // Generate return URL with appropriate parameters
+        var returnUrl = GenerateReturnUrl(
+            request.ReturnUrl, 
+            customerId, 
+            request.BatchPaymentId, 
+            request.MaintenanceRequestId
+        );
 
         var vnpayLibrary = new VnpayLibrary();
         vnpayLibrary.AddRequestData("vnp_Version", _vnpaySetting.Version);
@@ -73,7 +96,7 @@ public class PaymentService : IPaymentService
         vnpayLibrary.AddRequestData("vnp_CreateDate", time.ToString("yyyyMMddHHmmss"));
         vnpayLibrary.AddRequestData("vnp_IpAddr", GlobalUtility.GetIpAddress());
         vnpayLibrary.AddRequestData("vnp_OrderInfo", paymentInfo);
-        vnpayLibrary.AddRequestData("vnp_OrderType", EnumBillType.HOA_DON_THANH_TOAN + "");
+        vnpayLibrary.AddRequestData("vnp_OrderType", orderType);
         // Use SEA time for expire date to ensure consistency with the create date
         vnpayLibrary.AddRequestData("vnp_ExpireDate", time.AddSeconds(300).ToString("yyyyMMddHHmmss"));
         vnpayLibrary.AddRequestData("vnp_TxnRef", Guid.NewGuid().ToString());
@@ -86,11 +109,27 @@ public class PaymentService : IPaymentService
         return new CreateTransactionPaymentResponse(vnpayUrl);
     }
 
-    private string GenerateReturnUrl(string returnUrl, Guid customerId, Guid batchPaymentId)
+    private string GenerateReturnUrl(
+        string returnUrl, 
+        Guid customerId, 
+        Guid? batchPaymentId = null, 
+        Guid? maintenanceRequestId = null)
     {
         var serverUrl = GlobalUtility.GetSecureServerUrl(_httpContextAccessor);
         var callbackUrl = _vnpaySetting.CallbackUrl;
-        return  $"{serverUrl}/{callbackUrl}?returnUrl={returnUrl}&customerId={customerId}&batchPaymentId={batchPaymentId}";
+        string url = $"{serverUrl}/{callbackUrl}?returnUrl={returnUrl}&customerId={customerId}";
+        
+        if (batchPaymentId.HasValue)
+        {
+            url += $"&batchPaymentId={batchPaymentId.Value}";
+        }
+        
+        if (maintenanceRequestId.HasValue)
+        {
+            url += $"&maintenanceRequestId={maintenanceRequestId.Value}";
+        }
+        
+        return url;
     }
 
     private async Task<PaymentBatch> GetPaymentBatchAsync(Guid batchPaymentId)  
@@ -107,6 +146,22 @@ public class PaymentService : IPaymentService
             throw new Exception("Payment batch not found");
         }
         return paymentBatch;
+    }
+    
+    private async Task<MaintenanceRequest> GetMaintenanceRequestAsync(Guid maintenanceRequestId)
+    {
+        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: x => x.Id == maintenanceRequestId,
+                includeProperties: "Customer"
+            )
+            .FirstOrDefault();
+            
+        if (maintenanceRequest == null)
+        {
+            throw new Exception("Maintenance request not found");
+        }
+        return maintenanceRequest;
     }
 
     private string GeneratePaymentInfo(PaymentBatch paymentBatch)
@@ -147,15 +202,30 @@ public class PaymentService : IPaymentService
         }
         
         var customerId = Guid.Parse(request.customerId);
-        
-        // Validate that batchPaymentId is provided
-        if (string.IsNullOrEmpty(request.batchPaymentId))
-        {
-            return $"{returnUrl}?success=failed&message=BatchPaymentIdRequired";
-        }
-        
-        var batchPaymentId = Guid.Parse(request.batchPaymentId);
         var time = GlobalUtility.GetCurrentSEATime();
+        
+        // Check which type of payment we're handling
+        if (!string.IsNullOrEmpty(request.batchPaymentId))
+        {
+            return await ProcessBatchPaymentCallback(request, customerId, time, returnUrl);
+        }
+        else if (!string.IsNullOrEmpty(request.maintenanceRequestId))
+        {
+            return await ProcessMaintenanceRequestCallback(request, customerId, time, returnUrl);
+        }
+        else
+        {
+            return $"{returnUrl}?success=failed&message=NoPaymentTypeSpecified";
+        }
+    }
+    
+    private async Task<string> ProcessBatchPaymentCallback(
+        VnpayCallbackRequest request, 
+        Guid customerId, 
+        DateTime time, 
+        string returnUrl)
+    {
+        var batchPaymentId = Guid.Parse(request.batchPaymentId!);
         
         // Get payment batch with all necessary related entities
         var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
@@ -200,6 +270,58 @@ public class PaymentService : IPaymentService
         // Return success URL
         return $"{returnUrl}?success=true&transactionId={transaction.Id}";
     }
+    
+    private async Task<string> ProcessMaintenanceRequestCallback(
+        VnpayCallbackRequest request, 
+        Guid customerId, 
+        DateTime time, 
+        string returnUrl)
+    {
+        var maintenanceRequestId = Guid.Parse(request.maintenanceRequestId!);
+        
+        // Get maintenance request with all necessary related entities
+        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: x => x.Id == maintenanceRequestId,
+                includeProperties: "Customer.User,MaintenancePackage"
+            )
+            .FirstOrDefault();
+            
+        if (maintenanceRequest == null)
+        {
+            // If maintenance request not found, return failure URL
+            return $"{returnUrl}?success=failed&message=MaintenanceRequestNotFound";
+        }
+        
+        // Update maintenance request status to paid
+        maintenanceRequest.IsPaid = true;
+        maintenanceRequest.Status = EnumMaintanceRequestStatus.REQUESTING.ToString();
+        
+        // Create transaction record
+        var transaction = new Transaction
+        {
+            Id = Guid.Parse(request.vnp_TxnRef!),
+            IsActive = true,
+            Amount = (int)((request.vnp_Amount ?? 0) / 100),
+            CustomerId = customerId,
+            No = maintenanceRequestId, // Link transaction to the maintenance request
+            Note = request.vnp_OrderInfo,
+            Status = EnumTransactionStatus.SUCCESSFUL.ToString(),
+            Type = EnumBillType.HOA_DON_DICH_VU.ToString()
+        };
+        
+        // Add new transaction entity to context using repository pattern
+        await _unitOfWork.Repository<Transaction>().AddAsync(transaction, false);
+        
+        // Update the maintenance request entity using repository pattern
+        await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+        
+        // Save all changes in a single call
+        await _unitOfWork.SaveChangesAsync();
+        
+        // Return success URL
+        return $"{returnUrl}?success=true&transactionId={transaction.Id}";
+    }
 
     /// <summary>
     /// Gets the payment transaction details by ID
@@ -224,7 +346,7 @@ public class PaymentService : IPaymentService
         // Map transaction to response DTO using AutoMapper
         var response = _mapper.Map<GetTransactionDetailResponse>(transaction);
 
-        // The No field in Transaction can reference either a PaymentBatch or a Doc
+        // The No field in Transaction can reference either a PaymentBatch, a MaintenanceRequest, or a Doc
         // First, try to find a PaymentBatch with this ID
         var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
             .Get(
@@ -236,46 +358,304 @@ public class PaymentService : IPaymentService
         if (paymentBatch != null)
         {
             // This transaction is related to a payment batch
-            // Map payment batch to GetPaymentForTransactionResponse
-            var paymentBatchResponse = _mapper.Map<GetPaymentForTransactionResponse>(paymentBatch);
+            response.PaymentBatch = _mapper.Map<GetPaymentForTransactionResponse>(paymentBatch);
             
-            // Map contract to GetContractForPaymentBatchResponse
-            var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(paymentBatch.Contract);
-            
-            // Map project to GetProjectForTransactionResponse
-            var projectResponse = _mapper.Map<GetProjectForTransactionResponse>(paymentBatch.Contract.Project);
-            
-            // Link everything together
-            contractResponse.Project = projectResponse;
-            paymentBatchResponse.Contract = contractResponse;
-            response.PaymentBatch = paymentBatchResponse;
-        }
-        else
-        {
-            // If not a payment batch, try to find a Doc with this ID
-            var doc = _unitOfWork.Repository<Doc>()
-                .Get(
-                    filter: x => x.Id == transaction.No,
-                    includeProperties: "Project"
-                )
-                .FirstOrDefault();
-
-            if (doc != null)
+            if (paymentBatch.Contract != null)
             {
-                // This transaction is related to a document
-                var docResponse = _mapper.Map<GetDocResponse>(doc);
+                var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(paymentBatch.Contract);
                 
-                // Map project information if available
-                if (doc.Project != null)
+                if (paymentBatch.Contract.Project != null)
                 {
-                    var projectResponse = _mapper.Map<GetProjectForTransactionResponse>(doc.Project);
-                    docResponse.Project = projectResponse;
+                    contractResponse.Project = _mapper.Map<GetProjectForTransactionResponse>(paymentBatch.Contract.Project);
                 }
                 
-                response.Doc = docResponse;
+                response.PaymentBatch.Contract = contractResponse;
+            }
+            
+            return response;
+        }
+
+        // If not a payment batch, check if it's a maintenance request
+        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: x => x.Id == transaction.No,
+                includeProperties: "MaintenancePackage"
+            )
+            .FirstOrDefault();
+            
+        if (maintenanceRequest != null)
+        {
+            // This transaction is related to a maintenance request
+            response.MaintenanceRequest = _mapper.Map<GetMaintenanceRequestForTransactionResponse>(maintenanceRequest);
+            return response;
+        }
+
+        // If not a maintenance request, check if it's a doc
+        var doc = _unitOfWork.Repository<Doc>()
+            .Get(
+                filter: x => x.Id == transaction.No,
+                includeProperties: "Project"
+            )
+            .FirstOrDefault();
+
+        if (doc != null)
+        {
+            // This transaction is related to a document
+            response.Doc = _mapper.Map<GetDocResponse>(doc);
+            
+            if (doc.Project != null)
+            {
+                response.Doc.Project = _mapper.Map<GetProjectForTransactionResponse>(doc.Project);
             }
         }
 
         return response;
+    }
+
+    /// <summary>
+    /// Gets transactions based on filter criteria with optional filtering by customer ID and project ID
+    /// </summary>
+    /// <param name="request">Filter criteria for transactions</param>
+    /// <param name="customerId">Optional customer ID to filter transactions by customer</param>
+    /// <param name="projectId">Optional project ID to filter transactions by project</param>
+    /// <returns>List of transactions with pagination information</returns>
+    public async Task<(IEnumerable<GetTransactionDetailResponse> data, int total)> GetTransactionsAsync(
+        GetAllTransactionFilterRequest request,
+        Guid? customerId = null,
+        Guid? projectId = null)
+    {
+        var repository = _unitOfWork.Repository<Transaction>();
+        var expression = request.GetExpressions();
+        
+        // Add customer ID filter if provided
+        if (customerId.HasValue)
+        {
+            var customerId1 = customerId.Value; // Capture variable for lambda expression
+            expression = expression.And(t => t.CustomerId == customerId1);
+        }
+        
+        // Get all transactions based on filters
+        var (transactions, total) = repository.GetWithCount(
+            filter: expression,
+            includeProperties: "Customer.User",
+            orderBy: request.GetOrder(),
+            pageIndex: request.PageNumber,
+            pageSize: request.PageSize
+        );
+        
+        // Early return if no transactions found
+        if (!transactions.Any())
+            return (Enumerable.Empty<GetTransactionDetailResponse>(), 0);
+        
+        // Map transactions to response DTOs
+        var responses = _mapper.Map<IEnumerable<GetTransactionDetailResponse>>(transactions).ToList();
+        
+        // Get all transaction IDs to use in subsequent queries for related entities
+        var transactionIds = transactions.Select(t => t.No).ToList();
+        
+        // Check if we need to filter by related entity type
+        bool shouldFilterByRelated = !string.IsNullOrEmpty(request.Related);
+        string relatedType = shouldFilterByRelated ? request.Related.ToLower() : string.Empty;
+        
+        // Always process related data - but apply filters if Related is specified
+        // This ensures all transactions have their related data loaded
+        
+        // Process payment batch related transactions
+        if (!shouldFilterByRelated || relatedType == "batch")
+        {
+            ProcessBatchRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
+        }
+        
+        // Process maintenance request related transactions
+        if (!shouldFilterByRelated || relatedType == "maintenance")
+        {
+            ProcessMaintenanceRelatedTransactions(transactions, responses, transactionIds);
+        }
+        
+        // Process doc related transactions
+        if (!shouldFilterByRelated || relatedType == "doc")
+        {
+            ProcessDocRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
+        }
+        
+        // If filtering by related type is requested, remove responses without the specified related entity
+        if (shouldFilterByRelated)
+        {
+            switch (relatedType)
+            {
+                case "batch":
+                    responses.RemoveAll(r => r.PaymentBatch == null);
+                    break;
+                case "maintenance":
+                    responses.RemoveAll(r => r.MaintenanceRequest == null);
+                    break;
+                case "doc":
+                    responses.RemoveAll(r => r.Doc == null);
+                    break;
+            }
+            
+            // Update total count after filtering
+            total = responses.Count;
+        }
+        
+        return (responses, total);
+    }
+    
+    private void ProcessBatchRelatedTransactions(
+        IEnumerable<Transaction> transactions,
+        List<GetTransactionDetailResponse> responses,
+        List<Guid> transactionIds,
+        Guid? projectId,
+        ref int total)
+    {
+        // Get all payment batches related to these transactions with their related entities
+        var paymentBatches = _unitOfWork.Repository<PaymentBatch>()
+            .Get(
+                filter: pb => transactionIds.Contains(pb.Id),
+                includeProperties: "Contract.Project"
+            )
+            .ToList();
+        
+        // Additional filter by project ID if provided
+        if (projectId.HasValue)
+        {
+            var projectIdValue = projectId.Value; // Capture variable for lambda expression
+            
+            // Filter batches by project
+            paymentBatches = paymentBatches
+                .Where(pb => pb.Contract?.ProjectId == projectIdValue)
+                .ToList();
+            
+            // Get transaction IDs that match filtered batches
+            var filteredBatchIds = paymentBatches.Select(pb => pb.Id).ToList();
+            var filteredTransactionIds = transactions
+                .Where(t => filteredBatchIds.Contains(t.No))
+                .Select(t => t.Id)
+                .ToList();
+            
+            // Filter responses to only include matching transactions
+            responses.RemoveAll(r => r.Id.HasValue && !filteredTransactionIds.Contains(r.Id.Value));
+            
+            // Update total count
+            total = responses.Count;
+        }
+        
+        // Create lookup by ID for faster access
+        var batchLookup = paymentBatches.ToDictionary(b => b.Id);
+        var transactionsById = transactions.ToDictionary(t => t.Id);
+        
+        // Match transactions with their payment batches and populate response
+        foreach (var response in responses.Where(r => r.Id.HasValue))
+        {
+            if (transactionsById.TryGetValue(response.Id.Value, out var transaction) && 
+                batchLookup.TryGetValue(transaction.No, out var matchingBatch))
+            {
+                // Map payment batch to response
+                response.PaymentBatch = _mapper.Map<GetPaymentForTransactionResponse>(matchingBatch);
+                
+                // Map contract if available
+                if (matchingBatch.Contract != null)
+                {
+                    var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(matchingBatch.Contract);
+                    
+                    // Map project if available
+                    if (matchingBatch.Contract.Project != null)
+                    {
+                        contractResponse.Project = _mapper.Map<GetProjectForTransactionResponse>(matchingBatch.Contract.Project);
+                    }
+                    
+                    response.PaymentBatch.Contract = contractResponse;
+                }
+            }
+        }
+    }
+    
+    private void ProcessMaintenanceRelatedTransactions(
+        IEnumerable<Transaction> transactions,
+        List<GetTransactionDetailResponse> responses,
+        List<Guid> transactionIds)
+    {
+        // Get all maintenance requests related to these transactions
+        var maintenanceRequests = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: mr => transactionIds.Contains(mr.Id),
+                includeProperties: "MaintenancePackage"
+            )
+            .ToList();
+        
+        // Create lookup by ID for faster access
+        var requestLookup = maintenanceRequests.ToDictionary(mr => mr.Id);
+        var transactionsById = transactions.ToDictionary(t => t.Id);
+        
+        // Match transactions with their maintenance requests and populate response
+        foreach (var response in responses.Where(r => r.Id.HasValue))
+        {
+            if (transactionsById.TryGetValue(response.Id.Value, out var transaction) && 
+                requestLookup.TryGetValue(transaction.No, out var matchingRequest))
+            {
+                response.MaintenanceRequest = _mapper.Map<GetMaintenanceRequestForTransactionResponse>(matchingRequest);
+            }
+        }
+    }
+    
+    private void ProcessDocRelatedTransactions(
+        IEnumerable<Transaction> transactions,
+        List<GetTransactionDetailResponse> responses,
+        List<Guid> transactionIds,
+        Guid? projectId,
+        ref int total)
+    {
+        // Get all docs related to these transactions
+        var docs = _unitOfWork.Repository<Doc>()
+            .Get(
+                filter: d => transactionIds.Contains(d.Id),
+                includeProperties: "Project"
+            )
+            .ToList();
+        
+        // Additional filter by project ID if provided
+        if (projectId.HasValue)
+        {
+            var projectIdValue = projectId.Value; // Capture variable for lambda expression
+            
+            // Filter docs by project
+            docs = docs
+                .Where(d => d.ProjectId == projectIdValue)
+                .ToList();
+            
+            // Get transaction IDs that match filtered docs
+            var filteredDocIds = docs.Select(d => d.Id).ToList();
+            var filteredTransactionIds = transactions
+                .Where(t => filteredDocIds.Contains(t.No))
+                .Select(t => t.Id)
+                .ToList();
+            
+            // Filter responses to only include matching transactions
+            responses.RemoveAll(r => r.Id.HasValue && !filteredTransactionIds.Contains(r.Id.Value));
+            
+            // Update total count
+            total = responses.Count;
+        }
+        
+        // Create lookup by ID for faster access
+        var docLookup = docs.ToDictionary(d => d.Id);
+        var transactionsById = transactions.ToDictionary(t => t.Id);
+        
+        // Match transactions with their docs and populate response
+        foreach (var response in responses.Where(r => r.Id.HasValue))
+        {
+            if (transactionsById.TryGetValue(response.Id.Value, out var transaction) && 
+                docLookup.TryGetValue(transaction.No, out var matchingDoc))
+            {
+                // Map doc to response
+                response.Doc = _mapper.Map<GetDocResponse>(matchingDoc);
+                
+                // Map project if available
+                if (matchingDoc.Project != null)
+                {
+                    response.Doc.Project = _mapper.Map<GetProjectForTransactionResponse>(matchingDoc.Project);
+                }
+            }
+        }
     }
 }
