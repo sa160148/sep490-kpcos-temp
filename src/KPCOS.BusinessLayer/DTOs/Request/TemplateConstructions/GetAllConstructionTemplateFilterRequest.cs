@@ -1,9 +1,8 @@
 using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
-using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 
-namespace KPCOS.BusinessLayer.DTOs.Request;
+namespace KPCOS.BusinessLayer.DTOs.Request.TemplateConstructions;
 
 public class GetAllConstructionTemplateFilterRequest : PaginationRequest<ConstructionTemplate>
 {
