@@ -549,6 +549,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.Price).HasColumnName("price");
+            entity.Property(e => e.Rate).HasColumnName("rate");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
@@ -656,6 +657,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.StaffId).HasColumnName("staff_id");
+            entity.Property(e => e.MaintenanceItemId).HasColumnName("maintenance_item_id");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");
@@ -672,6 +674,11 @@ public partial class KpcosContext : DbContext
                 .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("maintenance_request_task_staff_id_fkey");
+
+            entity.HasOne(d => d.MaintenanceItem).WithMany(p => p.MaintenanceRequestTasks)
+                .HasForeignKey(d => d.MaintenanceItemId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("maintenance_request_task_maintenance_item_id_fkey");
         });
 
         modelBuilder.Entity<Package>(entity =>

@@ -15,4 +15,5 @@ public partial class MaintenanceItem
     public string? Description { get; set; }
 
     public virtual ICollection<MaintenancePackageItem> MaintenancePackageItems { get; set; } = new List<MaintenancePackageItem>();
+    public virtual ICollection<MaintenanceRequestTask> MaintenanceRequestTasks { get; set; } = new List<MaintenanceRequestTask>();
 }
