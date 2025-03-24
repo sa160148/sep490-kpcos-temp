@@ -15,6 +15,7 @@ public partial class MaintenancePackage
     public string? Description { get; set; }
 
     public int Price { get; set; }
+    public int Rate { get; set; }
 
     public string? Status { get; set; }
 

@@ -10,12 +10,13 @@ public partial class MaintenanceRequestTask
 
     public Guid MaintenanceRequestId { get; set; }
 
-    public string Name { get; set; } = null!;
+    public string? Name { get; set; } = null!;
 
     public string? Description { get; set; }
     public string? Reason { get; set; }
     public DateOnly? EstimateAt { get; set; }
-    public Guid StaffId { get; set; }
+    public Guid? StaffId { get; set; }
+    public Guid? MaintenanceItemId { get; set; }
 
     public string? Status { get; set; }
 
@@ -23,5 +24,7 @@ public partial class MaintenanceRequestTask
 
     public virtual MaintenanceRequest MaintenanceRequest { get; set; } = null!;
 
-    public virtual Staff Staff { get; set; } = null!;
+    public virtual Staff? Staff { get; set; }
+
+    public virtual MaintenanceItem? MaintenanceItem { get; set; }
 }

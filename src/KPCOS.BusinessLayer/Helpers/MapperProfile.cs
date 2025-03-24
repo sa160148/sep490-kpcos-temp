@@ -24,6 +24,10 @@ using KPCOS.BusinessLayer.DTOs.Request.Constructions;
 using KPCOS.Common.Utilities;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
+using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
+using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
+using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -291,5 +295,31 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt ?? DateTime.MinValue));
             
         CreateMap<DocType, GetDocTypeResponse>();
+
+        // Maintenance item mappings
+        CreateMap<MaintenanceItem, GetAllMaintenanceItemResponse>();
+        
+        CreateMap<CommandMaintenanceItemRequest, MaintenanceItem>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+            ;
+        
+        // Maintenance package mappings
+        CreateMap<CommandMaintenancePackageRequest, MaintenancePackage>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price.HasValue ? src.Price.Value : 0))
+            ;
+        
+        CreateMap<MaintenancePackage, GetAllMaintenancePackageResponse>()
+            .ForMember(dest => dest.PriceList, 
+                opt => opt.MapFrom(src => 
+                    Enumerable.Range(0, 5).Select(i => (int)(src.Price * Math.Pow(0.95, i))).ToList()))
+            .ForMember(dest => dest.MaintenanceItems,
+                opt => opt.MapFrom(src => src.MaintenancePackageItems.Select(mpi => mpi.MaintenanceItem)))
+            ;
+            
+        // Maintenance request mappings
+        CreateMap<MaintenanceRequest, GetAllMaintenanceRequestResponse>()
+            .ForMember(dest => dest.MaintenancePackage, 
+                opt => opt.MapFrom(src => src.MaintenancePackage));
     }
 }
