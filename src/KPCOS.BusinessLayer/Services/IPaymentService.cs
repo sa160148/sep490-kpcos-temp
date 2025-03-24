@@ -23,10 +23,10 @@ public interface IPaymentService
     Task<string> PaymentVnpayCallback(VnpayCallbackRequest request);
 
     /// <summary>
-    /// Gets the payment transaction details by ID
+    /// Gets the payment transaction details by ID with all related entities
     /// </summary>
     /// <param name="id">Transaction ID</param>
-    /// <returns>Payment transaction details with related payment batch, contract and project information</returns>
+    /// <returns>Payment transaction details with related payment batch, contract, project, maintenance request, or document information</returns>
     Task<GetTransactionDetailResponse> GetPaymentDetailAsync(Guid id);
     
     /// <summary>
@@ -35,7 +35,7 @@ public interface IPaymentService
     /// <param name="request">Filter criteria for transactions</param>
     /// <param name="customerId">Optional customer ID to filter transactions by customer</param>
     /// <param name="projectId">Optional project ID to filter transactions by project</param>
-    /// <returns>List of transactions with pagination information</returns>
+    /// <returns>List of transactions with pagination information and fully populated related entities</returns>
     Task<(IEnumerable<GetTransactionDetailResponse> data, int total)> GetTransactionsAsync(
         GetAllTransactionFilterRequest request, 
         Guid? customerId = null, 

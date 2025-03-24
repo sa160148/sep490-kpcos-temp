@@ -735,9 +735,24 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(PagedApiResponse<GetTransactionDetailResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Gets all payment transactions for a specific project",
+            Description = "Retrieves a paginated list of payment transactions associated with the specified project. By default, returns transactions related to payment batches unless another 'Related' type is specified in the filter.",
+            OperationId = "GetAllPaymentAsync",
+            Tags = new[] { "Projects" }
+        )]
         public async Task<PagedApiResponse<GetTransactionDetailResponse>> GetAllPaymentAsync(
+            [SwaggerParameter(
+                Description = "The ID of the project to get payments for",
+                Required = true
+            )]
             Guid id, 
-            [FromQuery] GetAllTransactionFilterRequest filter)
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for transactions including AmountMin, AmountMax, Type, Status, and Related. The Related parameter can be 'batch', 'maintenance', or 'doc' to filter by transaction type.",
+                Required = false
+            )]
+            GetAllTransactionFilterRequest filter)
         {
             // Set Related to "batch" if not already specified, to ensure we get payment batch transactions
             if (string.IsNullOrEmpty(filter.Related))

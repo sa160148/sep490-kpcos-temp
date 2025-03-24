@@ -103,14 +103,13 @@ namespace KPCOS.API.Controllers
 
         [HttpGet("{id}")]
         [SwaggerOperation(
-            Summary = "Get payment detail",
-            Description = "Get payment detail",
+            Summary = "Get detailed information about a payment transaction",
+            Description = "Retrieves comprehensive details about a specific payment transaction including associated payment batch, contract, project, maintenance request, or document information depending on the transaction type.",
             OperationId = "GetPaymentDetail",
             Tags = new[] { "Payments" }
         )]
-        [SwaggerResponse(200, "Returns the payment detail", typeof(ApiResult<GetTransactionDetailResponse>))]
-        [SwaggerResponse(400, "Invalid request data", typeof(ApiResult))]
-        [SwaggerResponse(404, "Payment batch not found", typeof(ApiResult))]
+        [SwaggerResponse(200, "Returns the payment transaction with all related entity details", typeof(ApiResult<GetTransactionDetailResponse>))]
+        [SwaggerResponse(404, "Transaction not found", typeof(ApiResult))]
         public async Task<ApiResult<GetTransactionDetailResponse>> GetPaymentDetailAsync(Guid id)
         {
             var response = await _paymentService.GetPaymentDetailAsync(id);
@@ -119,13 +118,17 @@ namespace KPCOS.API.Controllers
 
         [HttpGet("transaction")]
         [SwaggerOperation(
-            Summary = "Get all transactions",
-            Description = "Get all transactions",
+            Summary = "Get a filtered list of payment transactions",
+            Description = "Retrieves a paginated list of payment transactions with optional filtering by customer, amount range, type, status, and related entity type (batch, maintenance, doc). For the current user, transactions are automatically filtered by their customer ID.",
             OperationId = "GetAllTransactions",
             Tags = new[] { "Payments" }
         )]
         public async Task<PagedApiResponse<GetTransactionDetailResponse>> GetTransactionsAsync(
            [FromQuery]
+           [SwaggerParameter(
+                Description = "Filter criteria for transactions including AmountMin, AmountMax, Type, Status, and Related. The Related parameter can be 'batch', 'maintenance', or 'doc' to filter by transaction type.",
+                Required = false
+            )]
             GetAllTransactionFilterRequest request
         )
         {
