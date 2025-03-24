@@ -43,6 +43,7 @@ public static class AddServiceCollection
         services.AddScoped<IIssueTypeService, IssueTypeService>();
         services.AddScoped<IDocService, DocService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
+        services.AddScoped<IDocService, DocService>();
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
 
