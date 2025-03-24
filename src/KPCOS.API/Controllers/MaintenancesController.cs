@@ -142,5 +142,48 @@ namespace KPCOS.API.Controllers
             request.PageSize, 
             result.total);
         }
+
+        [HttpPut("tasks/{id}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Cập nhật trạng thái công việc bảo trì",
+            Description = "Cập nhật trạng thái công việc bảo trì dựa trên ID của công việc.",
+            OperationId = "UpdateMaintenanceTaskStatus",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> UpdateMaintenanceTaskStatusAsync(
+            [FromRoute] Guid id,
+            [FromBody] CommandMaintenanceRequestTaskRequest request)
+        {
+            await _maintenanceService.UpdateMaintenanceTaskStatusAsync(id, request);
+            return Ok();
+        }
+
+        [HttpPost("tasks/{id}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Tạo công việc bảo trì",
+            Description = "Tạo công việc bảo trì dựa trên ID của yêu cầu bảo trì.",
+            OperationId = "CreateMaintenanceTask",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> ConfirmMaintenanceTaskAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của công việc bảo trì cần xác nhận hoàn thành",
+                Required = true
+            )]
+            Guid id)
+        {
+            await _maintenanceService.ConfirmMaintenanceTaskAsync(id);
+            return Ok();
+        }
+
     }
 }
