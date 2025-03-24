@@ -334,7 +334,7 @@ public class MaintenanceService : IMaintenanceService
             
         if (maintenanceRequestTask == null)
         {
-            throw new NotFoundException($"Maintenance request task with ID {id} not found");
+            throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
         }
         
         // Get the current status
@@ -377,51 +377,52 @@ public class MaintenanceService : IMaintenanceService
     private async Task UpdateStaffAssignmentAsync(MaintenanceRequestTask maintenanceRequestTask, Guid staffId)
     {
         // Get the staff by ID
-        var staff = await _unitOfWork.Repository<Staff>().FindAsync(staffId);
+        var staff = await _unitOfWork.Repository<Staff>()
+        .SingleOrDefaultAsync(x => x.UserId == staffId);
         if (staff == null)
         {
-            throw new NotFoundException($"Staff with ID {staffId} not found");
+            throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
         }
         
         // Validate staff position is CONSTRUCTOR
         if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
         {
-            throw new InvalidOperationException("Only staff with CONSTRUCTOR position can be assigned to maintenance tasks");
+            throw new InvalidOperationException("Chỉ nhân viên có chức vụ CONSTRUCTOR mới có thể được phân công cho công việc bảo trì");
         }
         
         // Check if the staff is already assigned to other active tasks
         // Construction tasks
         var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
-            .Where(ct => ct.StaffId == staffId && ct.Status != "DONE")
+            .Where(ct => ct.StaffId == staff.Id && ct.Status != "DONE")
             .FirstOrDefaultAsync() != null;
             
         if (hasActiveConstructionTasks)
         {
-            throw new InvalidOperationException("Staff is already assigned to active construction tasks");
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc xây dựng đang hoạt động");
         }
         
         // Project issues
         var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
-            .Where(pi => pi.StaffId == staffId && pi.Status != "DONE")
+            .Where(pi => pi.StaffId == staff.Id && pi.Status != "DONE")
             .FirstOrDefaultAsync() != null;
             
         if (hasActiveProjectIssues)
         {
-            throw new InvalidOperationException("Staff is already assigned to active project issues");
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các vấn đề dự án đang hoạt động");
         }
         
         // Other maintenance request tasks that are not done
         var hasActiveMaintenanceTasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
-            .Where(mrt => mrt.StaffId == staffId && mrt.Id != maintenanceRequestTask.Id && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
+            .Where(mrt => mrt.StaffId == staff.Id && mrt.Id != maintenanceRequestTask.Id && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
             .FirstOrDefaultAsync() != null;
             
         if (hasActiveMaintenanceTasks)
         {
-            throw new InvalidOperationException("Staff is already assigned to active maintenance tasks");
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc bảo trì đang hoạt động");
         }
         
         // All validations passed, assign the staff and update status
-        maintenanceRequestTask.StaffId = staffId;
+        maintenanceRequestTask.StaffId = staff.Id;
         maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
         
         // Update the maintenance request status if it's still OPENING
@@ -443,13 +444,13 @@ public class MaintenanceService : IMaintenanceService
             
         if (maintenanceRequestTask == null)
         {
-            throw new NotFoundException($"Maintenance request task with ID {id} not found");
+            throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
         }
         
         // Validate current status is PREVIEWING
         if (maintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString())
         {
-            throw new InvalidOperationException($"Cannot confirm maintenance task that is not in PREVIEWING status. Current status: {maintenanceRequestTask.Status}");
+            throw new InvalidOperationException($"Không thể xác nhận hoàn thành công việc bảo trì không ở trạng thái PREVIEWING. Trạng thái hiện tại: {maintenanceRequestTask.Status}");
         }
         
         // Change status to DONE
