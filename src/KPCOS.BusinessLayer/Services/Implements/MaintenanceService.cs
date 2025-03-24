@@ -125,10 +125,24 @@ public class MaintenanceService : IMaintenanceService
         
         // Verify maintenance package exists
         var maintenancePackage = await _unitOfWork.Repository<MaintenancePackage>()
-        .FindAsync(request.MaintenancePackageId.Value);
+            .FindAsync(request.MaintenancePackageId.Value);
+        
         if (maintenancePackage == null)
         {
             throw new NotFoundException($"Maintenance package with ID {request.MaintenancePackageId} not found");
+        }
+
+        // Get maintenance package items associated with the package
+        var maintenancePackageItems = _unitOfWork.Repository<MaintenancePackageItem>()
+            .Get(
+                filter: mpi => mpi.MaintenancePackageId == maintenancePackage.Id && mpi.IsActive == true,
+                includeProperties: "MaintenanceItem"
+            );
+        
+        // Make sure the package has maintenance items
+        if (!maintenancePackageItems.Any())
+        {
+            throw new NotFoundException($"Maintenance package with ID {request.MaintenancePackageId} has no active maintenance items");
         }
 
         // Calculate the total value
@@ -149,7 +163,8 @@ public class MaintenanceService : IMaintenanceService
         }
 
         var customer = await _unitOfWork.Repository<Customer>()
-        .SingleOrDefaultAsync(x => x.UserId == customerId);
+            .SingleOrDefaultAsync(x => x.UserId == customerId);
+        
         if (customer == null)
         {
             throw new NotFoundException($"Customer with ID {customerId} not found");
@@ -185,25 +200,38 @@ public class MaintenanceService : IMaintenanceService
                 request.EstimateAt.Value, 
                 duration, 
                 httpClient);
-                
-            // Create tasks for each date
-            for (int i = 0; i < maintenanceDates.Count; i++)
+            
+            // Create tasks for each date and for each maintenance item
+            foreach (var date in maintenanceDates)
             {
-                var taskName = i == 0 
-                    ? $"Initial maintenance task for {request.Name}" 
-                    : $"Follow-up maintenance task #{i} for {request.Name}";
-                    
-                var maintenanceRequestTask = new MaintenanceRequestTask
+                foreach (var packageItem in maintenancePackageItems)
                 {
-                    Id = Guid.NewGuid(),
-                    MaintenanceRequestId = maintenanceRequest.Id,
-                    Name = taskName,
-                    Description = $"Scheduled maintenance for {maintenanceDates[i].ToString("yyyy-MM-dd")}",
-                    EstimateAt = maintenanceDates[i],
-                    Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
-                };
-                
-                await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(maintenanceRequestTask, false);
+                    var maintenanceItem = packageItem.MaintenanceItem;
+                    
+                    if (maintenanceItem == null)
+                    {
+                        // Skip if the maintenance item is null (shouldn't happen but just in case)
+                        continue;
+                    }
+                    
+                    var taskName = $"{maintenanceItem.Name} - {date.ToString("yyyy-MM-dd")}";
+                    var taskDescription = !string.IsNullOrEmpty(maintenanceItem.Description) 
+                        ? $"{maintenanceItem.Description} - Scheduled for {date.ToString("yyyy-MM-dd")}" 
+                        : $"Scheduled maintenance for {date.ToString("yyyy-MM-dd")}";
+                    
+                    var maintenanceRequestTask = new MaintenanceRequestTask
+                    {
+                        Id = Guid.NewGuid(),
+                        MaintenanceRequestId = maintenanceRequest.Id,
+                        Name = taskName,
+                        Description = taskDescription,
+                        EstimateAt = date,
+                        MaintenanceItemId = maintenanceItem.Id,
+                        Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                    };
+                    
+                    await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(maintenanceRequestTask, false);
+                }
             }
         }
         
