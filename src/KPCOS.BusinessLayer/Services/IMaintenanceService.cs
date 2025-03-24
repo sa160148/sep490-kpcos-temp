@@ -20,4 +20,8 @@ public interface IMaintenanceService
     Task CreateMaintenancePackageAsync(CommandMaintenancePackageRequest request);
     
     Task<(IEnumerable<GetAllMaintenancePackageResponse> data, int total)> GetAllMaintenancePackageAsync(GetAllMaintenancePackageFilterRequest request);
+    
+    Task UpdateMaintenanceTaskStatusAsync(Guid id, CommandMaintenanceRequestTaskRequest request);
+    
+    Task ConfirmMaintenanceTaskAsync(Guid id);
 }

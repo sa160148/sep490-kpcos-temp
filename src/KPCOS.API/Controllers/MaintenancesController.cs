@@ -142,5 +142,126 @@ namespace KPCOS.API.Controllers
             request.PageSize, 
             result.total);
         }
+
+        /// <summary>
+        /// Cập nhật trạng thái công việc bảo trì
+        /// </summary>
+        /// <remarks>
+        /// API này cho phép cập nhật trạng thái công việc bảo trì với ba chế độ khác nhau, ở các chế độ chỉ truyền 1 field.
+        /// 
+        /// **Chế độ 1: Phân công nhân viên (chuyển sang trạng thái PROCESSING)**
+        /// - Cung cấp staffId để phân công nhân viên cho công việc
+        /// - Nhân viên phải có chức vụ là CONSTRUCTOR
+        /// - Nhân viên không được phân công cho các nhiệm vụ xây dựng, vấn đề dự án, hoặc nhiệm vụ bảo trì khác đang hoạt động
+        /// - Trạng thái công việc bảo trì sẽ được cập nhật thành PROCESSING
+        /// 
+        /// **Mẫu yêu cầu chế độ 1:**
+        /// 
+        ///     {
+        ///       "staffId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        ///     }
+        /// 
+        /// **Chế độ 2: Cập nhật hình ảnh (chuyển sang trạng thái PREVIEWING)**
+        /// - Cung cấp imageUrl để tải lên hình ảnh hoặc tài liệu ghi nhận việc thực hiện công việc
+        /// - Trạng thái công việc bảo trì sẽ được cập nhật thành PREVIEWING
+        /// 
+        /// **Mẫu yêu cầu chế độ 2:**
+        /// 
+        ///     {
+        ///       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Liquid_Rubber_Europe_coatings.JPG/800px-Liquid_Rubber_Europe_coatings.JPG"
+        ///     }
+        /// 
+        /// **Chế độ 3: Cập nhật lý do (chuyển từ PREVIEWING sang PROCESSING)**
+        /// - Cung cấp reason để giải thích lý do cần xử lý thêm
+        /// - Trạng thái công việc bảo trì sẽ được cập nhật từ PREVIEWING sang PROCESSING
+        /// 
+        /// **Mẫu yêu cầu chế độ 3:**
+        /// 
+        ///     {
+        ///       "reason": "Bộ lọc cần thay thế một số chi tiết bị hư hỏng. Cần có thêm 1-2 ngày để hoàn thành."
+        ///     }
+        /// 
+        /// **Các tham số:**
+        /// - staffId: ID người dùng của nhân viên được phân công (bắt buộc cho chế độ 1)
+        /// - imageUrl: URL của hình ảnh hoàn thành công việc (bắt buộc cho chế độ 2)
+        /// - reason: Lý do cần xử lý thêm (bắt buộc cho chế độ 3)
+        /// - name: Tên công việc bảo trì (tùy chọn)
+        /// - description: Mô tả công việc bảo trì (tùy chọn)
+        /// </remarks>
+        /// <param name="id">ID của công việc bảo trì cần cập nhật</param>
+        /// <param name="request">Dữ liệu cập nhật cho công việc bảo trì</param>
+        /// <response code="200">Cập nhật trạng thái công việc bảo trì thành công</response>
+        /// <response code="400">Dữ liệu không hợp lệ hoặc vi phạm điều kiện nghiệp vụ</response>
+        /// <response code="401">Người dùng chưa đăng nhập</response>
+        /// <response code="404">Không tìm thấy công việc bảo trì hoặc nhân viên</response>
+        [HttpPut("tasks/{id}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Cập nhật trạng thái công việc bảo trì",
+            Description = "Cập nhật trạng thái công việc bảo trì dựa trên ID của công việc, với ba chế độ: phân công nhân viên, cập nhật hình ảnh, hoặc cập nhật lý do.",
+            OperationId = "UpdateMaintenanceTaskStatus",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> UpdateMaintenanceTaskStatusAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của công việc bảo trì cần cập nhật",
+                Required = true
+            )]
+            Guid id,
+            [FromBody]
+            [SwaggerParameter(
+                Description = "Dữ liệu cập nhật cho công việc bảo trì theo một trong ba chế độ (phân công nhân viên, cập nhật hình ảnh, hoặc cập nhật lý do)",
+                Required = true
+            )]
+            CommandMaintenanceRequestTaskRequest request)
+        {
+            await _maintenanceService.UpdateMaintenanceTaskStatusAsync(id, request);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Xác nhận hoàn thành công việc bảo trì
+        /// </summary>
+        /// <remarks>
+        /// API này cho phép xác nhận hoàn thành một công việc bảo trì, chuyển trạng thái từ PREVIEWING sang DONE.
+        /// 
+        /// **Quy tắc và hành vi:**
+        /// - Công việc bảo trì phải đang ở trạng thái PREVIEWING để có thể xác nhận hoàn thành
+        /// - Sau khi xác nhận, trạng thái công việc sẽ chuyển thành DONE
+        /// - Hệ thống sẽ tự động kiểm tra tất cả các công việc bảo trì khác thuộc cùng yêu cầu bảo trì
+        /// - Nếu tất cả các công việc bảo trì đều ở trạng thái DONE, yêu cầu bảo trì sẽ được cập nhật sang trạng thái DONE
+        /// </remarks>
+        /// <param name="id">ID của công việc bảo trì cần xác nhận hoàn thành</param>
+        /// <response code="200">Xác nhận hoàn thành công việc bảo trì thành công</response>
+        /// <response code="400">Công việc bảo trì không ở trạng thái PREVIEWING</response>
+        /// <response code="401">Người dùng chưa đăng nhập</response>
+        /// <response code="404">Không tìm thấy công việc bảo trì</response>
+        [HttpPost("tasks/{id}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Xác nhận hoàn thành công việc bảo trì",
+            Description = "Xác nhận hoàn thành công việc bảo trì, chuyển trạng thái từ PREVIEWING sang DONE và kiểm tra cập nhật trạng thái yêu cầu bảo trì nếu cần.",
+            OperationId = "ConfirmMaintenanceTask",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> ConfirmMaintenanceTaskAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của công việc bảo trì cần xác nhận hoàn thành",
+                Required = true
+            )]
+            Guid id)
+        {
+            await _maintenanceService.ConfirmMaintenanceTaskAsync(id);
+            return Ok();
+        }
+
     }
 }

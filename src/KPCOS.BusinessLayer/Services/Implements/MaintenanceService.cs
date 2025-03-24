@@ -325,4 +325,170 @@ public class MaintenanceService : IMaintenanceService
         var packageResponses = _mapper.Map<IEnumerable<GetAllMaintenancePackageResponse>>(packages);
         return (packageResponses, total);
     }
+
+    public async Task UpdateMaintenanceTaskStatusAsync(Guid id, CommandMaintenanceRequestTaskRequest request)
+    {
+        // Get the maintenance request task
+        var maintenanceRequestTask = await _unitOfWork.Repository<MaintenanceRequestTask>()
+            .FindAsync(id);
+            
+        if (maintenanceRequestTask == null)
+        {
+            throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
+        }
+        
+        // Get the current status
+        var currentStatus = maintenanceRequestTask.Status;
+
+        // Determine which update mode based on the request fields
+        if (request.StaffId.HasValue)
+        {
+            // First mode: Update staff assignment and change status to PROCESSING
+            await UpdateStaffAssignmentAsync(maintenanceRequestTask, request.StaffId.Value);
+        }
+        else if (!string.IsNullOrEmpty(request.ImageUrl))
+        {
+            // Second mode: Update image URL and change status to PREVIEWING
+            maintenanceRequestTask.ImageUrl = request.ImageUrl;
+            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString();
+        }
+        else if (!string.IsNullOrEmpty(request.Reason))
+        {
+            // Third mode: Update reason and change status to PROCESSING
+            maintenanceRequestTask.Reason = request.Reason;
+            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+        }
+        
+        // Update other provided fields if they exist
+        if (!string.IsNullOrEmpty(request.Name))
+        {
+            maintenanceRequestTask.Name = request.Name;
+        }
+        
+        if (!string.IsNullOrEmpty(request.Description))
+        {
+            maintenanceRequestTask.Description = request.Description;
+        }
+        
+        await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask);
+        await _unitOfWork.SaveChangesAsync();
+    }
+    
+    private async Task UpdateStaffAssignmentAsync(MaintenanceRequestTask maintenanceRequestTask, Guid staffId)
+    {
+        // Get the staff by ID
+        var staff = await _unitOfWork.Repository<Staff>()
+        .SingleOrDefaultAsync(x => x.UserId == staffId);
+        if (staff == null)
+        {
+            throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
+        }
+        
+        // Validate staff position is CONSTRUCTOR
+        if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
+        {
+            throw new InvalidOperationException("Chỉ nhân viên có chức vụ CONSTRUCTOR mới có thể được phân công cho công việc bảo trì");
+        }
+        
+        // Check if the staff is already assigned to other active tasks
+        // Construction tasks
+        var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
+            .Where(ct => ct.StaffId == staff.Id && ct.Status != "DONE")
+            .FirstOrDefaultAsync() != null;
+            
+        if (hasActiveConstructionTasks)
+        {
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc xây dựng đang hoạt động");
+        }
+        
+        // Project issues
+        var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
+            .Where(pi => pi.StaffId == staff.Id && pi.Status != "DONE")
+            .FirstOrDefaultAsync() != null;
+            
+        if (hasActiveProjectIssues)
+        {
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các vấn đề dự án đang hoạt động");
+        }
+        
+        // Other maintenance request tasks that are not done
+        var hasActiveMaintenanceTasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
+            .Where(mrt => mrt.StaffId == staff.Id && mrt.Id != maintenanceRequestTask.Id && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
+            .FirstOrDefaultAsync() != null;
+            
+        if (hasActiveMaintenanceTasks)
+        {
+            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc bảo trì đang hoạt động");
+        }
+        
+        // All validations passed, assign the staff and update status
+        maintenanceRequestTask.StaffId = staff.Id;
+        maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+        
+        // Update the maintenance request status if it's still OPENING
+        var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+            .FindAsync(maintenanceRequestTask.MaintenanceRequestId);
+            
+        if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.OPENING.ToString())
+        {
+            maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+        }
+    }
+    
+    public async Task ConfirmMaintenanceTaskAsync(Guid id)
+    {
+        // Get the maintenance request task
+        var maintenanceRequestTask = await _unitOfWork.Repository<MaintenanceRequestTask>()
+            .FindAsync(id);
+            
+        if (maintenanceRequestTask == null)
+        {
+            throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
+        }
+        
+        // Validate current status is PREVIEWING
+        if (maintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString())
+        {
+            throw new InvalidOperationException($"Không thể xác nhận hoàn thành công việc bảo trì không ở trạng thái PREVIEWING. Trạng thái hiện tại: {maintenanceRequestTask.Status}");
+        }
+        
+        // Change status to DONE
+        maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
+        await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask, false);
+        
+        // Check if all other maintenance request tasks with the same maintenance request ID are DONE
+        var allTasksDone = true;
+        var maintenanceRequestId = maintenanceRequestTask.MaintenanceRequestId;
+        
+        var otherTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+            .Get(
+                filter: mrt => mrt.MaintenanceRequestId == maintenanceRequestId && mrt.Id != id,
+                includeProperties: ""
+            );
+            
+        foreach (var task in otherTasks)
+        {
+            if (task.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
+            {
+                allTasksDone = false;
+                break;
+            }
+        }
+        
+        // If all tasks are done, update maintenance request status
+        if (allTasksDone)
+        {
+            var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+                .FindAsync(maintenanceRequestId);
+                
+            if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
+            {
+                maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
+                await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+            }
+        }
+        
+        await _unitOfWork.SaveChangesAsync();
+    }
 }
