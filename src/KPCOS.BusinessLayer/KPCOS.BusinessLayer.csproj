@@ -27,9 +27,5 @@
     <ItemGroup>
       <ProjectReference Include="..\KPCOS.DataAccessLayer\KPCOS.DataAccessLayer.csproj" />
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="DTOs\Request\Maintenances\" />
-      <Folder Include="DTOs\Response\Maintenances\" />
-    </ItemGroup>
 
 </Project>

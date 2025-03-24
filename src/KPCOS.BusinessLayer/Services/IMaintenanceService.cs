@@ -1,12 +1,18 @@
 using System;
 using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
+using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 using KPCOS.Common.Pagination;
 
 namespace KPCOS.BusinessLayer.Services;
 
 public interface IMaintenanceService
 {
+    Task CreateMaintenanceRequestAsync(CommandMaintenanceRequest request, Guid customerId);
+    
+    Task<(IEnumerable<GetAllMaintenanceRequestResponse> data, int total)> GetMaintenanceRequestsAsync(GetAllMaintenanceRequestFilterRequest request);
+    
     Task CreateMaintenancePackageItemAsync(CommandMaintenanceItemRequest request);
     
     Task<(IEnumerable<GetAllMaintenanceItemResponse> data, int total)> GetAllMaintenanceItemAsync(GetAllMaintenanceItemFilterRequest request);

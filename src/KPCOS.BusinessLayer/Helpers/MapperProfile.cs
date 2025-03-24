@@ -26,6 +26,8 @@ using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
+using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -314,5 +316,10 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.MaintenanceItems,
                 opt => opt.MapFrom(src => src.MaintenancePackageItems.Select(mpi => mpi.MaintenanceItem)))
             ;
+            
+        // Maintenance request mappings
+        CreateMap<MaintenanceRequest, GetAllMaintenanceRequestResponse>()
+            .ForMember(dest => dest.MaintenancePackage, 
+                opt => opt.MapFrom(src => src.MaintenancePackage));
     }
 }
