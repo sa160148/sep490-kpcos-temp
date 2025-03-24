@@ -25,4 +25,25 @@ public class GetTransactionDetailResponse
     public GetDocResponse? Doc { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public UserResponse? Customer { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GetMaintenanceRequestForTransactionResponse? MaintenanceRequest { get; set; }
+}
+
+public class GetMaintenanceRequestForTransactionResponse
+{
+    public Guid Id { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
+    public double Area { get; set; }
+    public double Depth { get; set; }
+    public int TotalValue { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GetMaintenancePackageForTransactionResponse? MaintenancePackage { get; set; }
+}
+
+public class GetMaintenancePackageForTransactionResponse
+{
+    public Guid Id { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
 }

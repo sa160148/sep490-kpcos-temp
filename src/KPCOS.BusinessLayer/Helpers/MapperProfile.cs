@@ -258,14 +258,28 @@ public class MapperProfile : Profile
         ;
 
         // Add mapping for Transaction to GetPaymentDetailResponse
+        // Transaction mappings for payment
         CreateMap<Transaction, GetTransactionDetailResponse>()
-            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer.User));
+            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer));
 
         // Add mappings for payment-related entities
         CreateMap<PaymentBatch, GetPaymentForTransactionResponse>()
-            .ForMember(dest => dest.TotalValue, opt => opt.MapFrom(src => (int)src.TotalValue));
-        CreateMap<Contract, GetContractForPaymentBatchResponse>();
-        CreateMap<Project, GetProjectForTransactionResponse>();
+            .ForMember(dest => dest.TotalValue, opt => opt.MapFrom(src => (int)src.TotalValue))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+            .ForMember(dest => dest.IsPaid, opt => opt.MapFrom(src => src.IsPaid))
+            .ForMember(dest => dest.PaymentAt, opt => opt.MapFrom(src => src.PaymentAt));
+            
+        CreateMap<Contract, GetContractForPaymentBatchResponse>()
+            .ForMember(dest => dest.ContractValue, opt => opt.MapFrom(src => src.ContractValue))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.CustomerName));
+            
+        CreateMap<Project, GetProjectForTransactionResponse>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
+            
         CreateMap<Doc, GetDocResponse>();
 
         // Project Issue mappings
@@ -321,5 +335,16 @@ public class MapperProfile : Profile
         CreateMap<MaintenanceRequest, GetAllMaintenanceRequestResponse>()
             .ForMember(dest => dest.MaintenancePackage, 
                 opt => opt.MapFrom(src => src.MaintenancePackage));
+                
+        // Transaction and maintenance mappings for payment
+        CreateMap<MaintenanceRequest, GetMaintenanceRequestForTransactionResponse>();
+        CreateMap<MaintenancePackage, GetMaintenancePackageForTransactionResponse>();
+                
+        // Add specific mapping from Customer to UserResponse
+        CreateMap<Customer, UserResponse>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FullName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+            .ForMember(dest => dest.Position, opt => opt.MapFrom(src => RoleEnum.CUSTOMER.ToString()));
     }
 }

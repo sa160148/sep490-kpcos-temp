@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request.Payments;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.BusinessLayer.Services;
@@ -116,5 +117,34 @@ namespace KPCOS.API.Controllers
             return Ok(response);
         }
 
+        [HttpGet("transaction")]
+        [SwaggerOperation(
+            Summary = "Get all transactions",
+            Description = "Get all transactions",
+            OperationId = "GetAllTransactions",
+            Tags = new[] { "Payments" }
+        )]
+        public async Task<PagedApiResponse<GetTransactionDetailResponse>> GetTransactionsAsync(
+           [FromQuery]
+            GetAllTransactionFilterRequest request
+        )
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            (IEnumerable<GetTransactionDetailResponse> data, int total) transactions;
+            if (userIdClaim != null)
+            {
+                var userId = Guid.Parse(userIdClaim);
+                transactions = await _paymentService.GetTransactionsAsync(request, userId);
+            }
+            else
+            {
+                transactions = await _paymentService.GetTransactionsAsync(request);
+            }
+            return new PagedApiResponse<GetTransactionDetailResponse>(
+                transactions.data, 
+                request.PageNumber, 
+                request.PageSize, 
+                transactions.total);
+        }
     }
 }

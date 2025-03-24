@@ -25,6 +25,8 @@ using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
+using KPCOS.BusinessLayer.DTOs.Response.Payments;
+using KPCOS.BusinessLayer.DTOs.Request.Payments;
 
 namespace KPCOS.API.Controllers
 {
@@ -34,7 +36,11 @@ namespace KPCOS.API.Controllers
     /// <param name="service"></param>
     /// <param name="authService"></param>
     [Route("api/[controller]")]
-    public class ProjectsController(IProjectService service, IAuthService authService, IConstructionServices constructionService) : BaseController
+    public class ProjectsController(
+        IProjectService service, 
+        IAuthService authService, 
+        IConstructionServices constructionService, 
+        IPaymentService paymentService) : BaseController
     {
         /// <summary>
         /// Get all project for each role of user
@@ -723,6 +729,28 @@ namespace KPCOS.API.Controllers
         {
             var docs = await service.GetAllDocAsync(id, filter);
             return new PagedApiResponse<GetAllDocResponse>(docs.data, filter.PageNumber, filter.PageSize, docs.total);
+        }
+
+        [HttpGet("{id}/payment")]
+        [ProducesResponseType(typeof(PagedApiResponse<GetTransactionDetailResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        public async Task<PagedApiResponse<GetTransactionDetailResponse>> GetAllPaymentAsync(
+            Guid id, 
+            [FromQuery] GetAllTransactionFilterRequest filter)
+        {
+            // Set Related to "batch" if not already specified, to ensure we get payment batch transactions
+            if (string.IsNullOrEmpty(filter.Related))
+            {
+                filter.Related = "batch";
+            }
+            
+            var payments = await paymentService.GetTransactionsAsync(filter, projectId: id);
+            return new PagedApiResponse<GetTransactionDetailResponse>(
+                payments.data, 
+                filter.PageNumber, 
+                filter.PageSize, 
+                payments.total);
         }
     }
 }
