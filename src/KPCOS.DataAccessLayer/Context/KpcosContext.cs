@@ -634,6 +634,26 @@ public partial class KpcosContext : DbContext
                 .HasConstraintName("maintenance_request_maintenance_package_id_fkey");
         });
 
+        modelBuilder.Entity<MaintenanceStaff>(entity =>
+        {
+            entity.HasKey(e => new { e.MaintenanceRequestId, e.StaffId }).HasName("maintenance_staff_pkey");
+
+            entity.ToTable("maintenance_staff");
+
+            entity.Property(e => e.MaintenanceRequestId).HasColumnName("maintenance_request_id");
+            entity.Property(e => e.StaffId).HasColumnName("staff_id");
+
+            entity.HasOne(d => d.MaintenanceRequest).WithMany(p => p.MaintenanceStaffs)
+                .HasForeignKey(d => d.MaintenanceRequestId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("maintenance_staff_maintenance_request_id_fkey");
+
+            entity.HasOne(d => d.Staff).WithMany(p => p.MaintenanceStaffs)
+                .HasForeignKey(d => d.StaffId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("maintenance_staff_staff_id_fkey");
+        });
+
         modelBuilder.Entity<MaintenanceRequestTask>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("maintenance_request_task_pkey");
@@ -656,6 +676,7 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.ParentId).HasColumnName("parent_id");
             entity.Property(e => e.StaffId).HasColumnName("staff_id");
             entity.Property(e => e.MaintenanceItemId).HasColumnName("maintenance_item_id");
             entity.Property(e => e.Status)

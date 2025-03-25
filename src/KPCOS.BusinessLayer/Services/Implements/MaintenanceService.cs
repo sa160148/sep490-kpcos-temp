@@ -182,7 +182,7 @@ public class MaintenanceService : IMaintenanceService
             Address = request.Address,
             TotalValue = totalValue,
             Type = request.Type,
-            IsPaid = false, // Ignore the IsPaid from request as specified
+            IsPaid = false,
             CustomerId = customer.Id,
             MaintenancePackageId = request.MaintenancePackageId.Value,
             Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
@@ -203,36 +203,49 @@ public class MaintenanceService : IMaintenanceService
                 duration, 
                 httpClient);
             
-            // Create tasks for each date and for each maintenance item
+            // Create tasks for each date
             foreach (var date in maintenanceDates)
             {
+                // Create parent task (Level 1)
+                var parentTask = new MaintenanceRequestTask
+                {
+                    Id = Guid.NewGuid(),
+                    MaintenanceRequestId = maintenanceRequest.Id,
+                    Name = $"Maintenance Visit - {date:yyyy-MM-dd}",
+                    Description = $"Scheduled maintenance visit for {date:yyyy-MM-dd}",
+                    EstimateAt = date,
+                    ParentId = null, // Level 1 tasks have no parent
+                    MaintenanceItemId = null, // Level 1 tasks have no maintenance item
+                    Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                };
+                
+                await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(parentTask, false);
+                
+                // Create child tasks (Level 2) for each maintenance item
                 foreach (var packageItem in maintenancePackageItems)
                 {
                     var maintenanceItem = packageItem.MaintenanceItem;
                     
                     if (maintenanceItem == null)
                     {
-                        // Skip if the maintenance item is null (shouldn't happen but just in case)
                         continue;
                     }
                     
-                    var taskName = $"{maintenanceItem.Name} - {date.ToString("yyyy-MM-dd")}";
-                    var taskDescription = !string.IsNullOrEmpty(maintenanceItem.Description) 
-                        ? $"{maintenanceItem.Description} - Scheduled for {date.ToString("yyyy-MM-dd")}" 
-                        : $"Scheduled maintenance for {date.ToString("yyyy-MM-dd")}";
-                    
-                    var maintenanceRequestTask = new MaintenanceRequestTask
+                    var childTask = new MaintenanceRequestTask
                     {
                         Id = Guid.NewGuid(),
                         MaintenanceRequestId = maintenanceRequest.Id,
-                        Name = taskName,
-                        Description = taskDescription,
-                        EstimateAt = date,
+                        Name = $"{maintenanceItem.Name} - {date:yyyy-MM-dd}",
+                        Description = !string.IsNullOrEmpty(maintenanceItem.Description) 
+                            ? $"{maintenanceItem.Description} - Scheduled for {date:yyyy-MM-dd}" 
+                            : $"Scheduled maintenance for {date:yyyy-MM-dd}",
+                        EstimateAt = date, // Same date as parent
+                        ParentId = parentTask.Id, // Reference to parent task
                         MaintenanceItemId = maintenanceItem.Id,
                         Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
                     };
                     
-                    await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(maintenanceRequestTask, false);
+                    await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(childTask, false);
                 }
             }
         }
@@ -252,6 +265,14 @@ public class MaintenanceService : IMaintenanceService
             pageIndex: request.PageNumber,
             pageSize: request.PageSize
         );
+
+        // Filter out child tasks (tasks with ParentId) from each maintenance request
+        foreach (var maintenanceRequest in requests)
+        {
+            maintenanceRequest.MaintenanceRequestTasks = maintenanceRequest.MaintenanceRequestTasks
+                .Where(t => t.ParentId == null)
+                .ToList();
+        }
 
         var requestResponses = _mapper.Map<IEnumerable<GetAllMaintenanceRequestResponse>>(requests);
         return (requestResponses, total);
@@ -512,6 +533,18 @@ public class MaintenanceService : IMaintenanceService
         // Map the entity to DTO
         var taskResponse = _mapper.Map<GetAllMaintenanceRequestTaskResponse>(maintenanceRequestTask);
         
+        // If this is a parent task, get all its child tasks
+        if (maintenanceRequestTask.ParentId == null)
+        {
+            var childTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+                .Get(
+                    filter: mrt => mrt.ParentId == id,
+                    includeProperties: "MaintenanceItem,Staff,Staff.User"
+                );
+                
+            taskResponse.Childs = _mapper.Map<IEnumerable<GetMaintenanceRequestTaskChildResponse>>(childTasks);
+        }
+        
         return taskResponse;
     }
     
@@ -554,6 +587,18 @@ public class MaintenanceService : IMaintenanceService
                 );
                 
                 var taskResponses = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(tasks);
+                
+                // For each parent task, get its child tasks
+                foreach (var taskResponse in taskResponses.Where(t => !tasks.Any(task => task.ParentId == t.Id)))
+                {
+                    var childTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+                        .Get(
+                            filter: mrt => mrt.ParentId == taskResponse.Id,
+                            includeProperties: "MaintenanceItem,Staff,Staff.User"
+                        );
+                    taskResponse.Childs = _mapper.Map<IEnumerable<GetMaintenanceRequestTaskChildResponse>>(childTasks);
+                }
+                
                 return (taskResponses, total);
             }
             else
@@ -586,6 +631,18 @@ public class MaintenanceService : IMaintenanceService
                     );
                     
                     var taskResponses = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(tasks);
+                    
+                    // For each parent task, get its child tasks
+                    foreach (var taskResponse in taskResponses.Where(t => !tasks.Any(task => task.ParentId == t.Id)))
+                    {
+                        var childTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+                            .Get(
+                                filter: mrt => mrt.ParentId == taskResponse.Id,
+                                includeProperties: "MaintenanceItem,Staff,Staff.User"
+                            );
+                        taskResponse.Childs = _mapper.Map<IEnumerable<GetMaintenanceRequestTaskChildResponse>>(childTasks);
+                    }
+                    
                     return (taskResponses, total);
                 }
             }
@@ -593,8 +650,10 @@ public class MaintenanceService : IMaintenanceService
         
         // No user ID provided or user is neither customer nor constructor staff
         // Use the default filter from the request
+        var baseFilterExpression = request.GetExpressions();
+        
         var (taskList, count) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
-            filter: request.GetExpressions(),
+            filter: baseFilterExpression,
             includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
@@ -602,6 +661,18 @@ public class MaintenanceService : IMaintenanceService
         );
         
         var responseList = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(taskList);
+        
+        // For each parent task, get its child tasks
+        foreach (var taskResponse in responseList.Where(t => !taskList.Any(task => task.ParentId == t.Id)))
+        {
+            var childTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+                .Get(
+                    filter: mrt => mrt.ParentId == taskResponse.Id,
+                    includeProperties: "MaintenanceItem,Staff,Staff.User"
+                );
+            taskResponse.Childs = _mapper.Map<IEnumerable<GetMaintenanceRequestTaskChildResponse>>(childTasks);
+        }
+        
         return (responseList, count);
     }
 }

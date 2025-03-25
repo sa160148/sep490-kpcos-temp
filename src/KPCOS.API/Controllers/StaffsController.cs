@@ -171,7 +171,11 @@ namespace KPCOS.API.Controllers
         public async Task<PagedApiResponse<StaffResponse>> GetAllConstructors([FromQuery] PaginationFilter filter)
         {
             var response = await userService.GetsConstructorAsync(filter);
-            return new PagedApiResponse<StaffResponse>(response.data, filter.PageNumber, filter.PageSize, response.total);
+            return new PagedApiResponse<StaffResponse>(
+                response.data, 
+                filter.PageNumber, 
+                filter.PageSize, 
+                response.total);
         }
         
         // [CustomAuthorize("ADMINISTRATOR")]

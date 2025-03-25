@@ -27,6 +27,7 @@ using KPCOS.BusinessLayer.DTOs.Request.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.BusinessLayer.DTOs.Request.Payments;
+using LinqKit;
 
 namespace KPCOS.API.Controllers
 {
@@ -65,24 +66,25 @@ namespace KPCOS.API.Controllers
         [HttpGet("")]
         [ProducesResponseType(typeof(PagedApiResponse<ProjectForListResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        [CustomAuthorize]
-        public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] PaginationFilter filter)
+        /*[CustomAuthorize]*/
+        public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] GetAllProjectFilterRequest filter)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var role = User.FindFirstValue(ClaimTypes.Role);
-            var count = await service.CountAsync();
-            if (count == 0)
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var roleClaim = User.FindFirstValue(ClaimTypes.Role);
+            (IEnumerable<ProjectForListResponse> Data, int Count) projects;
+
+            if (userIdClaim != null && roleClaim != null)
             {
-                return new PagedApiResponse<ProjectForListResponse>(new List<ProjectForListResponse>(),
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: count);
+                var userId = Guid.Parse(userIdClaim);
+                projects = await service.GetsAsync(filter, userId, roleClaim);
             }
-            var projects = await service.GetsAsync(filter, userId, role);
-            return new PagedApiResponse<ProjectForListResponse>(projects,
+            
+            projects = await service.GetsAsync(filter);
+            return new PagedApiResponse<ProjectForListResponse>(
+                projects.Data,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
-                totalRecords: count);
+                totalRecords: projects.Count);
         }
         
         /// <summary>
@@ -115,34 +117,25 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(PagedApiResponse<GetAllProjectForQuotationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [CustomAuthorize]
         public async Task<PagedApiResponse<GetAllProjectForQuotationResponse>> GetsProjectForConsultationAsync(
-            [FromQuery] PaginationFilter filter)
+            [FromQuery] GetAllProjectFilterRequest filter)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
             
-            var advandcedFilter = new GetAllProjectByUserIdRequest
+            var advandcedFilter = new GetAllProjectByUserIdRequest();
+            advandcedFilter.GetExpressionsV2(Guid.Parse(userId), role).And(filter.GetExpressions());
+            advandcedFilter.PageNumber = filter.PageNumber;
+            advandcedFilter.PageSize = filter.PageSize;
+            advandcedFilter.Status = new List<string>()
             {
-                PageNumber = filter.PageNumber,
-                PageSize = filter.PageSize,
-                Status = new List<string>()
-                {
-                    EnumProjectStatus.REQUESTING.ToString(),
-                    EnumProjectStatus.PROCESSING.ToString()
-                },
+                EnumProjectStatus.REQUESTING.ToString(),
+                EnumProjectStatus.PROCESSING.ToString()
             };
-            
+
             // Get projects and count in a single query
             var (projects, count) = await service.GetAllProjectForQuotationByUserIdAsync(advandcedFilter, userId, role);
-            
-            if (count == 0)
-            {
-                return new PagedApiResponse<GetAllProjectForQuotationResponse>(
-                    new List<GetAllProjectForQuotationResponse>(),
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: 0);
-            }
             
             return new PagedApiResponse<GetAllProjectForQuotationResponse>(
                 projects,
@@ -223,33 +216,22 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [CustomAuthorize]
         public async Task<PagedApiResponse<GetAllProjectForDesignResponse>> GetsProjectForDesignAsync(
-            [FromQuery] PaginationFilter filter)
+            [FromQuery] GetAllProjectFilterRequest filter)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var role = User.FindFirstValue(ClaimTypes.Role);
             
-            var advandcedFilter = new GetAllProjectByUserIdRequest
+            var advandcedFilter = new GetAllProjectByUserIdRequest();
+            advandcedFilter.GetExpressionsV2(Guid.Parse(userId), role).And(filter.GetExpressions());
+            advandcedFilter.PageNumber = filter.PageNumber;
+            advandcedFilter.PageSize = filter.PageSize;
+            advandcedFilter.Status = new List<string>()
             {
-                PageNumber = filter.PageNumber,
-                PageSize = filter.PageSize,
-                Status = new List<string>()
-                {
-                    EnumProjectStatus.DESIGNING.ToString()
-                },
+                EnumProjectStatus.DESIGNING.ToString()
             };
             
             // Get projects and count in a single query
             var (projects, count) = await service.GetAllProjectForDesignByUserIdAsync(advandcedFilter, userId, role);
-            
-            if (count == 0)
-            {
-                return new PagedApiResponse<GetAllProjectForDesignResponse>(
-                    new List<GetAllProjectForDesignResponse>(),
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: 0);
-            }
-            
             return new PagedApiResponse<GetAllProjectForDesignResponse>(
                 projects,
                 pageNumber: filter.PageNumber,

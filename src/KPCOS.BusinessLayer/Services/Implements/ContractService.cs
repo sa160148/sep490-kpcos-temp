@@ -50,9 +50,14 @@ public class ContractService : IContractService
         var projectRepo = _unitOfWork.Repository<Project>();
         var project = await projectRepo.FindAsync(contract.ProjectId) ?? throw new NotFoundException("Dự án không tồn tại");
         project.Status = EnumProjectStatus.DESIGNING.ToString();
+
+        var quotationRepo = _unitOfWork.Repository<Quotation>();
+        var quotation = await quotationRepo.FindAsync(contract.QuotationId) ?? throw new NotFoundException("Báo giá không tồn tại");
+        quotation.Status = EnumQuotationStatus.CONFIRMED.ToString();
         
         await repo.UpdateAsync(contract, false);
         await projectRepo.UpdateAsync(project, false);
+        await quotationRepo.UpdateAsync(quotation, false);
         await _unitOfWork.SaveChangesAsync();
     }
 

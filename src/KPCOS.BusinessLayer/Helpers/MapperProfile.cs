@@ -347,6 +347,10 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Staff,
                 opt => opt.MapFrom(src => src.Staff))
             ;
+        CreateMap<MaintenanceRequestTask, GetMaintenanceRequestTaskChildResponse>()
+            .ForMember(dest => dest.Staff,
+                opt => opt.MapFrom(src => src.Staff))
+            ;
                 
         // Transaction and maintenance mappings for payment
         CreateMap<MaintenanceRequest, GetMaintenanceRequestForTransactionResponse>();
