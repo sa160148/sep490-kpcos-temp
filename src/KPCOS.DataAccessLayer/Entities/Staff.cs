@@ -25,4 +25,6 @@ public partial class Staff
     public virtual User User { get; set; } = null!;
 
     public virtual ICollection<ProjectIssue> ProjectIssues { get; set; } = new List<ProjectIssue>();
+
+    public virtual ICollection<MaintenanceStaff> MaintenanceStaffs { get; set; } = new List<MaintenanceStaff>();
 }
