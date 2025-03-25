@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KPCOS.API.Controllers;
 
-
-[ApiController]
 [Route("api/[controller]")]
-public class DocsTypeController : ControllerBase
+public class DocsTypeController : BaseController
 {
     private readonly IDocTypeService _docTypeService;
     
