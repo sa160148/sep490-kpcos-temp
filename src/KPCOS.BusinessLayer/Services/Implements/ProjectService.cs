@@ -42,24 +42,29 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
     private string GetDesignRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Designs,Designs.DesignImages";
 
-    public async Task<IEnumerable<ProjectForListResponse>> GetsAsync(
-        PaginationFilter filter, 
-        string? userId, 
-        string role)
+    public async Task<(IEnumerable<ProjectForListResponse> Data, int Count)> GetsAsync(
+        GetAllProjectFilterRequest filter,
+        Guid? userId = null,
+        string? role = null)
     {
-        var filterOption = new GetAllProjectByRoleRequest();
+        if (userId != null && role != null)
+        {
+            filter.GetExpressions().And(filter.GetExpressionsV2(userId.Value, role));
+        }
+
         var repo = unitOfWork.Repository<Project>();
-        var query = repo.Get(
-            filter: filterOption.GetExpressionsV2(Guid.Parse(userId), role),
-            orderBy: null,
+        var query = repo.GetWithCount(
+            filter: filter.GetExpressions(),
+            orderBy: filter.GetOrder(),
             includeProperties: "Package,ProjectStaffs.Staff.User",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
+        var projects = query.Data;
 
-        var projectResponses = query.Select(project => mapper.Map<ProjectForListResponse>(project)).ToList();
+        var projectResponses = mapper.Map<IEnumerable<ProjectForListResponse>>(projects);
 
-        return projectResponses;
+        return (projectResponses, query.Count);
     }
 
     /// <summary>
@@ -80,7 +85,7 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
         var (projects, count) = unitOfWork.Repository<Project>().GetWithCount(
             filter: BuildProjectFilter(filter, userId, role),
             includeProperties: GetQuotationRequiredIncludes,
-            orderBy: null,
+            orderBy: filter.GetOrder(),
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );

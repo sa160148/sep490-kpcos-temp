@@ -22,7 +22,10 @@ namespace KPCOS.BusinessLayer.Services;
 
 public interface IProjectService
 {
-    Task<IEnumerable<ProjectForListResponse>> GetsAsync(PaginationFilter filter, string? userId, string role);
+    Task<(IEnumerable<ProjectForListResponse> Data, int Count)> GetsAsync(
+        GetAllProjectFilterRequest filter, 
+        Guid? userId = null, 
+        string? role = null);
     
     /// <summary>
     /// Gets all projects for a user with quotation-related information and standout status
