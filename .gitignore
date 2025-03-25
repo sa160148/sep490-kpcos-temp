@@ -947,3 +947,4 @@ $RECYCLE.BIN/
 
 # Custom ignores
 /test/
+/src/KPCOS.API/appsettings.Development.json

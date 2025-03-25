@@ -334,7 +334,19 @@ public class MapperProfile : Profile
         // Maintenance request mappings
         CreateMap<MaintenanceRequest, GetAllMaintenanceRequestResponse>()
             .ForMember(dest => dest.MaintenancePackage, 
-                opt => opt.MapFrom(src => src.MaintenancePackage));
+                opt => opt.MapFrom(src => src.MaintenancePackage))
+                ;
+        CreateMap<MaintenanceRequest, GetMaintenanceRequestResponse>();
+
+        CreateMap<MaintenanceRequestTask, GetAllMaintenanceRequestTaskResponse>()
+            .ForMember(dest => dest.MaintenanceItem,
+                opt => opt.MapFrom(src => src.MaintenanceItem))
+            .ForMember(dest => dest.MaintenanceRequest,
+                opt => opt.MapFrom(src => src.MaintenanceRequest));
+        CreateMap<MaintenanceRequestTask, GetMaintenanceRequestTaskForMaintenanceRequestResponse>()
+            .ForMember(dest => dest.Staff,
+                opt => opt.MapFrom(src => src.Staff))
+            ;
                 
         // Transaction and maintenance mappings for payment
         CreateMap<MaintenanceRequest, GetMaintenanceRequestForTransactionResponse>();
