@@ -944,3 +944,7 @@ $RECYCLE.BIN/
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode,jetbrains+all,macos,linux,windows,csharp,aspnetcore,dotnetcore,sublimetext,notepadpp,vim,dotenv
+
+# Custom ignores
+/test/
+/src/KPCOS.API/appsettings.Development.json

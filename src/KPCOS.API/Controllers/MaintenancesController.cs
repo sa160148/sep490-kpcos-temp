@@ -263,5 +263,63 @@ namespace KPCOS.API.Controllers
             return Ok();
         }
 
+        [HttpGet("tasks/{id}")]
+        [ProducesResponseType(typeof(ApiResult<GetAllMaintenanceRequestTaskResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Lấy chi tiết công việc bảo trì",
+            Description = "Lấy chi tiết công việc bảo trì dựa trên ID của công việc",
+            OperationId = "GetMaintenanceTask",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult<GetAllMaintenanceRequestTaskResponse>> GetMaintenanceTaskAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của công việc bảo trì cần lấy chi tiết",
+                Required = true
+            )]
+            Guid id)
+        {
+            var result = await _maintenanceService.GetMaintenanceTaskAsync(id);
+            return Ok(result);
+        }
+        
+        [HttpGet("task")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Lấy danh sách công việc bảo trì",    
+            Description = "Lấy danh sách công việc bảo trì dựa trên ID của yêu cầu bảo trì",    
+            OperationId = "GetMaintenanceTasks",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<PagedApiResponse<GetAllMaintenanceRequestTaskResponse>> GetAllMaintenanceRequestTasksAsync(
+            [FromQuery]
+            GetAllMaintenanceRequestTaskFilterRequest request)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            (IEnumerable<GetAllMaintenanceRequestTaskResponse> data, int total) result;
+            
+            if (userIdClaim != null)
+            {
+                var userId = Guid.Parse(userIdClaim);
+                result = await _maintenanceService.GetAllMaintenanceRequestTasksAsync(request, userId);
+            }
+            else
+            {
+                result = await _maintenanceService.GetAllMaintenanceRequestTasksAsync(request);
+            }
+            
+            return new PagedApiResponse<GetAllMaintenanceRequestTaskResponse>(
+                result.data, 
+                request.PageNumber, 
+                request.PageSize, 
+                result.total);
+        }
     }
 }

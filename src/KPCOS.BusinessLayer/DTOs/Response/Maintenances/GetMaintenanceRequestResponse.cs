@@ -5,7 +5,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Users;
 
 namespace KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 
-public class GetAllMaintenanceRequestResponse
+public class GetMaintenanceRequestResponse
 {
     public Guid Id { get; set; }
     public string? Name { get; set; }
@@ -21,8 +21,7 @@ public class GetAllMaintenanceRequestResponse
     public DateTime? UpdatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GetAllMaintenancePackageResponse? MaintenancePackage { get; set; }
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public GetAllStaffResponse? Cusomer { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public IEnumerable<GetMaintenanceRequestTaskForMaintenanceRequestResponse>? MaintenanceRequestTasks { get; set; } = new List<GetMaintenanceRequestTaskForMaintenanceRequestResponse>();
+    public GetAllStaffResponse? Customer { get; set; }
 }
