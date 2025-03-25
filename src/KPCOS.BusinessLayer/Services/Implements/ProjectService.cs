@@ -1135,8 +1135,10 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
             predicate = predicate.And(ps => 
                 ps.Staff.Position == RoleEnum.CONSTRUCTOR.ToString() && 
                 (
+                    /*
                     // Not assigned to any construction task for this project
                     !ps.Staff.ConstructionTasks.Any(ct => ct.ConstructionItem.ProjectId == id) ||
+                    */
                     
                     // OR all assigned tasks for this project are in DONE status
                     ps.Staff.ConstructionTasks
