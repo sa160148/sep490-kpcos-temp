@@ -12,6 +12,7 @@ public class GetAllMaintenanceRequestTaskFilterRequest : PaginationRequest<Maint
     public Guid? MaintenanceRequestId { get; set; }
     public string? Status { get; set; }
     public string? MaintenanceItemIds { get; set; }
+    public bool? IsChild { get; set; } = false;
     public DateOnly? From { get; set; }
     public DateOnly? To { get; set; }
     public override Expression<Func<MaintenanceRequestTask, bool>> GetExpressions()
@@ -41,6 +42,11 @@ public class GetAllMaintenanceRequestTaskFilterRequest : PaginationRequest<Maint
         if (To.HasValue)
         {
             predicate = predicate.And(x => x.EstimateAt <= To.Value);
+        }
+        if (IsChild.HasValue)
+        {
+            predicate = predicate.And(x => 
+                IsChild.Value ? x.ParentId != null : x.ParentId == null);
         }
         return predicate;
     }

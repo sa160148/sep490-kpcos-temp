@@ -15,6 +15,7 @@ public partial class MaintenanceRequestTask
     public string? Description { get; set; }
     public string? Reason { get; set; }
     public DateOnly? EstimateAt { get; set; }
+    public Guid? ParentId { get; set; }
     public Guid? StaffId { get; set; }
     public Guid? MaintenanceItemId { get; set; }
 
