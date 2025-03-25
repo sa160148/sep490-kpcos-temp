@@ -24,4 +24,8 @@ public interface IMaintenanceService
     Task UpdateMaintenanceTaskStatusAsync(Guid id, CommandMaintenanceRequestTaskRequest request);
     
     Task ConfirmMaintenanceTaskAsync(Guid id);
+    
+    Task<GetAllMaintenanceRequestTaskResponse> GetMaintenanceTaskAsync(Guid id);
+    
+    Task<(IEnumerable<GetAllMaintenanceRequestTaskResponse> data, int total)> GetAllMaintenanceRequestTasksAsync(GetAllMaintenanceRequestTaskFilterRequest request, Guid? userId = null);
 }

@@ -15,6 +15,8 @@ using KPCOS.DataAccessLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
+using System.Linq.Expressions;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -245,7 +247,7 @@ public class MaintenanceService : IMaintenanceService
         
         var (requests, total) = repository.GetWithCount(
             filter: filterExpression,
-            includeProperties: "MaintenancePackage,Customer,MaintenanceRequestTasks",
+            includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User",
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
             pageSize: request.PageSize
@@ -490,5 +492,116 @@ public class MaintenanceService : IMaintenanceService
         }
         
         await _unitOfWork.SaveChangesAsync();
+    }
+    
+    public async Task<GetAllMaintenanceRequestTaskResponse> GetMaintenanceTaskAsync(Guid id)
+    {
+        // Find the maintenance request task by ID
+        var maintenanceRequestTask = _unitOfWork.Repository<MaintenanceRequestTask>()
+            .Get(
+                filter: mrt => mrt.Id == id,
+                includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User"
+            )
+            .FirstOrDefault();
+            
+        if (maintenanceRequestTask == null)
+        {
+            throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
+        }
+        
+        // Map the entity to DTO
+        var taskResponse = _mapper.Map<GetAllMaintenanceRequestTaskResponse>(maintenanceRequestTask);
+        
+        return taskResponse;
+    }
+    
+    public async Task<(IEnumerable<GetAllMaintenanceRequestTaskResponse> data, int total)> GetAllMaintenanceRequestTasksAsync(GetAllMaintenanceRequestTaskFilterRequest request, Guid? userId = null)
+    {
+        // If userId is provided, determine user role and prepare additional filter
+        if (userId.HasValue)
+        {
+            // First try to find the user as a customer
+            var customer = await _unitOfWork.Repository<Customer>()
+                .SingleOrDefaultAsync(c => c.UserId == userId.Value);
+                
+            if (customer != null)
+            {
+                // User is a customer, filter tasks by customer's maintenance requests
+                var baseFilter = request.GetExpressions();
+                
+                // Get all maintenance requests for this customer
+                var customerRequests = _unitOfWork.Repository<MaintenanceRequest>()
+                    .Get(filter: mr => mr.CustomerId == customer.Id)
+                    .Select(mr => mr.Id)
+                    .ToList();
+                
+                // Create a predicate for tasks related to customer's maintenance requests
+                var customerFilter = PredicateBuilder.New<MaintenanceRequestTask>();
+                customerFilter = customerFilter.And(mrt => customerRequests.Contains(mrt.MaintenanceRequestId));
+                
+                // Combine the base filter with the customer filter
+                var combinedFilter = PredicateBuilder.New<MaintenanceRequestTask>()
+                    .And(baseFilter)
+                    .And(customerFilter);
+                
+                // Use GetWithCount with the combined filter
+                var (tasks, total) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
+                    filter: combinedFilter,
+                    includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+                    orderBy: request.GetOrder(),
+                    pageIndex: request.PageNumber,
+                    pageSize: request.PageSize
+                );
+                
+                var taskResponses = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(tasks);
+                return (taskResponses, total);
+            }
+            else
+            {
+                // Try to find the user as a staff member
+                var staff = await _unitOfWork.Repository<Staff>()
+                    .SingleOrDefaultAsync(s => s.UserId == userId.Value);
+                    
+                if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
+                {
+                    // User is a constructor staff, filter tasks assigned to this staff
+                    var baseFilter = request.GetExpressions();
+                    
+                    // Create a predicate for tasks assigned to this staff
+                    var staffFilter = PredicateBuilder.New<MaintenanceRequestTask>();
+                    staffFilter = staffFilter.And(mrt => mrt.StaffId == staff.Id);
+                    
+                    // Combine the base filter with the staff filter
+                    var combinedFilter = PredicateBuilder.New<MaintenanceRequestTask>()
+                        .And(baseFilter)
+                        .And(staffFilter);
+                    
+                    // Use GetWithCount with the staff filter
+                    var (tasks, total) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
+                        filter: combinedFilter,
+                        includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+                        orderBy: request.GetOrder(),
+                        pageIndex: request.PageNumber,
+                        pageSize: request.PageSize
+                    );
+                    
+                    var taskResponses = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(tasks);
+                    return (taskResponses, total);
+                }
+            }
+        }
+        
+        // No user ID provided or user is neither customer nor constructor staff
+        // Use the default filter from the request
+        var (taskList, count) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
+            filter: request.GetExpressions(),
+            includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+            orderBy: request.GetOrder(),
+            pageIndex: request.PageNumber,
+            pageSize: request.PageSize
+        );
+        
+        var responseList = _mapper.Map<IEnumerable<GetAllMaintenanceRequestTaskResponse>>(taskList);
+        return (responseList, count);
     }
 }
