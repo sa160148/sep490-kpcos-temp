@@ -359,6 +359,10 @@ public class MaintenanceService : IMaintenanceService
         {
             throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
         }
+        if (maintenanceRequestTask.ParentId == null)
+        {
+            throw new BadRequestException("Không thể cập nhật trạng thái cho công việc cha");
+        }
         
         // Get the current status
         var currentStatus = maintenanceRequestTask.Status;
@@ -473,42 +477,65 @@ public class MaintenanceService : IMaintenanceService
         // Validate current status is PREVIEWING
         if (maintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString())
         {
-            throw new InvalidOperationException($"Không thể xác nhận hoàn thành công việc bảo trì không ở trạng thái PREVIEWING. Trạng thái hiện tại: {maintenanceRequestTask.Status}");
+            throw new BadRequestException($"Không thể xác nhận hoàn thành công việc bảo trì không ở trạng thái PREVIEWING. Trạng thái hiện tại: {maintenanceRequestTask.Status}");
+        }
+
+        // Validate this is a level 2 task (has ParentId)
+        if (maintenanceRequestTask.ParentId == null)
+        {
+            throw new BadRequestException("Chỉ có thể xác nhận hoàn thành công việc bảo trì cấp 2");
         }
         
         // Change status to DONE
         maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
         await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask, false);
         
-        // Check if all other maintenance request tasks with the same maintenance request ID are DONE
-        var allTasksDone = true;
-        var maintenanceRequestId = maintenanceRequestTask.MaintenanceRequestId;
-        
-        var otherTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+        // Check if all other level 2 tasks under the same parent are DONE
+        var parentId = maintenanceRequestTask.ParentId.Value;
+        var siblingTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
             .Get(
-                filter: mrt => mrt.MaintenanceRequestId == maintenanceRequestId && mrt.Id != id,
+                filter: mrt => mrt.ParentId == parentId,
                 includeProperties: ""
             );
             
-        foreach (var task in otherTasks)
-        {
-            if (task.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
-            {
-                allTasksDone = false;
-                break;
-            }
-        }
+        var allSiblingsDone = siblingTasks.All(task => 
+            task.Status == EnumMaintenanceRequestTaskStatus.DONE.ToString());
         
-        // If all tasks are done, update maintenance request status
-        if (allTasksDone)
+        if (allSiblingsDone)
         {
-            var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
-                .FindAsync(maintenanceRequestId);
+            // Update parent task (level 1) to DONE
+            var parentTask = await _unitOfWork.Repository<MaintenanceRequestTask>()
+                .FindAsync(parentId);
                 
-            if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
+            if (parentTask != null && parentTask.Status == EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
             {
-                maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
-                await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+                parentTask.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
+                await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(parentTask, false);
+                
+                // Check if all level 1 tasks in the maintenance request are DONE
+                var maintenanceRequestId = maintenanceRequestTask.MaintenanceRequestId;
+                var otherLevel1Tasks = _unitOfWork.Repository<MaintenanceRequestTask>()
+                    .Get(
+                        filter: mrt => mrt.MaintenanceRequestId == maintenanceRequestId 
+                            && mrt.ParentId == null,
+                        includeProperties: ""
+                    );
+                    
+                var allLevel1TasksDone = otherLevel1Tasks.All(task => 
+                    task.Status == EnumMaintenanceRequestTaskStatus.DONE.ToString());
+                
+                if (allLevel1TasksDone)
+                {
+                    // Update maintenance request status to DONE
+                    var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+                        .FindAsync(maintenanceRequestId);
+                        
+                    if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
+                    {
+                        maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
+                        await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+                    }
+                }
             }
         }
         
