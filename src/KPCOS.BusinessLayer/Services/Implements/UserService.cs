@@ -26,9 +26,6 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         {
             throw new Exception("Chức vụ không đúng");
         }*/
-
-        var yes = RoleEnum.CONSTRUCTOR.ToString();
-
         var userId = Guid.NewGuid();
         var user = new User
         {
@@ -123,14 +120,14 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
             !staff.ProjectStaffs.Any(ps => 
                 ps.Project.IsActive == true && 
                 ps.Project.Status != EnumProjectStatus.FINISHED.ToString());
-        var staffs = repo.Get(
+        var staffs = repo.GetWithCount(
             filter: advanceFilter,
             orderBy: null,
             "User",
             filter.PageNumber,
             filter.PageSize);
-        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
-        return (response, response.Count());
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
+        return (response, staffs.Count);
     }
 
     public async Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter)
@@ -142,14 +139,14 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
             !staff.ProjectStaffs.Any(ps => 
                 ps.Project.IsActive == true && 
                 ps.Project.Status == EnumProjectStatus.DESIGNING.ToString());
-        var staffs = repo.Get(
+        var staffs = repo.GetWithCount(
             filter: advanceFilter,
             orderBy: null,
             "User",
             filter.PageNumber,
             filter.PageSize);
-        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
-        return (response, response.Count());
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
+        return (response, staffs.Count);
     }
 
     public async Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter)
@@ -158,18 +155,23 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         Expression<Func<Staff, bool>> advanceFilter = staff => 
             staff.Position == RoleEnum.CONSTRUCTOR.ToString() &&
             staff.User.IsActive == true &&
-            staff.User.IsActive == true &&
             !staff.ProjectStaffs.Any(ps => 
                 ps.Project.IsActive == true &&
-                ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString());
-        var staffs = repo.Get(
+                ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString()) &&
+            !staff.MaintenanceRequestTasks.Any(mrt => 
+                mrt.ParentId != null && // Level 2 tasks
+                mrt.MaintenanceRequest.MaintenanceRequestTasks.Any(parentMrt => 
+                    parentMrt.Id == mrt.ParentId && // Get the specific parent task
+                    parentMrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())); // Parent must be DONE
+            
+        var staffs = repo.GetWithCount(
             filter: advanceFilter,
             orderBy: null,
             "User",
             filter.PageNumber,
             filter.PageSize);
-        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs);
-        return (response, response.Count());
+        var response = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
+        return (response, staffs.Count);
     }
 
     private async Task<User?> UserExitByEmail(string email)
