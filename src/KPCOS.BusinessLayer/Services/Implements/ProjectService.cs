@@ -35,7 +35,11 @@ using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
-public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailService emailService, IFirebaseService firebaseService) : IProjectService
+public class ProjectService(
+    IUnitOfWork unitOfWork, 
+    IMapper mapper, 
+    IEmailService emailService, 
+    IFirebaseService firebaseService) : IProjectService
 {
     private string GetQuotationRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
@@ -47,14 +51,15 @@ public class ProjectService(IUnitOfWork unitOfWork, IMapper mapper, IEmailServic
         Guid? userId = null,
         string? role = null)
     {
+        var advancedFilter = filter.GetExpressions();
         if (userId != null && role != null)
         {
-            filter.GetExpressions().And(filter.GetExpressionsV2(userId.Value, role));
+            advancedFilter = advancedFilter.And(filter.GetExpressionsV2(userId.Value, role));
         }
 
         var repo = unitOfWork.Repository<Project>();
         var query = repo.GetWithCount(
-            filter: filter.GetExpressions(),
+            filter: advancedFilter,
             orderBy: filter.GetOrder(),
             includeProperties: "Package,ProjectStaffs.Staff.User",
             pageIndex: filter.PageNumber,

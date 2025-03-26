@@ -32,5 +32,7 @@ public class ProjectForListResponse
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? UpdatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? IsActive { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IEnumerable<GetAllStaffForDesignResponse>? Staffs { get; set; } = new List<GetAllStaffForDesignResponse>();
 }
