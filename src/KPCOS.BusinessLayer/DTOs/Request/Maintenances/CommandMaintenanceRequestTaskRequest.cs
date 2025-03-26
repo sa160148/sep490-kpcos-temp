@@ -9,4 +9,5 @@ public class CommandMaintenanceRequestTaskRequest
     public Guid? StaffId { get; set; }
     public string? ImageUrl { get; set; }
     public string? Reason { get; set; }
+    public List<Guid>? StaffIds { get; set; }
 }

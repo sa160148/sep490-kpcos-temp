@@ -15,4 +15,5 @@ public class CommandMaintenanceRequest
     public DateOnly? EstimateAt { get; set; }
     public int? Duration { get; set; }
     public Guid? MaintenancePackageId { get; set; }
+    public List<Guid>? StaffIds { get; set; }
 }

@@ -1,8 +1,10 @@
 using System;
 using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
 
 namespace KPCOS.BusinessLayer.Services;
@@ -28,4 +30,8 @@ public interface IMaintenanceService
     Task<GetAllMaintenanceRequestTaskResponse> GetMaintenanceTaskAsync(Guid id);
     
     Task<(IEnumerable<GetAllMaintenanceRequestTaskResponse> data, int total)> GetAllMaintenanceRequestTasksAsync(GetAllMaintenanceRequestTaskFilterRequest request, Guid? userId = null);
+    
+    Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetStaffsAsync(GetAllStaffRequest request, Guid maintenanceRequestId);
+    
+    Task AssignStaffsAsync(Guid maintenanceRequestId, CommandMaintenanceRequestTaskRequest request);
 }
