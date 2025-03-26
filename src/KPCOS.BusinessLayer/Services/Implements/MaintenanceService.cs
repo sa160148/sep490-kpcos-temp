@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
@@ -701,5 +703,169 @@ public class MaintenanceService : IMaintenanceService
         }
         
         return (responseList, count);
+    }
+    
+    public async Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetStaffsAsync(
+        GetAllStaffRequest request, 
+        Guid maintenanceRequestId)
+    {
+        // Check if maintenance request exists
+        var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+            .FindAsync(maintenanceRequestId);
+            
+        if (maintenanceRequest == null)
+        {
+            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {maintenanceRequestId}");
+        }
+        
+        // Get the maintenance staff assigned to this maintenance request
+        var maintenanceStaffs = _unitOfWork.Repository<MaintenanceStaff>()
+            .Get(filter: ms => ms.MaintenanceRequestId == maintenanceRequestId,
+                 includeProperties: "Staff,Staff.User");
+        
+        // Extract staff IDs from maintenance staff records
+        var staffIds = maintenanceStaffs.Select(ms => ms.StaffId).ToList();
+        
+        // Prepare search expression for Staff entity
+        var staffExpression = PredicateBuilder.New<Staff>();
+        
+        // Filter staff with CONSTRUCTOR position that are assigned to this maintenance request
+        staffExpression = staffExpression.And(s => s.Position == RoleEnum.CONSTRUCTOR.ToString());
+        staffExpression = staffExpression.And(s => staffIds.Contains(s.Id));
+        
+        // Apply additional filters from request
+        var baseFilterExpression = request.GetExpressions();
+        
+        // Combine our filter with the request's filter
+        var combinedFilter = PredicateBuilder.New<Staff>()
+            .And(staffExpression)
+            .And(baseFilterExpression);
+        
+        // Get the staff with pagination
+        var (staffList, total) = _unitOfWork.Repository<Staff>().GetWithCount(
+            filter: combinedFilter,
+            includeProperties: "User",
+            orderBy: request.GetOrder(),
+            pageIndex: request.PageNumber,
+            pageSize: request.PageSize
+        );
+        
+        // Use the mapper to map Staff entities to GetAllStaffResponse DTOs
+        var responseList = _mapper.Map<IEnumerable<GetAllStaffResponse>>(staffList);
+        
+        return (responseList, total);
+    }
+    
+    public async Task AssignStaffsAsync(Guid maintenanceRequestId, CommandMaintenanceRequestTaskRequest request)
+    {
+        // Validate maintenance request exists
+        var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+            .FindAsync(maintenanceRequestId);
+            
+        if (maintenanceRequest == null)
+        {
+            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {maintenanceRequestId}");
+        }
+        
+        // Ensure staff IDs are provided
+        if (request.StaffIds == null || !request.StaffIds.Any())
+        {
+            throw new BadRequestException("Danh sách ID nhân viên không được để trống");
+        }
+        
+        // Validate that all staff exist and have CONSTRUCTOR position
+        foreach (var staffId in request.StaffIds)
+        {
+            var staff = await _unitOfWork.Repository<Staff>()
+                .SingleOrDefaultAsync(s => s.UserId == staffId);
+                
+            if (staff == null)
+            {
+                throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
+            }
+            
+            // Validate staff position is CONSTRUCTOR
+            if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} không có chức vụ CONSTRUCTOR");
+            }
+            
+            // Check if staff is assigned to any construction tasks that are not DONE
+            var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
+                .Where(ct => ct.StaffId == staff.Id && ct.Status != "DONE")
+                .FirstOrDefaultAsync() != null;
+                
+            if (hasActiveConstructionTasks)
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc xây dựng đang hoạt động");
+            }
+            
+            // Check if staff is involved in any projects that are in CONSTRUCTING status
+            var hasConstructingProjects = await _unitOfWork.Repository<ProjectStaff>()
+                .Where(ps => ps.StaffId == staff.Id && ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString())
+                .FirstOrDefaultAsync() != null;
+                
+            if (hasConstructingProjects)
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đang tham gia các dự án đang trong giai đoạn thi công");
+            }
+            
+            // Check if staff is assigned to any project issues that are not DONE
+            var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
+                .Where(pi => pi.StaffId == staff.Id && pi.Status != "DONE")
+                .FirstOrDefaultAsync() != null;
+                
+            if (hasActiveProjectIssues)
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề dự án đang hoạt động");
+            }
+            
+            // Check if staff is assigned to any Level 2 maintenance tasks that belong to Level 1 tasks that are not DONE
+            var hasActiveMaintLv2Tasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
+                .Where(mrt => mrt.StaffId == staff.Id 
+                    && mrt.ParentId != null 
+                    && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
+                .FirstOrDefaultAsync() != null;
+                
+            if (hasActiveMaintLv2Tasks)
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì cấp 2 đang hoạt động");
+            }
+            
+            // Check if staff is assigned to any maintenance requests (through MaintenanceStaff) that are not DONE
+            var hasActiveMaintenanceRequests = await _unitOfWork.Repository<MaintenanceStaff>()
+                .Where(ms => ms.StaffId == staff.Id 
+                    && ms.MaintenanceRequest.Status != EnumMaintanceRequestStatus.DONE.ToString())
+                .FirstOrDefaultAsync() != null;
+                
+            if (hasActiveMaintenanceRequests)
+            {
+                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các yêu cầu bảo trì đang hoạt động");
+            }
+        }
+        
+        // Clear existing maintenance staff associations for this request
+        var existingMaintenanceStaffs = _unitOfWork.Repository<MaintenanceStaff>()
+            .Get(filter: ms => ms.MaintenanceRequestId == maintenanceRequestId)
+            .ToList();
+            
+        _unitOfWork.Repository<MaintenanceStaff>().RemoveRange(existingMaintenanceStaffs);
+        
+        // Create new maintenance staff records
+        foreach (var staffId in request.StaffIds)
+        {
+            var staff = await _unitOfWork.Repository<Staff>()
+                .SingleOrDefaultAsync(s => s.UserId == staffId);
+            
+            var maintenanceStaff = new MaintenanceStaff
+            {
+                MaintenanceRequestId = maintenanceRequestId,
+                StaffId = staff.Id
+            };
+            
+            await _unitOfWork.Repository<MaintenanceStaff>().AddAsync(maintenanceStaff, false);
+        }
+        
+        await _unitOfWork.SaveChangesAsync();
     }
 }

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
@@ -321,5 +323,64 @@ namespace KPCOS.API.Controllers
                 request.PageSize, 
                 result.total);
         }
+
+        [HttpGet("{id}/staff")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Lấy danh sách nhân viên",
+            Description = "Lấy danh sách nhân viên dựa trên ID của yêu cầu bảo trì",
+            OperationId = "GetStaffs",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<PagedApiResponse<GetAllStaffResponse>> GetStaffsAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu bảo trì(maintenanceRequest) cần lấy danh sách nhân viên",
+                Required = true
+            )]
+            Guid id,
+            [FromQuery]
+            GetAllStaffRequest request)
+        {
+            var result = await _maintenanceService.GetStaffsAsync(request, id);
+            return new PagedApiResponse<GetAllStaffResponse>(
+                result.data, 
+                request.PageNumber, 
+                request.PageSize, 
+                result.total);
+        }
+
+
+        [HttpPut("{id}/staff")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Cập nhật danh sách nhân viên",
+            Description = "Cập nhật danh sách nhân viên cho yêu cầu bảo trì",
+            OperationId = "UpdateStaffs",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> AssignStaffsAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu bảo trì(maintenanceRequest) cần cập nhật danh sách nhân viên",
+                Required = true
+            )]
+            Guid id,
+            [FromBody]
+            [SwaggerParameter(
+                Description = "Danh sách nhân viên cần cập nhật cho yêu cầu bảo trì(maintenanceRequest)",
+                Required = true
+            )]
+            CommandMaintenanceRequestTaskRequest request)
+        {
+            await _maintenanceService.AssignStaffsAsync(id, request);
+            return Ok();
+        }   
     }
 }
