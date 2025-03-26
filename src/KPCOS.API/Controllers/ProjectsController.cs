@@ -44,30 +44,121 @@ namespace KPCOS.API.Controllers
         IPaymentService paymentService) : BaseController
     {
         /// <summary>
-        /// Get all project for each role of user
+        /// Gets a paginated list of projects based on user role and filter criteria
         /// </summary>
-        /// <param name="filter">
-        /// <para><see cref="PaginationFilter"/> request object contains: </para>
-        ///
-        /// pageNumber: int.
-        /// pageSize: int.
+        /// <param name="filter">Filter criteria for projects including:
+        /// - Search: Filters by project name or description
+        /// - Status: Filters by project status (REQUESTING, PROCESSING, DESIGNING, CONSTRUCTING, FINISHED)
+        /// - Area: Filters by minimum project area (in square meters)
+        /// - Depth: Filters by minimum project depth (in meters)
+        /// - PriceMin/PriceMax: Filters by confirmed quotation price range
+        /// - PackageIds: Filters by specific package IDs (comma-separated GUIDs)
+        /// - Templatedesignids: Filters by specific template design IDs (comma-separated GUIDs)
+        /// - IsActive: Filters by active status (true/false)
+        /// - PageNumber: Page number for pagination (1-based)
+        /// - PageSize: Number of items per page
         /// </param>
+        /// <returns>A paginated list of projects with basic information and assigned staff</returns>
         /// <remarks>
-        /// <para>Retrieve a paginate list of project for each role user.
-        /// ADMINISTRATOR can get all project, CUSTOMER can get all project that they created, staff* can get all project that they assigned.</para>
-        /// <para>staff* is CONSULTANT, DESIGNER, CONSTRUCTOR.</para>
+        /// This endpoint returns projects based on the user's role and permissions:
+        /// 
+        /// Role-based access:
+        /// - ADMINISTRATOR: Can see all projects
+        /// - CUSTOMER: Can only see their own projects
+        /// - Staff roles (CONSULTANT, DESIGNER, MANAGER, CONSTRUCTOR): Can only see projects they are assigned to
+        /// 
+        /// Each project includes:
+        /// - Basic project information (name, address, area, etc.)
+        /// - Package information
+        /// - Assigned staff details
+        /// 
+        /// Available status values:
+        /// - REQUESTING: Initial status for new projects
+        /// - PROCESSING: Projects in consultation phase
+        /// - DESIGNING: Projects in design phase
+        /// - CONSTRUCTING: Projects in construction phase
+        /// - FINISHED: Completed projects
+        /// 
         /// Sample request:
         /// 
-        ///     Get /api/projects
+        ///     GET /api/projects?Search=modern&amp;Status=PROCESSING,DESIGNING&amp;Area=100&amp;IsActive=true&amp;PageNumber=1&amp;PageSize=10
+        /// 
+        /// Sample response:
+        /// ```json
+        /// {
+        ///   "data": [
+        ///     {
+        ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///       "name": "John Doe project",
+        ///       "customerName": "John Doe",
+        ///       "email": "john.doe@example.com",
+        ///       "phone": "+84909123456",
+        ///       "note": "This is a note for the project",
+        ///       "address": "123 Main St",
+        ///       "area": 150,
+        ///       "depth": 3.5,
+        ///       "status": "PROCESSING",
+        ///       "packageName": "Premium Package",
+        ///       "isActive": true,
+        ///       "createdAt": "2024-01-01T00:00:00Z",
+        ///       "updatedAt": "2024-01-01T00:00:00Z",
+        ///       "staffs": [
+        ///         {
+        ///           "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///           "fullName": "Jane Smith",
+        ///           "position": "CONSULTANT",
+        ///           "avatar": "https://example.com/avatar.jpg"
+        ///         }
+        ///       ]
+        ///     }
+        ///   ],
+        ///   "pageNumber": 1,
+        ///   "pageSize": 10,
+        ///   "totalPages": 1,
+        ///   "totalRecords": 1
+        /// }
+        /// ```
+        /// 
+        /// Parameters:
+        /// - Search (string): Search term to filter by project name (e.g., "modern", "house")
+        /// - Status (string): Comma-separated list of project statuses (e.g., "PROCESSING,DESIGNING")
+        /// - Area (number): Minimum project area in square meters (e.g., 100)
+        /// - Depth (number): Minimum project depth in meters (e.g., 3.5)
+        /// - PriceMin (number): Minimum confirmed quotation price (e.g., 10000)
+        /// - PriceMax (number): Maximum confirmed quotation price (e.g., 50000)
+        /// - PackageIds (string): Comma-separated list of package GUIDs
+        /// - Templatedesignids (string): Comma-separated list of template design GUIDs
+        /// - IsActive (boolean): Filter by active status (true/false)
+        /// - PageNumber (integer): Page number for pagination, starting from 1
+        /// - PageSize (integer): Number of items per page (e.g., 10)
         /// </remarks>
-        /// <response code="200">Success</response>
-        /// <response code="500">Error</response>
-        /// <response code="401">Unauthorized</response>
+        /// <response code="200">Success. Returns paginated list of projects</response>
+        /// <response code="401">Unauthorized. User is not authenticated</response>
+        /// <response code="500">Internal server error</response>
         [HttpGet("")]
         [ProducesResponseType(typeof(PagedApiResponse<ProjectForListResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        /*[CustomAuthorize]*/
-        public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync([FromQuery] GetAllProjectFilterRequest filter)
+        [SwaggerOperation(
+            Summary = "Gets a paginated list of projects based on user role and filter criteria",
+            Description = "Returns projects based on the user's role (ADMINISTRATOR sees all, others see only assigned/owned projects) and the provided filter criteria. Includes project details and assigned staff information.",
+            OperationId = "GetsAsync",
+            Tags = new[] { "Projects" }
+        )]
+        public async Task<PagedApiResponse<ProjectForListResponse>> GetsAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria including:\n" +
+                            "- Search: Filter by project name (e.g., \"modern\")\n" +
+                            "- Status: Filter by status (e.g., \"PROCESSING,DESIGNING\")\n" +
+                            "- Area: Minimum area in m² (e.g., 100)\n" +
+                            "- Depth: Minimum depth in m (e.g., 3.5)\n" +
+                            "- PriceMin/Max: Price range for confirmed quotations\n" +
+                            "- IsActive: Active status (true/false)\n" +
+                            "- PageNumber/PageSize: Pagination parameters",
+                Required = false
+            )]
+            GetAllProjectFilterRequest filter)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var roleClaim = User.FindFirstValue(ClaimTypes.Role);
@@ -77,6 +168,11 @@ namespace KPCOS.API.Controllers
             {
                 var userId = Guid.Parse(userIdClaim);
                 projects = await service.GetsAsync(filter, userId, roleClaim);
+                return new PagedApiResponse<ProjectForListResponse>(
+                    projects.Data,
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: projects.Count);
             }
             
             projects = await service.GetsAsync(filter);
