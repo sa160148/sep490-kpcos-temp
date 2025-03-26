@@ -13,8 +13,6 @@ public enum EnumMaintanceRequestStatus
     REQUESTING,
     [EnumMember(Value = "PROCESSING")]
     PROCESSING,
-    [EnumMember(Value = "PREVIEWING")]
-    PREVIEWING,
     [EnumMember(Value = "DONE")]
     DONE
 }
