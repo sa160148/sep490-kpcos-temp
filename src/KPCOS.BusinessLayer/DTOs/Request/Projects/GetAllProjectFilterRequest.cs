@@ -8,27 +8,72 @@ using LinqKit;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Projects;
 
+/// <summary>
+/// Filter criteria for retrieving projects
+/// </summary>
 public class GetAllProjectFilterRequest : PaginationRequest<Project>
 {
-    [Display(Name = "Trạng thái", Description = "Trạng thái của dự án")]
+    /// <summary>
+    /// Filter by project status(comma-separated): OPENING,REQUESTING,PROCESSING,DESIGNING,CONSTRUCTING,FINISHED
+    /// </summary>
+    /// <remarks>
+    /// Multiple statuses can be specified as a comma-separated list
+    /// </remarks>
+    [Display(Name = "Trạng thái", Description = "Filter by project status (comma-separated): REQUESTING, PROCESSING, DESIGNING, CONSTRUCTING, FINISHED")]
     public string? Status { get; set; }
-    [Display(Name = "Tìm kiếm", Description = "Tìm kiếm dự án theo tên")]
+    
+    /// <summary>
+    /// Search term to filter projects by name
+    /// </summary>
+    [Display(Name = "Tìm kiếm", Description = "Search term to filter projects by name")]
     public string? Search { get; set; }
-    [Display(Name = "Diện tích", Description = "Diện tích của dự án")]
+    
+    /// <summary>
+    /// Filter by minimum project area in square meters
+    /// </summary>
+    [Display(Name = "Diện tích", Description = "Filter by minimum project area in square meters (e.g., 100)")]
     public double? Area { get; set; }
-    [Display(Name = "Chiều sâu", Description = "Chiều sâu của dự án")]
+    
+    /// <summary>
+    /// Filter by minimum project depth in meters
+    /// </summary>
+    [Display(Name = "Chiều sâu", Description = "Filter by minimum project depth in meters (e.g., 3.5)")]
     public double? Depth { get; set; }
-    [Display(Name = "Giá tối thiểu", Description = "Dựa theo quotation confirmed")]
+    
+    /// <summary>
+    /// Filter by minimum confirmed quotation price
+    /// </summary>
+    [Display(Name = "Giá tối thiểu", Description = "Filter by minimum confirmed quotation price (e.g., 10000)")]
     public double? PriceMin { get; set; }
-    [Display(Name = "Giá tối đa", Description = "Dựa theo quotation confirmed")]
+    
+    /// <summary>
+    /// Filter by maximum confirmed quotation price
+    /// </summary>
+    [Display(Name = "Giá tối đa", Description = "Filter by maximum confirmed quotation price (e.g., 50000)")]
     public double? PriceMax { get; set; }
-    [Display(Name = "PackageIds", Description = "PackageIds")]
+    
+    /// <summary>
+    /// Filter by specific package IDs (comma-separated GUIDs)
+    /// </summary>
+    [Display(Name = "PackageIds", Description = "Filter by comma-separated package GUIDs")]
     public string? PackageIds { get; set; }
-    [Display(Name = "Templatedesignids", Description = "Templatedesignids")]
+    
+    /// <summary>
+    /// Filter by specific template design IDs (comma-separated GUIDs)
+    /// </summary>
+    [Display(Name = "Templatedesignids", Description = "Filter by comma-separated template design GUIDs")]
     public string? Templatedesignids { get; set; }
-    [Display(Name = "IsActive", Description = "IsActive")]
+    
+    /// <summary>
+    /// Filter by active status
+    /// </summary>
+    [Display(Name = "IsActive", Description = "Filter by active status (true/false)")]
     public bool? IsActive { get; set; }
 
+    /// <summary>
+    /// Builds the filter expression based on the provided criteria
+    /// </summary>
+    /// <returns>A LINQ expression for filtering projects</returns>
     public override Expression<Func<Project, bool>> GetExpressions()
     {
         var predicate = PredicateBuilder.New<Project>(true);
@@ -40,7 +85,8 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
 
         if (!string.IsNullOrEmpty(Status))
         {
-            predicate = predicate.And(p => p.Status == Status);
+            var statuses = Status.Split(',').ToList();
+            predicate = predicate.And(p => statuses.Contains(p.Status));
         }
 
         if (IsActive.HasValue)
@@ -79,17 +125,41 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
         return predicate;
     }
 
+    /// <summary>
+    /// Builds a filter expression based on user ID and role for role-based access control
+    /// </summary>
+    /// <param name="userId">The user ID to filter by</param>
+    /// <param name="role">The user role (ADMINISTRATOR, CUSTOMER, or staff role)</param>
+    /// <returns>A LINQ expression for filtering projects based on user access rights</returns>
+    /// <remarks>
+    /// - ADMINISTRATOR: Can see all projects (no additional filtering)
+    /// - CUSTOMER: Can only see their own projects
+    /// - Staff roles: Can only see projects they are specifically assigned to with their role
+    /// </remarks>
     public Expression<Func<Project, bool>> GetExpressionsV2(Guid userId, string role)
     {       
-        var customerQueryExpression = PredicateBuilder.New<Project>(true);
+        var predicate = PredicateBuilder.New<Project>(true);
+        
         if (role == RoleEnum.ADMINISTRATOR.ToString())
         {
-            return Expression = Expression.And(customerQueryExpression);
+            return predicate; // Administrator can see all projects
         }
-        customerQueryExpression.Or(pro => pro.Customer.UserId == userId || 
-                                          pro.ProjectStaffs.Any(ps => ps.Staff.UserId == userId) 
-                                          // || pro.ProjectStaffs.Any(ps => ps.StaffId == userId && ps.Staff.Position == RoleEnum.ADMINISTRATOR.ToString())
-                                          );
-        return Expression = Expression.And(customerQueryExpression);
+
+        if (role == RoleEnum.CUSTOMER.ToString())
+        {
+            predicate = predicate.And(pro => pro.Customer.UserId == userId);
+        }
+        else
+        {
+            // For staff roles, only show projects they are specifically assigned to
+            predicate = predicate.And(pro => 
+                pro.ProjectStaffs.Any(ps => 
+                    ps.Staff.UserId == userId && 
+                    ps.Staff.Position == role
+                )
+            );
+        }
+        
+        return predicate;
     }
 }
