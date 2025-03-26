@@ -28,7 +28,8 @@ public class GetAllMaintenanceRequestTaskFilterRequest : PaginationRequest<Maint
         }
         if (!string.IsNullOrEmpty(Status))
         {
-            predicate = predicate.And(x => x.Status == Status);
+            var statuses = Status.Split(',').Select(x => x.Trim()).ToList();
+            predicate = predicate.And(x => statuses.Contains(x.Status));
         }
         if (!string.IsNullOrEmpty(MaintenanceItemIds))
         {
