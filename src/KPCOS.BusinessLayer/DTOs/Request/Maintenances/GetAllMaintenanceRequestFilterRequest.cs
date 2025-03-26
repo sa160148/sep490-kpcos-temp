@@ -31,12 +31,14 @@ public class GetAllMaintenanceRequestFilterRequest : PaginationRequest<Maintenan
 
         if (!string.IsNullOrEmpty(Status))
         {
-            predicate = predicate.And(x => x.Status == Status);
+            var statuses = Status.Split(',').Select(x => x.Trim()).ToList();
+            predicate = predicate.And(x => statuses.Contains(x.Status));
         }
         
         if (!string.IsNullOrEmpty(Type))
         {
-            predicate = predicate.And(x => x.Type == Type);
+            var types = Type.Split(',').Select(x => x.Trim()).ToList();
+            predicate = predicate.And(x => types.Contains(x.Type));
         }
 
         if (Area != null)
