@@ -1327,6 +1327,8 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("image_url");
             entity.Property(e => e.Rating)
                 .HasColumnName("rating");
+            entity.Property(e => e.No)
+                .HasColumnName("no");
             entity.Property(e => e.CustomerId)
                 .HasColumnName("customer_id");
 

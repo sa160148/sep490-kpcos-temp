@@ -34,4 +34,6 @@ public interface IMaintenanceService
     Task<(IEnumerable<GetAllStaffResponse> data, int total)> GetStaffsAsync(GetAllStaffRequest request, Guid maintenanceRequestId);
     
     Task AssignStaffsAsync(Guid maintenanceRequestId, CommandMaintenanceRequestTaskRequest request);
+
+    Task<GetAllMaintenanceRequestResponse> GetDetailMaintenanceRequestAsync(Guid id);
 }
