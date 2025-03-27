@@ -876,7 +876,7 @@ public class MaintenanceService : IMaintenanceService
         var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
             .Get(
                 filter: mr => mr.Id == id,
-                includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User"
+                includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User,MaintenanceRequestTasks.MaintenanceItem"
             )
             .FirstOrDefault();
 
@@ -898,10 +898,26 @@ public class MaintenanceService : IMaintenanceService
         // Add feedbacks to the response
         response.Feedbacks = _mapper.Map<IEnumerable<GetAllFeedbackResponse>>(feedbacks);
 
-        // Filter out child tasks (tasks with ParentId) from the response
-        response.MaintenanceRequestTasks = response.MaintenanceRequestTasks
+        // Get level 1 tasks (parent tasks)
+        var level1Tasks = maintenanceRequest.MaintenanceRequestTasks
             .Where(t => t.ParentId == null)
             .ToList();
+
+        // Map level 1 tasks
+        var mappedLevel1Tasks = _mapper.Map<List<GetMaintenanceRequestTaskForMaintenanceRequestResponse>>(level1Tasks);
+
+        // For each level 1 task, get and map its level 2 tasks (children)
+        foreach (var level1Task in mappedLevel1Tasks)
+        {
+            var level2Tasks = maintenanceRequest.MaintenanceRequestTasks
+                .Where(t => t.ParentId == level1Task.Id)
+                .ToList();
+
+            level1Task.Childs = _mapper.Map<IEnumerable<GetMaintenanceRequestTaskChildResponse>>(level2Tasks);
+        }
+
+        // Set the maintenance request tasks to only include level 1 tasks with their children
+        response.MaintenanceRequestTasks = mappedLevel1Tasks;
 
         return response;
     }
