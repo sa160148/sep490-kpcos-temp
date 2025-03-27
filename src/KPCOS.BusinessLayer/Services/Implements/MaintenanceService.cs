@@ -836,7 +836,7 @@ public class MaintenanceService : IMaintenanceService
             // Check if staff is assigned to any maintenance requests (through MaintenanceStaff) that are not DONE
             var hasActiveMaintenanceRequests = await _unitOfWork.Repository<MaintenanceStaff>()
                 .Where(ms => ms.StaffId == staff.Id 
-                    && ms.MaintenanceRequest.Status != EnumMaintanceRequestStatus.DONE.ToString())
+                    && ms.MaintenanceRequest.Status != EnumMaintenanceRequestStatus.DONE.ToString())
                 .FirstOrDefaultAsync() != null;
                 
             if (hasActiveMaintenanceRequests)

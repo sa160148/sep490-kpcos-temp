@@ -1,5 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
+using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
+using KPCOS.BusinessLayer.DTOs.Response.Projects;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 
 namespace KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
@@ -17,4 +19,10 @@ public class GetAllFeedbackResponse
     public bool? IsActive { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GetAllStaffResponse? Customer { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GetMaintenanceRequestResponse? MaintenanceRequest { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ProjectResponse? Project { get; set; }
 }
