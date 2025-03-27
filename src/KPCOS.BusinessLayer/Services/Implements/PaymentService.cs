@@ -295,7 +295,7 @@ public class PaymentService : IPaymentService
         
         // Update maintenance request status to paid
         maintenanceRequest.IsPaid = true;
-        maintenanceRequest.Status = EnumMaintanceRequestStatus.REQUESTING.ToString();
+        maintenanceRequest.Status = EnumMaintenanceRequestStatus.REQUESTING.ToString();
         
         // Create transaction record
         var transaction = new Transaction
