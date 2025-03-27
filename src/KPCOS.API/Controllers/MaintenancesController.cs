@@ -15,10 +15,12 @@ namespace KPCOS.API.Controllers
     public class MaintenancesController : BaseController
     {
         private readonly IMaintenanceService _maintenanceService;
+        private readonly IFeedbackService _feedbackService;
 
-        public MaintenancesController(IMaintenanceService maintenanceService)
+        public MaintenancesController(IMaintenanceService maintenanceService, IFeedbackService feedbackService)
         {
             _maintenanceService = maintenanceService;
+            _feedbackService = feedbackService;
         }
 
         /// <summary>
@@ -381,6 +383,31 @@ namespace KPCOS.API.Controllers
         {
             await _maintenanceService.AssignStaffsAsync(id, request);
             return Ok();
-        }   
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResult<GetAllMaintenanceRequestResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Lấy chi tiết yêu cầu bảo trì",
+            Description = "Lấy chi tiết yêu cầu bảo trì dựa trên ID của yêu cầu bảo trì",
+            OperationId = "GetMaintenanceRequest",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult<GetAllMaintenanceRequestResponse>> GetDetailMaintenanceRequestAsync(
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu bảo trì(maintenanceRequest) cần lấy chi tiết",
+                Required = true
+            )]
+            Guid id)
+        {
+            var result = await _maintenanceService.GetDetailMaintenanceRequestAsync(id);
+            return Ok(result);
+        }
+
+
     }
 }

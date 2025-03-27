@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json.Serialization;
+using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 
@@ -25,4 +26,6 @@ public class GetAllMaintenanceRequestResponse
     public GetAllStaffResponse? Cusomer { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IEnumerable<GetMaintenanceRequestTaskForMaintenanceRequestResponse>? MaintenanceRequestTasks { get; set; } = new List<GetMaintenanceRequestTaskForMaintenanceRequestResponse>();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IEnumerable<GetAllFeedbackResponse>? Feedbacks { get; set; } = new List<GetAllFeedbackResponse>();
 }
