@@ -24,7 +24,7 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
     /// Filter by category
     /// </summary>
     [Display(Name = "Categories", Description = "Filter by category")]
-    public List<string>? Categories { get; set; }
+    public string? Categories { get; set; }
 
     /// <summary>
     /// Filter by active status
@@ -73,9 +73,10 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
         }
 
         // Filter by category
-        if (Categories != null && Categories.Any())
+        if (!string.IsNullOrWhiteSpace(Categories))
         {
-            Expression = Expression.And(x => Categories.Contains(x.Category));
+            var categories = Categories.Split(',').ToList();
+            Expression = Expression.And(x => categories.Contains(x.Category));
         }
         
         // Filter by active status
@@ -87,6 +88,9 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
         // Filter by status
         if (!string.IsNullOrWhiteSpace(Status))
         {
+            var statuses = Status.Split(',').ToList();
+            Expression = Expression.And(x => statuses.Contains(x.Status));
+            /*
             // Validate that the status is a valid enum value
             if (Enum.TryParse<EnumConstructionItemStatus>(Status, out var statusEnum))
             {
@@ -97,6 +101,7 @@ public class GetAllConstructionItemFilterRequest : PaginationRequest<Constructio
                 // If not a valid enum value, use the string directly
                 Expression = Expression.And(x => x.Status == Status);
             }
+            */
         }
         
         // Filter by payment status
