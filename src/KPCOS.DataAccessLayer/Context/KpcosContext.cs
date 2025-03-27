@@ -1295,6 +1295,48 @@ public partial class KpcosContext : DbContext
                 .HasConstraintName("project_issue_staff_id_fkey");
         });
 
+        modelBuilder.Entity<Feedback>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("feedback_pkey");
+
+            entity.ToTable("feedback");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .HasColumnName("description");
+            entity.Property(e => e.Type)
+                .HasMaxLength(255)
+                .HasColumnName("type");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("image_url");
+            entity.Property(e => e.Rating)
+                .HasColumnName("rating");
+            entity.Property(e => e.CustomerId)
+                .HasColumnName("customer_id");
+
+            entity.HasOne(d => d.Customer)
+                .WithMany(p => p.Feedbacks)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("feedback_customer_id_fkey");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 
