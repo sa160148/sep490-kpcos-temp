@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
 using System.Linq.Expressions;
 using LinqKit;
+using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -867,5 +868,41 @@ public class MaintenanceService : IMaintenanceService
         }
         
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<GetAllMaintenanceRequestResponse> GetDetailMaintenanceRequestAsync(Guid id)
+    {
+        // Get the maintenance request with all related data
+        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: mr => mr.Id == id,
+                includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User"
+            )
+            .FirstOrDefault();
+
+        if (maintenanceRequest == null)
+        {
+            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {id}");
+        }
+
+        // Get feedbacks for this maintenance request
+        var feedbacks = _unitOfWork.Repository<Feedback>()
+            .Get(
+                filter: f => f.Type == EnumFeedbackType.MAINTENANCE.ToString() && f.No == id,
+                includeProperties: "Customer,Customer.User"
+            );
+
+        // Map the maintenance request to response DTO
+        var response = _mapper.Map<GetAllMaintenanceRequestResponse>(maintenanceRequest);
+
+        // Add feedbacks to the response
+        response.Feedbacks = _mapper.Map<IEnumerable<GetAllFeedbackResponse>>(feedbacks);
+
+        // Filter out child tasks (tasks with ParentId) from the response
+        response.MaintenanceRequestTasks = response.MaintenanceRequestTasks
+            .Where(t => t.ParentId == null)
+            .ToList();
+
+        return response;
     }
 }

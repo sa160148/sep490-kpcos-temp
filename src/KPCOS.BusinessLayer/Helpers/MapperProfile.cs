@@ -29,6 +29,7 @@ using KPCOS.BusinessLayer.DTOs.Request.MaintenancePackages;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Feedbacks;
+using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -366,5 +367,8 @@ public class MapperProfile : Profile
             ;
 
         CreateMap<CommandFeedbackRequest, Feedback>();
+
+        CreateMap<Feedback, GetAllFeedbackResponse>()
+            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer));
     }
 }
