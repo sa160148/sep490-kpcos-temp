@@ -15,10 +15,12 @@ namespace KPCOS.API.Controllers
     public class MaintenancesController : BaseController
     {
         private readonly IMaintenanceService _maintenanceService;
+        private readonly IFeedbackService _feedbackService;
 
-        public MaintenancesController(IMaintenanceService maintenanceService)
+        public MaintenancesController(IMaintenanceService maintenanceService, IFeedbackService feedbackService)
         {
             _maintenanceService = maintenanceService;
+            _feedbackService = feedbackService;
         }
 
         /// <summary>

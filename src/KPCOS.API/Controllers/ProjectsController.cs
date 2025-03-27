@@ -41,7 +41,8 @@ namespace KPCOS.API.Controllers
         IProjectService service, 
         IAuthService authService, 
         IConstructionServices constructionService, 
-        IPaymentService paymentService) : BaseController
+        IPaymentService paymentService,
+        IFeedbackService feedbackService) : BaseController
     {
         /// <summary>
         /// Gets a paginated list of projects based on user role and filter criteria
