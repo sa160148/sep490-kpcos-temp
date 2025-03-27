@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace KPCOS.DataAccessLayer.Enums;
 
 [DataContract]
-public enum EnumMaintanceRequestStatus
+public enum EnumMaintenanceRequestStatus
 {
     [EnumMember(Value = "OPENING")]
     OPENING,
