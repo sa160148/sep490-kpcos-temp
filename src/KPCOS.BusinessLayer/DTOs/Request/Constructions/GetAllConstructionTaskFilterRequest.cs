@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
 using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
+using LinqKit;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Constructions;
 
@@ -46,7 +47,43 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     {
         // Get current SEA time for deadline comparison
         var currentSEATime = GlobalUtility.GetCurrentSEATime();
+        var predicate = PredicateBuilder.New<ConstructionTask>();
+
+        if (!string.IsNullOrEmpty(Search))
+        {
+            predicate = predicate.And(task => task.Name.Contains(Search));
+        }
         
+        if (IsActive.HasValue)
+        {
+            predicate = predicate.And(task => task.IsActive == IsActive);
+        }
+        
+        if (!string.IsNullOrEmpty(Status))
+        {
+            predicate = predicate.And(task => task.Status == Status);
+        }
+        
+        if (IsOverdue.HasValue)
+        {
+            predicate = predicate.And(task =>
+                (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < currentSEATime && task.Status != "DONE") ||
+                (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= currentSEATime || task.Status == "DONE")));
+        }
+        
+        if (ConstructionItemId.HasValue)
+        {
+            predicate = predicate.And(task => task.ConstructionItemId == ConstructionItemId);
+        }
+        
+        if (!string.IsNullOrEmpty(Status))
+        {
+            var statuses = Status.Split(',').ToList();
+            predicate = predicate.And(task => statuses.Contains(task.Status));
+        }
+        
+        return predicate;
+        /*
         return task => 
             (string.IsNullOrEmpty(Search) || task.Name.Contains(Search)) &&
             (!IsActive.HasValue || task.IsActive == IsActive) &&
@@ -55,5 +92,6 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
                 (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < currentSEATime && task.Status != "DONE") || 
                 (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= currentSEATime || task.Status == "DONE"))) &&
             (!ConstructionItemId.HasValue || task.ConstructionItemId == ConstructionItemId);
+        */
     }
 }
