@@ -12,6 +12,7 @@ public class GetAllMaintenanceRequestTaskFilterRequest : PaginationRequest<Maint
     public Guid? MaintenanceRequestId { get; set; }
     public string? Status { get; set; }
     public string? MaintenanceItemIds { get; set; }
+    public Guid? ParentId { get; set; }
     public bool? IsChild { get; set; } = false;
     public DateOnly? From { get; set; }
     public DateOnly? To { get; set; }
@@ -48,6 +49,10 @@ public class GetAllMaintenanceRequestTaskFilterRequest : PaginationRequest<Maint
         {
             predicate = predicate.And(x => 
                 IsChild.Value ? x.ParentId != null : x.ParentId == null);
+        }
+        if (ParentId.HasValue && IsChild.HasValue)
+        {
+            predicate = predicate.And(x => x.ParentId == ParentId.Value);
         }
         return predicate;
     }
