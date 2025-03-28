@@ -355,61 +355,236 @@ public class MaintenanceService : IMaintenanceService
 
     public async Task UpdateMaintenanceTaskStatusAsync(Guid id, CommandMaintenanceRequestTaskRequest request)
     {
-        // Get the maintenance request task
-        var maintenanceRequestTask = await _unitOfWork.Repository<MaintenanceRequestTask>()
-            .FindAsync(id);
-            
+        // Get task by ID with related entities
+        var maintenanceRequestTask = await GetMaintenanceRequestTaskById(id);
+        
+        // Validate task exists
         if (maintenanceRequestTask == null)
         {
             throw new NotFoundException($"Không tìm thấy công việc bảo trì với ID {id}");
         }
-        if (maintenanceRequestTask.ParentId == null)
-        {
-            throw new BadRequestException("Không thể cập nhật trạng thái cho công việc cha");
-        }
         
-        // Get the current status
-        var currentStatus = maintenanceRequestTask.Status;
-
-        // Determine which update mode based on the request fields
-        if (request.StaffId.HasValue)
-        {
-            // First mode: Update staff assignment and change status to PROCESSING
-            await UpdateStaffAssignmentAsync(maintenanceRequestTask, request.StaffId.Value);
-        }
-        else if (!string.IsNullOrEmpty(request.ImageUrl))
-        {
-            // Second mode: Update image URL and change status to PREVIEWING
-            maintenanceRequestTask.ImageUrl = request.ImageUrl;
-            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString();
-        }
-        else if (!string.IsNullOrEmpty(request.Reason))
-        {
-            // Third mode: Update reason and change status to PROCESSING
-            maintenanceRequestTask.Reason = request.Reason;
-            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
-        }
+        // Track if we need to save changes at the end
+        bool needToSaveChanges = false;
         
-        // Update other provided fields if they exist
+        // If name is provided, update it
         if (!string.IsNullOrEmpty(request.Name))
         {
             maintenanceRequestTask.Name = request.Name;
+            needToSaveChanges = true;
         }
         
+        // If description is provided, update it
         if (!string.IsNullOrEmpty(request.Description))
         {
             maintenanceRequestTask.Description = request.Description;
+            needToSaveChanges = true;
         }
         
-        await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask);
-        await _unitOfWork.SaveChangesAsync();
+        // Mode 1: Staff assignment
+        if (request.StaffId.HasValue)
+        {
+            // If this is a Level 1 task (ParentId is null), use MaintenanceStaff
+            if (maintenanceRequestTask.ParentId == null)
+            {
+                await UpdateLevel1StaffAssignmentAsync(maintenanceRequestTask, request.StaffId.Value);
+                // Changes are already saved by UpdateLevel1StaffAssignmentAsync
+                needToSaveChanges = false;
+            }
+            // If this is a Level 2 task (has ParentId), assign directly
+            else
+            {
+                await UpdateLevel2StaffAssignmentAsync(maintenanceRequestTask, request.StaffId.Value);
+                // Changes are already saved by UpdateLevel2StaffAssignmentAsync
+                needToSaveChanges = false;
+            }
+        }
+        // Mode 2: Image upload
+        else if (!string.IsNullOrEmpty(request.ImageUrl))
+        {
+            // Task must be in PROCESSING status
+            if (maintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
+            {
+                throw new BadRequestException("Chỉ có thể cập nhật hình ảnh cho công việc bảo trì đang trong trạng thái PROCESSING");
+            }
+            
+            // Update image URL and status
+            maintenanceRequestTask.ImageUrl = request.ImageUrl;
+            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask, false);
+            needToSaveChanges = true;
+        }
+        // Mode 3: Update reason (requires task to be in PREVIEWING status)
+        else if (!string.IsNullOrEmpty(request.Reason))
+        {
+            // Task must be in PREVIEWING status
+            if (maintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.PREVIEWING.ToString())
+            {
+                throw new BadRequestException("Chỉ có thể cập nhật lý do cho công việc bảo trì đang trong trạng thái PREVIEWING");
+            }
+            
+            // Update reason and revert to PROCESSING status
+            maintenanceRequestTask.Reason = request.Reason;
+            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask, false);
+            needToSaveChanges = true;
+        }
+        
+        // Save all changes in a single transaction if needed
+        if (needToSaveChanges)
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
     }
-    
-    private async Task UpdateStaffAssignmentAsync(MaintenanceRequestTask maintenanceRequestTask, Guid staffId)
+
+    private async Task UpdateLevel1StaffAssignmentAsync(MaintenanceRequestTask level1Task, Guid staffId)
     {
         // Get the staff by ID
         var staff = await _unitOfWork.Repository<Staff>()
-        .SingleOrDefaultAsync(x => x.UserId == staffId);
+            .SingleOrDefaultAsync(x => x.UserId == staffId);
+            
+        if (staff == null)
+        {
+            throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
+        }
+        
+        // Validate that this is a Level 1 task (no parent)
+        if (level1Task.ParentId != null)
+        {
+            throw new BadRequestException("Nhân viên chỉ có thể được phân công trực tiếp cho công việc bảo trì cấp 1");
+        }
+        
+        // Validate staff position is CONSTRUCTOR
+        if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} không có chức vụ CONSTRUCTOR");
+        }
+        
+        // Check if staff is assigned to any maintenance tasks that are not DONE
+        var isStaffAssignedToOtherTask = await _unitOfWork.Repository<MaintenanceStaff>()
+            .Where(ms => 
+                ms.StaffId == staff.Id && 
+                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() &&
+                ms.MaintenanceRequestTask.MaintenanceRequestId != level1Task.MaintenanceRequestId)
+            .AnyAsync();
+            
+        if (isStaffAssignedToOtherTask)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì khác đang hoạt động");
+        }
+        
+        // Check for valid assignment to level 1 tasks from other maintenance requests
+        var allStaffAssignments = _unitOfWork.Repository<MaintenanceStaff>()
+            .Get(
+                filter: ms => ms.StaffId == staff.Id,
+                includeProperties: "MaintenanceRequestTask"
+            )
+            .ToList();
+            
+        // Check if staff is already assigned to active level 1 tasks from other maintenance requests
+        var activeTasksFromOtherRequests = allStaffAssignments
+            .Where(ms => 
+                ms.MaintenanceRequestTask.ParentId == null && // Level 1 task
+                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() && // Not DONE
+                ms.MaintenanceRequestTask.MaintenanceRequestId != level1Task.MaintenanceRequestId // Different maintenance request
+            )
+            .ToList();
+            
+        // If staff is already assigned to other level 1 tasks, throw an error with details
+        if (activeTasksFromOtherRequests.Any())
+        {
+            // Create detailed error message with the specific conflicting tasks
+            var conflictingTasksInfo = activeTasksFromOtherRequests
+                .Select(ms => $"{ms.MaintenanceRequestTaskId} (Request: {ms.MaintenanceRequestTask.MaintenanceRequestId}, Status: {ms.MaintenanceRequestTask.Status})")
+                .ToList();
+                
+            var conflictingTasksMessage = string.Join(", ", conflictingTasksInfo);
+            
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì cấp 1 từ một yêu cầu bảo trì khác. Task IDs: {conflictingTasksMessage}");
+        }
+        
+        // Check if staff is assigned to any projects in CONSTRUCTING status
+        var hasConstructingProjects = await _unitOfWork.Repository<ProjectStaff>()
+            .Where(ps => ps.StaffId == staff.Id && ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString())
+            .AnyAsync();
+                
+        if (hasConstructingProjects)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đang tham gia các dự án đang trong giai đoạn thi công (CONSTRUCTING). Nhân viên chỉ có thể được phân công khi không còn tham gia dự án đang thi công.");
+        }
+        
+        // Check if staff is assigned to any construction tasks that are not DONE
+        var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
+            .Where(ct => ct.StaffId == staff.Id && ct.Status != EnumConstructionTaskStatus.DONE.ToString())
+            .AnyAsync();
+            
+        if (hasActiveConstructionTasks)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc xây dựng đang hoạt động");
+        }
+        
+        // Check if staff is assigned to any project issues that are not DONE
+        var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
+            .Where(pi => pi.StaffId == staff.Id && pi.Status != EnumProjectIssueStatus.DONE.ToString())
+            .AnyAsync();
+            
+        if (hasActiveProjectIssues)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề dự án đang hoạt động");
+        }
+        
+        // Check if the staff is already assigned to this task
+        var existingAssignment = await _unitOfWork.Repository<MaintenanceStaff>()
+            .Where(ms => ms.StaffId == staff.Id && ms.MaintenanceRequestTaskId == level1Task.Id)
+            .FirstOrDefaultAsync();
+        
+        // If already assigned, nothing to do
+        if (existingAssignment != null)
+        {
+            return;
+        }
+        
+        // Create new maintenance staff assignment
+        var maintenanceStaff = new MaintenanceStaff
+        {
+            MaintenanceRequestTaskId = level1Task.Id,
+            StaffId = staff.Id
+        };
+        
+        await _unitOfWork.Repository<MaintenanceStaff>().AddAsync(maintenanceStaff, false);
+        
+        // Update task status to PROCESSING if it was OPENING
+        if (level1Task.Status == EnumMaintenanceRequestTaskStatus.OPENING.ToString())
+        {
+            level1Task.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(level1Task, false);
+            
+            // Update parent request status if needed
+            var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+                .FindAsync(level1Task.MaintenanceRequestId);
+                
+            if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestStatus.OPENING.ToString())
+            {
+                maintenanceRequest.Status = EnumMaintenanceRequestStatus.PROCESSING.ToString();
+                await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+            }
+        }
+        
+        await _unitOfWork.SaveChangesAsync();
+    }
+    
+    private async Task UpdateLevel2StaffAssignmentAsync(MaintenanceRequestTask maintenanceRequestTask, Guid staffId)
+    {
+        // Ensure this is a child task
+        if (maintenanceRequestTask.ParentId == null)
+        {
+            throw new BadRequestException("Phương thức này chỉ áp dụng cho công việc bảo trì cấp 2 (có ParentId)");
+        }
+        
+        // Get the staff by ID
+        var staff = await _unitOfWork.Repository<Staff>()
+            .SingleOrDefaultAsync(x => x.UserId == staffId);
+            
         if (staff == null)
         {
             throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
@@ -418,52 +593,46 @@ public class MaintenanceService : IMaintenanceService
         // Validate staff position is CONSTRUCTOR
         if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
         {
-            throw new InvalidOperationException("Chỉ nhân viên có chức vụ CONSTRUCTOR mới có thể được phân công cho công việc bảo trì");
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} không có chức vụ CONSTRUCTOR");
         }
         
-        // Check if the staff is already assigned to other active tasks
-        // Construction tasks
-        var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
-            .Where(ct => ct.StaffId == staff.Id && ct.Status != "DONE")
-            .FirstOrDefaultAsync() != null;
+        // CRITICAL VALIDATION: Make sure the staff is assigned to the parent level 1 task
+        var parentId = maintenanceRequestTask.ParentId.Value;
+        var isStaffAssignedToParent = await _unitOfWork.Repository<MaintenanceStaff>()
+            .Where(ms => ms.StaffId == staff.Id && ms.MaintenanceRequestTaskId == parentId)
+            .AnyAsync();
             
-        if (hasActiveConstructionTasks)
+        if (!isStaffAssignedToParent)
         {
-            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc xây dựng đang hoạt động");
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} phải được phân công cho công việc bảo trì cấp 1 (công việc cha) trước khi được phân công cho công việc cấp 2 (công việc con)");
         }
         
-        // Project issues
-        var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
-            .Where(pi => pi.StaffId == staff.Id && pi.Status != "DONE")
-            .FirstOrDefaultAsync() != null;
-            
-        if (hasActiveProjectIssues)
-        {
-            throw new InvalidOperationException("Nhân viên đã được phân công cho các vấn đề dự án đang hoạt động");
-        }
-        
-        // Other maintenance request tasks that are not done
-        var hasActiveMaintenanceTasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
-            .Where(mrt => mrt.StaffId == staff.Id && mrt.Id != maintenanceRequestTask.Id && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
-            .FirstOrDefaultAsync() != null;
-            
-        if (hasActiveMaintenanceTasks)
-        {
-            throw new InvalidOperationException("Nhân viên đã được phân công cho các công việc bảo trì đang hoạt động");
-        }
-        
-        // All validations passed, assign the staff and update status
+        // Update the task with the assigned staff ID
         maintenanceRequestTask.StaffId = staff.Id;
-        maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
         
-        // Update the maintenance request status if it's still OPENING
-        var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
-            .FindAsync(maintenanceRequestTask.MaintenanceRequestId);
-            
-        if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.OPENING.ToString())
+        // Update the task status to PROCESSING
+        if (maintenanceRequestTask.Status == EnumMaintenanceRequestTaskStatus.OPENING.ToString())
         {
-            maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
-            await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
+            maintenanceRequestTask.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+        }
+        
+        // Update the task in the database (but don't save changes yet)
+        await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(maintenanceRequestTask, false);
+        
+        // Save all changes to the database
+        await _unitOfWork.SaveChangesAsync();
+    }
+    
+    private async Task UpdateStaffAssignmentAsync(MaintenanceRequestTask maintenanceRequestTask, Guid staffId)
+    {
+        // This method is kept for backward compatibility but we'll delegate to the new methods
+        if (maintenanceRequestTask.ParentId == null)
+        {
+            await UpdateLevel1StaffAssignmentAsync(maintenanceRequestTask, staffId);
+        }
+        else
+        {
+            await UpdateLevel2StaffAssignmentAsync(maintenanceRequestTask, staffId);
         }
     }
     
@@ -720,9 +889,20 @@ public class MaintenanceService : IMaintenanceService
             throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {maintenanceRequestId}");
         }
         
-        // Get the maintenance staff assigned to this maintenance request
+        // Get all level 1 maintenance tasks for this request
+        var level1TaskIds = _unitOfWork.Repository<MaintenanceRequestTask>()
+            .Get(filter: mrt => mrt.MaintenanceRequestId == maintenanceRequestId && mrt.ParentId == null)
+            .Select(task => task.Id)
+            .ToList();
+            
+        if (!level1TaskIds.Any())
+        {
+            return (Enumerable.Empty<GetAllStaffResponse>(), 0);
+        }
+        
+        // Get the maintenance staff assigned to these level 1 tasks
         var maintenanceStaffs = _unitOfWork.Repository<MaintenanceStaff>()
-            .Get(filter: ms => ms.MaintenanceRequestId == maintenanceRequestId,
+            .Get(filter: ms => level1TaskIds.Contains(ms.MaintenanceRequestTaskId),
                  includeProperties: "Staff,Staff.User");
         
         // Extract staff IDs from maintenance staff records
@@ -760,7 +940,12 @@ public class MaintenanceService : IMaintenanceService
     
     public async Task AssignStaffsAsync(Guid maintenanceRequestId, CommandMaintenanceRequestTaskRequest request)
     {
-        // Validate maintenance request exists
+        if (!Guid.TryParse(request?.StaffId?.ToString(), out Guid staffId) || staffId == Guid.Empty)
+        {
+            throw new BadRequestException("ID nhân viên không hợp lệ");
+        }
+        
+        // Get the maintenance request
         var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
             .FindAsync(maintenanceRequestId);
             
@@ -769,103 +954,140 @@ public class MaintenanceService : IMaintenanceService
             throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {maintenanceRequestId}");
         }
         
-        // Ensure staff IDs are provided
-        if (request.StaffIds == null || !request.StaffIds.Any())
+        // Get the staff by ID
+        var staff = await _unitOfWork.Repository<Staff>()
+            .SingleOrDefaultAsync(x => x.UserId == staffId);
+            
+        if (staff == null)
         {
-            throw new BadRequestException("Danh sách ID nhân viên không được để trống");
+            throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
         }
         
-        // Validate that all staff exist and have CONSTRUCTOR position
-        foreach (var staffId in request.StaffIds)
+        // Validate staff position is CONSTRUCTOR
+        if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
         {
-            var staff = await _unitOfWork.Repository<Staff>()
-                .SingleOrDefaultAsync(s => s.UserId == staffId);
-                
-            if (staff == null)
-            {
-                throw new NotFoundException($"Không tìm thấy nhân viên với ID người dùng {staffId}");
-            }
-            
-            // Validate staff position is CONSTRUCTOR
-            if (staff.Position != RoleEnum.CONSTRUCTOR.ToString())
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} không có chức vụ CONSTRUCTOR");
-            }
-            
-            // Check if staff is assigned to any construction tasks that are not DONE
-            var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
-                .Where(ct => ct.StaffId == staff.Id && ct.Status != "DONE")
-                .FirstOrDefaultAsync() != null;
-                
-            if (hasActiveConstructionTasks)
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc xây dựng đang hoạt động");
-            }
-            
-            // Check if staff is involved in any projects that are in CONSTRUCTING status
-            var hasConstructingProjects = await _unitOfWork.Repository<ProjectStaff>()
-                .Where(ps => ps.StaffId == staff.Id && ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString())
-                .FirstOrDefaultAsync() != null;
-                
-            if (hasConstructingProjects)
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đang tham gia các dự án đang trong giai đoạn thi công");
-            }
-            
-            // Check if staff is assigned to any project issues that are not DONE
-            var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
-                .Where(pi => pi.StaffId == staff.Id && pi.Status != "DONE")
-                .FirstOrDefaultAsync() != null;
-                
-            if (hasActiveProjectIssues)
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề dự án đang hoạt động");
-            }
-            
-            // Check if staff is assigned to any Level 2 maintenance tasks that belong to Level 1 tasks that are not DONE
-            var hasActiveMaintLv2Tasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
-                .Where(mrt => mrt.StaffId == staff.Id 
-                    && mrt.ParentId != null 
-                    && mrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
-                .FirstOrDefaultAsync() != null;
-                
-            if (hasActiveMaintLv2Tasks)
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì cấp 2 đang hoạt động");
-            }
-            
-            // Check if staff is assigned to any maintenance requests (through MaintenanceStaff) that are not DONE
-            var hasActiveMaintenanceRequests = await _unitOfWork.Repository<MaintenanceStaff>()
-                .Where(ms => ms.StaffId == staff.Id 
-                    && ms.MaintenanceRequest.Status != EnumMaintenanceRequestStatus.DONE.ToString())
-                .FirstOrDefaultAsync() != null;
-                
-            if (hasActiveMaintenanceRequests)
-            {
-                throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các yêu cầu bảo trì đang hoạt động");
-            }
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} không có chức vụ CONSTRUCTOR");
         }
         
-        // Clear existing maintenance staff associations for this request
-        var existingMaintenanceStaffs = _unitOfWork.Repository<MaintenanceStaff>()
-            .Get(filter: ms => ms.MaintenanceRequestId == maintenanceRequestId)
+        // Get all level 1 tasks for this maintenance request
+        var level1Tasks = await _unitOfWork.Repository<MaintenanceRequestTask>()
+            .Where(t => t.MaintenanceRequestId == maintenanceRequestId && t.ParentId == null)
+            .ToListAsync();
+            
+        if (!level1Tasks.Any())
+        {
+            throw new BadRequestException($"Không tìm thấy công việc bảo trì cấp 1 cho yêu cầu bảo trì có ID {maintenanceRequestId}");
+        }
+        
+        // Check if staff is assigned to any maintenance tasks that are not DONE
+        var isStaffAssignedToOtherTask = await _unitOfWork.Repository<MaintenanceStaff>()
+            .Where(ms => 
+                ms.StaffId == staff.Id && 
+                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() &&
+                ms.MaintenanceRequestTask.MaintenanceRequestId != maintenanceRequestId)
+            .AnyAsync();
+            
+        if (isStaffAssignedToOtherTask)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì khác đang hoạt động");
+        }
+        
+        // Check for valid assignment to level 1 tasks from other maintenance requests
+        var allStaffAssignments = _unitOfWork.Repository<MaintenanceStaff>()
+            .Get(
+                filter: ms => ms.StaffId == staff.Id,
+                includeProperties: "MaintenanceRequestTask"
+            )
             .ToList();
             
-        _unitOfWork.Repository<MaintenanceStaff>().RemoveRange(existingMaintenanceStaffs);
-        
-        // Create new maintenance staff records
-        foreach (var staffId in request.StaffIds)
-        {
-            var staff = await _unitOfWork.Repository<Staff>()
-                .SingleOrDefaultAsync(s => s.UserId == staffId);
+        // Check if staff is already assigned to active level 1 tasks from other maintenance requests
+        var activeTasksFromOtherRequests = allStaffAssignments
+            .Where(ms => 
+                ms.MaintenanceRequestTask?.ParentId == null && // Level 1 task
+                ms.MaintenanceRequestTask?.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() && // Not DONE
+                ms.MaintenanceRequestTask?.MaintenanceRequestId != maintenanceRequestId // Different maintenance request
+            )
+            .ToList();
             
+        // If staff is already assigned to other level 1 tasks, throw an error with details
+        if (activeTasksFromOtherRequests.Any())
+        {
+            // Create detailed error message with the specific conflicting tasks
+            var conflictingTasksInfo = activeTasksFromOtherRequests
+                .Select(ms => $"{ms.MaintenanceRequestTaskId} (Request: {ms.MaintenanceRequestTask?.MaintenanceRequestId}, Status: {ms.MaintenanceRequestTask?.Status})")
+                .ToList();
+                
+            var conflictingTasksMessage = string.Join(", ", conflictingTasksInfo);
+            
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì cấp 1 từ một yêu cầu bảo trì khác. Task IDs: {conflictingTasksMessage}");
+        }
+        
+        // Check if staff is assigned to any projects in CONSTRUCTING status
+        var hasConstructingProjects = await _unitOfWork.Repository<ProjectStaff>()
+            .Where(ps => ps.StaffId == staff.Id && ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString())
+            .AnyAsync();
+                
+        if (hasConstructingProjects)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đang tham gia các dự án đang trong giai đoạn thi công (CONSTRUCTING). Nhân viên chỉ có thể được phân công khi không còn tham gia dự án đang thi công.");
+        }
+        
+        // Check if staff is assigned to any construction tasks that are not DONE
+        var hasActiveConstructionTasks = await _unitOfWork.Repository<ConstructionTask>()
+            .Where(ct => ct.StaffId == staff.Id && ct.Status != EnumConstructionTaskStatus.DONE.ToString())
+            .AnyAsync();
+            
+        if (hasActiveConstructionTasks)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc xây dựng đang hoạt động");
+        }
+        
+        // Check if staff is assigned to any project issues that are not DONE
+        var hasActiveProjectIssues = await _unitOfWork.Repository<ProjectIssue>()
+            .Where(pi => pi.StaffId == staff.Id && pi.Status != EnumProjectIssueStatus.DONE.ToString())
+            .AnyAsync();
+            
+        if (hasActiveProjectIssues)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề dự án đang hoạt động");
+        }
+
+        // Assign staff to each level 1 task
+        foreach (var task in level1Tasks)
+        {
+            // Check if the staff is already assigned to this task
+            var existingAssignment = await _unitOfWork.Repository<MaintenanceStaff>()
+                .Where(ms => ms.StaffId == staff.Id && ms.MaintenanceRequestTaskId == task.Id)
+                .FirstOrDefaultAsync();
+            
+            // If already assigned, nothing to do
+            if (existingAssignment != null)
+            {
+                continue;
+            }
+            
+            // Create new maintenance staff assignment
             var maintenanceStaff = new MaintenanceStaff
             {
-                MaintenanceRequestId = maintenanceRequestId,
+                MaintenanceRequestTaskId = task.Id,
                 StaffId = staff.Id
             };
             
             await _unitOfWork.Repository<MaintenanceStaff>().AddAsync(maintenanceStaff, false);
+            
+            // Update task status to PROCESSING if it was OPENING
+            if (task.Status == EnumMaintenanceRequestTaskStatus.OPENING.ToString())
+            {
+                task.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
+                await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(task, false);
+            }
+        }
+        
+        // Update maintenance request status if it was still OPENING
+        if (maintenanceRequest.Status == EnumMaintenanceRequestStatus.OPENING.ToString())
+        {
+            maintenanceRequest.Status = EnumMaintenanceRequestStatus.PROCESSING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
         }
         
         await _unitOfWork.SaveChangesAsync();
@@ -921,5 +1143,12 @@ public class MaintenanceService : IMaintenanceService
         response.MaintenanceRequestTasks = mappedLevel1Tasks;
 
         return response;
+    }
+
+    // Helper method to get maintenance request task by ID with related entities
+    private async Task<MaintenanceRequestTask?> GetMaintenanceRequestTaskById(Guid id)
+    {
+        return await _unitOfWork.Repository<MaintenanceRequestTask>()
+            .FindAsync(id);
     }
 }

@@ -362,8 +362,8 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [SwaggerOperation(
-            Summary = "Cập nhật danh sách nhân viên",
-            Description = "Cập nhật danh sách nhân viên cho yêu cầu bảo trì",
+            Summary = "[Deprecated] Cập nhật danh sách nhân viên",
+            Description = "DEPRECATED: Sử dụng API PUT /api/maintenances/tasks/{id} với staffId thay thế. API này sẽ bị loại bỏ trong phiên bản tương lai.",
             OperationId = "UpdateStaffs",
             Tags = new[] { "Maintenances" }
         )]
@@ -381,6 +381,7 @@ namespace KPCOS.API.Controllers
             )]
             CommandMaintenanceRequestTaskRequest request)
         {
+            // NOTE: This API is deprecated. Use PUT /api/maintenances/tasks/{id} with staffId instead.
             await _maintenanceService.AssignStaffsAsync(id, request);
             return Ok();
         }
