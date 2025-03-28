@@ -27,7 +27,7 @@ public class GetMaintenanceRequestTaskForMaintenanceRequestResponse
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? ParentId { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public GetAllStaffResponse? Staff { get; set; }
+    public IEnumerable<GetAllStaffResponse>? Staffs { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GetAllMaintenanceItemResponse? MaintenanceItem { get; set; }
 

@@ -344,11 +344,15 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.MaintenanceItem,
                 opt => opt.MapFrom(src => src.MaintenanceItem))
             .ForMember(dest => dest.MaintenanceRequest,
-                opt => opt.MapFrom(src => src.MaintenanceRequest));
+                opt => opt.MapFrom(src => src.MaintenanceRequest))
+            .ForMember(dest => dest.Staffs,
+                opt => opt.MapFrom(src => src.MaintenanceStaffs.Select(ms => ms.Staff)));
+                
         CreateMap<MaintenanceRequestTask, GetMaintenanceRequestTaskForMaintenanceRequestResponse>()
-            .ForMember(dest => dest.Staff,
-                opt => opt.MapFrom(src => src.Staff))
+            .ForMember(dest => dest.Staffs,
+                opt => opt.MapFrom(src => src.MaintenanceStaffs.Select(ms => ms.Staff)))
             ;
+            
         CreateMap<MaintenanceRequestTask, GetMaintenanceRequestTaskChildResponse>()
             .ForMember(dest => dest.Staff,
                 opt => opt.MapFrom(src => src.Staff))
