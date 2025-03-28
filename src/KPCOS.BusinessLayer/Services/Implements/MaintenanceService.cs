@@ -93,27 +93,27 @@ public class MaintenanceService : IMaintenanceService
         // Validate required fields
         if (request.MaintenancePackageId == null)
         {
-            throw new ArgumentException("Maintenance package ID is required");
+            throw new BadRequestException("Gói bảo trì không được để trống");
         }
         
         if (string.IsNullOrEmpty(request.Name))
         {
-            throw new ArgumentException("Name is required for maintenance request");
+            throw new BadRequestException("Tên yêu cầu bảo trì không được để trống");
         }
         
         if (request.Area == null || request.Depth == null)
         {
-            throw new ArgumentException("Area and Depth are required for maintenance request");
+            throw new BadRequestException("Diện tích và độ sâu hồ cá không được để trống");
         }
         
         if (string.IsNullOrEmpty(request.Address))
         {
-            throw new ArgumentException("Address is required for maintenance request");
+            throw new BadRequestException("Địa chỉ thực hiện bảo trì không được để trống");
         }
         
         if (request.Type == null)
         {
-            throw new ArgumentException("Type is required for maintenance request");
+            throw new BadRequestException("Loại bảo trì không được để trống");
         }
         
         // Set duration based on request and validate if needed
@@ -125,7 +125,7 @@ public class MaintenanceService : IMaintenanceService
         if (request.Type.Equals(EnumMaintenanceRequestType.UNSCHEDULED.ToString(), StringComparison.OrdinalIgnoreCase) 
             && duration > 2)
         {
-            throw new ArgumentException("Unscheduled maintenance requests cannot have more than 2 maintenance tasks");
+            throw new BadRequestException("Bảo trì không định kỳ (UNSCHEDULED) không thể có quá 2 lần bảo trì");
         }
         
         // Verify maintenance package exists
@@ -134,7 +134,7 @@ public class MaintenanceService : IMaintenanceService
         
         if (maintenancePackage == null)
         {
-            throw new NotFoundException($"Maintenance package with ID {request.MaintenancePackageId} not found");
+            throw new NotFoundException($"Không tìm thấy gói bảo trì với ID {request.MaintenancePackageId}");
         }
 
         // Get maintenance package items associated with the package
@@ -147,7 +147,7 @@ public class MaintenanceService : IMaintenanceService
         // Make sure the package has maintenance items
         if (!maintenancePackageItems.Any())
         {
-            throw new NotFoundException($"Maintenance package with ID {request.MaintenancePackageId} has no active maintenance items");
+            throw new NotFoundException($"Gói bảo trì với ID {request.MaintenancePackageId} không có hạng mục bảo trì nào đang hoạt động");
         }
 
         // Calculate the total value
@@ -172,7 +172,7 @@ public class MaintenanceService : IMaintenanceService
         
         if (customer == null)
         {
-            throw new NotFoundException($"Customer with ID {customerId} not found");
+            throw new NotFoundException($"Không tìm thấy khách hàng với ID {customerId}");
         }
 
         // Create new maintenance request
@@ -201,6 +201,7 @@ public class MaintenanceService : IMaintenanceService
             var httpClient = _httpClientFactory.CreateClient();
             
             // Calculate maintenance dates (avoiding weekends and holidays)
+            // Using the updated utility function that respects milestone days and adds end-of-month dates
             var maintenanceDates = await GlobalUtility.GetMaintenanceDatesAsync(
                 request.EstimateAt.Value, 
                 duration, 
