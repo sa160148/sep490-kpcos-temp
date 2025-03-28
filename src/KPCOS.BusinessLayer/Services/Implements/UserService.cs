@@ -155,14 +155,14 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         Expression<Func<Staff, bool>> advanceFilter = staff => 
             staff.Position == RoleEnum.CONSTRUCTOR.ToString() &&
             staff.User.IsActive == true &&
+            // Constructor should not be in any project that is not finished
             !staff.ProjectStaffs.Any(ps => 
                 ps.Project.IsActive == true &&
-                ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString()) &&
-            !staff.MaintenanceRequestTasks.Any(mrt => 
-                mrt.ParentId != null && // Level 2 tasks
-                mrt.MaintenanceRequest.MaintenanceRequestTasks.Any(parentMrt => 
-                    parentMrt.Id == mrt.ParentId && // Get the specific parent task
-                    parentMrt.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())); // Parent must be DONE
+                ps.Project.Status != EnumProjectStatus.FINISHED.ToString()) &&
+            // Constructor should not be in any maintenance request task (level 1) that is not done
+            !staff.MaintenanceStaffs.Any(ms => 
+                ms.MaintenanceRequestTask.ParentId == null && // Level 1 tasks (parent is null)
+                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString());
             
         var staffs = repo.GetWithCount(
             filter: advanceFilter,
