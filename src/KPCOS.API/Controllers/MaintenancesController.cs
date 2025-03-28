@@ -119,6 +119,10 @@ namespace KPCOS.API.Controllers
         /// **Mẫu yêu cầu:**
         /// 
         ///     GET /api/maintenances?Search=Koi&amp;IsActive=true&amp;Status=OPENING&amp;IsPaid=false&amp;Type=SCHEDULED&amp;PageNumber=1&amp;PageSize=10
+        ///
+        /// **Phản hồi:**
+        /// - Bao gồm danh sách nhân viên (Staffs) được phân công cho mỗi công việc bảo trì cấp 1 (level 1 tasks)
+        /// - Công việc bảo trì cấp 2 (level 2 tasks) chỉ có một nhân viên (Staff) được phân công
         /// </remarks>
         /// <param name="request">Các tham số lọc</param>
         /// <returns>Danh sách các yêu cầu bảo trì theo bộ lọc với phân trang</returns>
@@ -156,7 +160,11 @@ namespace KPCOS.API.Controllers
         /// **Chế độ 1: Phân công nhân viên (chuyển sang trạng thái PROCESSING)**
         /// - Cung cấp staffId để phân công nhân viên cho công việc
         /// - Nhân viên phải có chức vụ là CONSTRUCTOR
-        /// - Nhân viên không được phân công cho các nhiệm vụ xây dựng, vấn đề dự án, hoặc nhiệm vụ bảo trì khác đang hoạt động
+        /// - Nhân viên không được phân công cho công việc bảo trì cấp 1 từ các yêu cầu bảo trì khác đang hoạt động (các công việc chưa DONE)
+        /// - Nhân viên không được phân công cho các dự án đang trong giai đoạn thi công (CONSTRUCTING)
+        /// - Nhân viên không được phân công cho các công việc xây dựng đang hoạt động (các công việc chưa DONE)
+        /// - Nhân viên không được phân công cho các vấn đề dự án đang hoạt động (các vấn đề chưa DONE)
+        /// - Đối với công việc cấp 2 (Level 2), nhân viên phải được phân công cho công việc cấp 1 (công việc cha) trước
         /// - Trạng thái công việc bảo trì sẽ được cập nhật thành PROCESSING
         /// 
         /// **Mẫu yêu cầu chế độ 1:**
@@ -167,6 +175,7 @@ namespace KPCOS.API.Controllers
         /// 
         /// **Chế độ 2: Cập nhật hình ảnh (chuyển sang trạng thái PREVIEWING)**
         /// - Cung cấp imageUrl để tải lên hình ảnh hoặc tài liệu ghi nhận việc thực hiện công việc
+        /// - Công việc bảo trì phải đang ở trạng thái PROCESSING
         /// - Trạng thái công việc bảo trì sẽ được cập nhật thành PREVIEWING
         /// 
         /// **Mẫu yêu cầu chế độ 2:**
@@ -177,6 +186,7 @@ namespace KPCOS.API.Controllers
         /// 
         /// **Chế độ 3: Cập nhật lý do (chuyển từ PREVIEWING sang PROCESSING)**
         /// - Cung cấp reason để giải thích lý do cần xử lý thêm
+        /// - Công việc bảo trì phải đang ở trạng thái PREVIEWING
         /// - Trạng thái công việc bảo trì sẽ được cập nhật từ PREVIEWING sang PROCESSING
         /// 
         /// **Mẫu yêu cầu chế độ 3:**
@@ -195,7 +205,7 @@ namespace KPCOS.API.Controllers
         /// <param name="id">ID của công việc bảo trì cần cập nhật</param>
         /// <param name="request">Dữ liệu cập nhật cho công việc bảo trì</param>
         /// <response code="200">Cập nhật trạng thái công việc bảo trì thành công</response>
-        /// <response code="400">Dữ liệu không hợp lệ hoặc vi phạm điều kiện nghiệp vụ</response>
+        /// <response code="400">Dữ liệu không hợp lệ hoặc vi phạm điều kiện nghiệp vụ: nhân viên đã được phân công vào công việc bảo trì khác, nhân viên đang tham gia dự án đang thi công, v.v.</response>
         /// <response code="401">Người dùng chưa đăng nhập</response>
         /// <response code="404">Không tìm thấy công việc bảo trì hoặc nhân viên</response>
         [HttpPut("tasks/{id}")]
@@ -274,7 +284,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [SwaggerOperation(
             Summary = "Lấy chi tiết công việc bảo trì",
-            Description = "Lấy chi tiết công việc bảo trì dựa trên ID của công việc",
+            Description = "Lấy chi tiết công việc bảo trì dựa trên ID của công việc. Đối với công việc bảo trì cấp 1 (Level 1), phản hồi sẽ bao gồm danh sách toàn bộ nhân viên (trường Staffs) được phân công và danh sách công việc con (trường Childs). Đối với công việc bảo trì cấp 2 (Level 2), phản hồi sẽ bao gồm thông tin nhân viên được phân công trực tiếp (trường Staff).",
             OperationId = "GetMaintenanceTask",
             Tags = new[] { "Maintenances" }
         )]
@@ -291,18 +301,25 @@ namespace KPCOS.API.Controllers
         }
         
         [HttpGet("task")]
-        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedApiResponse<GetAllMaintenanceRequestTaskResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [SwaggerOperation(
             Summary = "Lấy danh sách công việc bảo trì",    
-            Description = "Lấy danh sách công việc bảo trì dựa trên ID của yêu cầu bảo trì",    
+            Description = "Lấy danh sách công việc bảo trì dựa trên các tiêu chí lọc. Hỗ trợ việc lọc theo yêu cầu bảo trì (MaintenanceRequestId), trạng thái (Status), và nhiều tiêu chí khác.\n\n" + 
+                          "Đối với công việc bảo trì cấp 1 (Level 1), phản hồi sẽ bao gồm danh sách toàn bộ nhân viên (trường Staffs) được phân công và danh sách công việc con (trường Childs). " + 
+                          "Đối với công việc bảo trì cấp 2 (Level 2), phản hồi sẽ bao gồm thông tin nhân viên được phân công trực tiếp (trường Staff).\n\n" +
+                          "Nếu người dùng đã đăng nhập, API sẽ tự động lọc danh sách công việc bảo trì dựa trên vai trò của người dùng: khách hàng sẽ chỉ thấy công việc thuộc yêu cầu bảo trì của họ, nhân viên xây dựng sẽ chỉ thấy công việc được phân công cho họ.",
             OperationId = "GetMaintenanceTasks",
             Tags = new[] { "Maintenances" }
         )]
         public async Task<PagedApiResponse<GetAllMaintenanceRequestTaskResponse>> GetAllMaintenanceRequestTasksAsync(
             [FromQuery]
+            [SwaggerParameter(
+                Description = "Các tham số lọc bao gồm MaintenanceRequestId, Status, IsChild, ParentId, From, To, Search, PageNumber, PageSize, SortColumn, và SortDir",
+                Required = false
+            )]
             GetAllMaintenanceRequestTaskFilterRequest request)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -363,7 +380,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [SwaggerOperation(
             Summary = "[Deprecated] Cập nhật danh sách nhân viên",
-            Description = "DEPRECATED: Sử dụng API PUT /api/maintenances/tasks/{id} với staffId thay thế. API này sẽ bị loại bỏ trong phiên bản tương lai.",
+            Description = "DEPRECATED: Sử dụng API PUT /api/maintenances/tasks/{id} với staffId thay thế. API này phân công một nhân viên cho tất cả các công việc bảo trì cấp 1 của một yêu cầu bảo trì. Lưu ý API này sẽ bị loại bỏ trong phiên bản tương lai.",
             OperationId = "UpdateStaffs",
             Tags = new[] { "Maintenances" }
         )]
@@ -376,7 +393,7 @@ namespace KPCOS.API.Controllers
             Guid id,
             [FromBody]
             [SwaggerParameter(
-                Description = "Danh sách nhân viên cần cập nhật cho yêu cầu bảo trì(maintenanceRequest)",
+                Description = "Thông tin nhân viên cần được phân công cho tất cả công việc bảo trì cấp 1 của yêu cầu bảo trì. Chỉ cần truyền trường staffId.",
                 Required = true
             )]
             CommandMaintenanceRequestTaskRequest request)
@@ -393,7 +410,14 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [SwaggerOperation(
             Summary = "Lấy chi tiết yêu cầu bảo trì",
-            Description = "Lấy chi tiết yêu cầu bảo trì dựa trên ID của yêu cầu bảo trì",
+            Description = "Lấy chi tiết yêu cầu bảo trì dựa trên ID của yêu cầu bảo trì. Phản hồi bao gồm thông tin đầy đủ về yêu cầu bảo trì, gói bảo trì, khách hàng, danh sách đánh giá phản hồi, và cấu trúc phân cấp đầy đủ của các công việc bảo trì.\n\n" +
+                          "Cấu trúc phản hồi bao gồm:\n" +
+                          "- Thông tin yêu cầu bảo trì: ID, tên, diện tích, độ sâu, địa chỉ, tổng giá trị, trạng thái, v.v.\n" +
+                          "- Thông tin gói bảo trì (MaintenancePackage): ID, tên, mô tả, giá, v.v.\n" +
+                          "- Thông tin khách hàng (Customer): ID, tên, email, v.v.\n" +
+                          "- Danh sách công việc bảo trì cấp 1 (MaintenanceRequestTasks): bao gồm danh sách nhân viên được phân công (Staffs) cho mỗi công việc cấp 1.\n" +
+                          "- Danh sách công việc bảo trì cấp 2 (Childs): mỗi công việc cấp 1 bao gồm danh sách các công việc cấp 2 và nhân viên được phân công (Staff) cho mỗi công việc cấp 2.\n" +
+                          "- Danh sách đánh giá phản hồi (Feedbacks): các đánh giá từ khách hàng về yêu cầu bảo trì.",
             OperationId = "GetMaintenanceRequest",
             Tags = new[] { "Maintenances" }
         )]

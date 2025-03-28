@@ -264,7 +264,7 @@ public class MaintenanceService : IMaintenanceService
         
         var (requests, total) = repository.GetWithCount(
             filter: filterExpression,
-            includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User",
+            includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User,MaintenanceRequestTasks.MaintenanceStaffs,MaintenanceRequestTasks.MaintenanceStaffs.Staff,MaintenanceRequestTasks.MaintenanceStaffs.Staff.User",
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
             pageSize: request.PageSize
@@ -721,7 +721,7 @@ public class MaintenanceService : IMaintenanceService
         var maintenanceRequestTask = _unitOfWork.Repository<MaintenanceRequestTask>()
             .Get(
                 filter: mrt => mrt.Id == id,
-                includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User"
+                includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User,MaintenanceStaffs,MaintenanceStaffs.Staff,MaintenanceStaffs.Staff.User"
             )
             .FirstOrDefault();
             
@@ -780,7 +780,7 @@ public class MaintenanceService : IMaintenanceService
                 // Use GetWithCount with the combined filter
                 var (tasks, total) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
                     filter: combinedFilter,
-                    includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+                    includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User,MaintenanceStaffs,MaintenanceStaffs.Staff,MaintenanceStaffs.Staff.User",
                     orderBy: request.GetOrder(),
                     pageIndex: request.PageNumber,
                     pageSize: request.PageSize
@@ -824,7 +824,7 @@ public class MaintenanceService : IMaintenanceService
                     // Use GetWithCount with the staff filter
                     var (tasks, total) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
                         filter: combinedFilter,
-                        includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+                        includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User,MaintenanceStaffs,MaintenanceStaffs.Staff,MaintenanceStaffs.Staff.User",
                         orderBy: request.GetOrder(),
                         pageIndex: request.PageNumber,
                         pageSize: request.PageSize
@@ -854,7 +854,7 @@ public class MaintenanceService : IMaintenanceService
         
         var (taskList, count) = _unitOfWork.Repository<MaintenanceRequestTask>().GetWithCount(
             filter: baseFilterExpression,
-            includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User",
+            includeProperties: "MaintenanceRequest,MaintenanceItem,Staff,Staff.User,MaintenanceRequest.Customer,MaintenanceRequest.Customer.User,MaintenanceStaffs,MaintenanceStaffs.Staff,MaintenanceStaffs.Staff.User",
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
             pageSize: request.PageSize
@@ -1099,7 +1099,7 @@ public class MaintenanceService : IMaintenanceService
         var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
             .Get(
                 filter: mr => mr.Id == id,
-                includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User,MaintenanceRequestTasks.MaintenanceItem"
+                includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User,MaintenanceRequestTasks.MaintenanceItem,MaintenanceRequestTasks.MaintenanceStaffs,MaintenanceRequestTasks.MaintenanceStaffs.Staff,MaintenanceRequestTasks.MaintenanceStaffs.Staff.User"
             )
             .FirstOrDefault();
 
