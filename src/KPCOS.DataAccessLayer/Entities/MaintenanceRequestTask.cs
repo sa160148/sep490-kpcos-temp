@@ -28,4 +28,6 @@ public partial class MaintenanceRequestTask
     public virtual Staff? Staff { get; set; }
 
     public virtual MaintenanceItem? MaintenanceItem { get; set; }
+
+    public virtual ICollection<MaintenanceStaff> MaintenanceStaffs { get; set; } = new List<MaintenanceStaff>();
 }
