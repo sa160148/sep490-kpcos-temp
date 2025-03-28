@@ -23,7 +23,7 @@ public class GetAllMaintenanceRequestTaskResponse
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public GetAllStaffResponse? Staff { get; set; }
+    public IEnumerable<GetAllStaffResponse>? Staffs { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GetAllMaintenanceItemResponse? MaintenanceItem { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

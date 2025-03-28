@@ -638,17 +638,17 @@ public partial class KpcosContext : DbContext
 
         modelBuilder.Entity<MaintenanceStaff>(entity =>
         {
-            entity.HasKey(e => new { e.MaintenanceRequestId, e.StaffId }).HasName("maintenance_staff_pkey");
+            entity.HasKey(e => new { e.MaintenanceRequestTaskId, e.StaffId }).HasName("maintenance_staff_pkey");
 
             entity.ToTable("maintenance_staff");
 
-            entity.Property(e => e.MaintenanceRequestId).HasColumnName("maintenance_request_id");
+            entity.Property(e => e.MaintenanceRequestTaskId).HasColumnName("maintenance_request_task_id");
             entity.Property(e => e.StaffId).HasColumnName("staff_id");
 
-            entity.HasOne(d => d.MaintenanceRequest).WithMany(p => p.MaintenanceStaffs)
-                .HasForeignKey(d => d.MaintenanceRequestId)
+            entity.HasOne(d => d.MaintenanceRequestTask).WithMany(p => p.MaintenanceStaffs)
+                    .HasForeignKey(d => d.MaintenanceRequestTaskId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("maintenance_staff_maintenance_request_id_fkey");
+                .HasConstraintName("maintenance_staff_maintenance_request_task_id_fkey");
 
             entity.HasOne(d => d.Staff).WithMany(p => p.MaintenanceStaffs)
                 .HasForeignKey(d => d.StaffId)

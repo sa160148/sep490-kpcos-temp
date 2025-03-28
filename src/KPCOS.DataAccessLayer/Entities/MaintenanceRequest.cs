@@ -28,6 +28,4 @@ public partial class MaintenanceRequest
     public virtual MaintenancePackage MaintenancePackage { get; set; } = null!;
 
     public virtual ICollection<MaintenanceRequestTask> MaintenanceRequestTasks { get; set; } = new List<MaintenanceRequestTask>();
-
-    public virtual ICollection<MaintenanceStaff> MaintenanceStaffs { get; set; } = new List<MaintenanceStaff>();
 }

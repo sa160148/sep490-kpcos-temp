@@ -321,24 +321,37 @@ public static class GlobalUtility
             holidays = GetVietnameseHolidaysFallback(); 
         }
         
+        // Initialize date collection
         var dates = new List<DateOnly>();
-        var currentDate = startDate;
+        
+        // Get original milestone day from start date (e.g., 30 from 2025-01-30)
+        int milestoneDayOfMonth = startDate.Day;
         
         // Make sure the start date itself is a working day
+        var currentDate = startDate;
         while (IsWeekend(currentDate) || holidays.Contains(currentDate))
         {
             currentDate = currentDate.AddDays(1);
         }
         
+        // Add the start date
         dates.Add(currentDate);
         
-        // Get subsequent dates
+        // Calculate subsequent dates based on the milestone day when possible
         for (int i = 1; i < duration; i++)
         {
-            // Try to get the same day in the next month
-            var nextDate = currentDate.AddMonths(1);
+            // Get the next month
+            var nextMonth = currentDate.AddMonths(1).Month;
+            var nextYear = currentDate.AddMonths(1).Year;
             
-            // Adjust if it falls on a weekend or holiday
+            // Try to maintain the original milestone day (e.g., 30th of the month)
+            // We need to check if the day exists in the next month (e.g., Feb doesn't have 30/31)
+            int daysInNextMonth = DateTime.DaysInMonth(nextYear, nextMonth);
+            int targetDay = Math.Min(milestoneDayOfMonth, daysInNextMonth);
+            
+            var nextDate = new DateOnly(nextYear, nextMonth, targetDay);
+            
+            // Adjust if the date falls on a weekend or holiday
             while (IsWeekend(nextDate) || holidays.Contains(nextDate))
             {
                 nextDate = nextDate.AddDays(1);
@@ -346,6 +359,37 @@ public static class GlobalUtility
             
             dates.Add(nextDate);
             currentDate = nextDate;
+        }
+        
+        // For the final task, add an additional task at the end of the last month
+        if (duration > 0)
+        {
+            var lastDate = dates.Last();
+            var lastMonth = lastDate.Month;
+            var lastYear = lastDate.Year;
+            
+            // Get the last day of the month
+            int daysInLastMonth = DateTime.DaysInMonth(lastYear, lastMonth);
+            var endOfMonthDate = new DateOnly(lastYear, lastMonth, daysInLastMonth);
+            
+            // Adjust if the date falls on a weekend or holiday
+            while (IsWeekend(endOfMonthDate) || holidays.Contains(endOfMonthDate))
+            {
+                endOfMonthDate = endOfMonthDate.AddDays(-1); // Go backward to stay in the same month
+                
+                // If we've adjusted too much, break to avoid issues
+                if (endOfMonthDate <= lastDate)
+                {
+                    break;
+                }
+            }
+            
+            // Only add the end-of-month date if it's different from the regular date
+            // and it's still after the regular date
+            if (endOfMonthDate > lastDate)
+            {
+                dates.Add(endOfMonthDate);
+            }
         }
         
         return dates;
