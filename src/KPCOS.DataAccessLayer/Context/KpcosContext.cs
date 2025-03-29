@@ -1339,6 +1339,45 @@ public partial class KpcosContext : DbContext
                 .HasConstraintName("feedback_customer_id_fkey");
         });
 
+        modelBuilder.Entity<Blog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("blog_pkey");
+
+            entity.ToTable("blog");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .HasColumnName("description");
+            entity.Property(e => e.Type)
+                .HasMaxLength(255)
+                .HasColumnName("type");
+            entity.Property(e => e.StaffId)
+                .HasColumnName("staff_id");
+            entity.Property(e => e.No)
+                .HasColumnName("no");
+
+            entity.HasOne(d => d.Staff)
+                .WithMany(p => p.Blogs)
+                .HasForeignKey(d => d.StaffId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("blog_staff_id_fkey");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

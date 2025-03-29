@@ -45,6 +45,7 @@ public static class AddServiceCollection
         services.AddScoped<IMaintenanceService, MaintenanceService>();
         services.AddScoped<IDocTypeService, DocTypeService>();
         services.AddScoped<IFeedbackService, FeedbackService>();
+        services.AddScoped<IBlogService, BlogService>();
         /*services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();*/
 
