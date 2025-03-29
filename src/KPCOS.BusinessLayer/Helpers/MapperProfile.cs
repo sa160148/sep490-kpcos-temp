@@ -30,6 +30,8 @@ using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
+using KPCOS.BusinessLayer.DTOs.Response.Blogs;
+using KPCOS.BusinessLayer.DTOs.Request.Blogs;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -374,5 +376,18 @@ public class MapperProfile : Profile
 
         CreateMap<Feedback, GetAllFeedbackResponse>()
             .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer));
+
+        CreateMap<Blog, GetAllBlogResponse>()
+            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff));
+            
+        CreateMap<CommandBlogRequest, Blog>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
+            .ForMember(dest => dest.No, opt => opt.MapFrom(src => src.No))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive ?? true))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => GlobalUtility.GetCurrentSEATime()))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => GlobalUtility.GetCurrentSEATime()));
     }
 }
