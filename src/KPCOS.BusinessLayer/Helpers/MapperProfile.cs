@@ -384,7 +384,7 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
+            .ForMember(dest => dest.Type, opt => opt.Ignore())
             .ForMember(dest => dest.No, opt => opt.MapFrom(src => src.No))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive ?? true))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => GlobalUtility.GetCurrentSEATime()))

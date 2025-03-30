@@ -12,11 +12,17 @@ namespace KPCOS.BusinessLayer.DTOs.Request.Blogs;
 /// {
 ///   "name": "Modern Koi Pond Construction Techniques",
 ///   "description": "A comprehensive guide to modern techniques for constructing beautiful and functional koi ponds in residential gardens",
-///   "type": "PROJECT",
 ///   "no": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
 ///   "isActive": true
 /// }
 /// </example>
+/// <remarks>
+/// The Type property is optional. If not provided, it will be automatically determined based on the No value:
+/// - If No refers to a Project, Type will be set to PROJECT
+/// - If No refers to a Package, Type will be set to PACKAGE
+/// - If No refers to a MaintenancePackage, Type will be set to MAINTENANCE_PACKAGE
+/// - If No is null or doesn't match any entity, Type will be set to OTHER
+/// </remarks>
 public class CommandBlogRequest
 {
     /// <summary>
@@ -32,10 +38,12 @@ public class CommandBlogRequest
     public string? Description { get; set; }
 
     /// <summary>
-    /// The type of blog post, which determines its relation to other entities
+    /// The type of blog post (optional, will be determined automatically)
     /// </summary>
+    /// <remarks>
+    /// This property is optional and will be ignored. The type will be determined automatically based on the No value.
+    /// </remarks>
     /// <example>PROJECT</example>
-    [EnumDataType(typeof(EnumBlogType))]
     public string? Type { get; set; }
 
     /// <summary>

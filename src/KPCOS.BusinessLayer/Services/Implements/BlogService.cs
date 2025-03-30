@@ -154,6 +154,13 @@ public class BlogService : IBlogService
     /// <param name="request">The blog post information</param>
     /// <param name="userId">Optional user ID of the blog creator</param>
     /// <returns>A task representing the asynchronous operation</returns>
+    /// <remarks>
+    /// The method will automatically determine the blog type based on the No value:
+    /// - If No is null, Type will be set to OTHER
+    /// - If No references a Project, Type will be set to PROJECT
+    /// - If No references a Package, Type will be set to PACKAGE
+    /// - If No references a MaintenancePackage, Type will be set to MAINTENANCE_PACKAGE
+    /// </remarks>
     /// <example>
     /// Example usage:
     /// <code>
@@ -161,8 +168,7 @@ public class BlogService : IBlogService
     /// {
     ///     Name = "Modern Koi Pond Design",
     ///     Description = "A detailed guide to designing modern koi ponds for urban gardens",
-    ///     Type = nameof(EnumBlogType.PROJECT),
-    ///     No = projectId
+    ///     No = projectId // The type will be automatically set based on this ID
     /// };
     /// await _blogService.CreateBlog(newBlog, currentUserId);
     /// </code>
@@ -171,10 +177,60 @@ public class BlogService : IBlogService
     {
         Blog blog = _mapper.Map<Blog>(request);
         
-        var staff = await _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(x => x.UserId == userId);
-        blog.StaffId = staff.Id;
+        // Auto-determine blog type based on No value
+        if (request.No.HasValue)
+        {
+            // Try to find the entity in different repositories to determine type
+            var project = await _unitOfWork.Repository<Project>().FindAsync(request.No.Value);
+            if (project != null)
+            {
+                blog.Type = nameof(EnumBlogType.PROJECT);
+                blog.No = project.Id;
+            }
+            else
+            {
+                var package = await _unitOfWork.Repository<Package>().FindAsync(request.No.Value);
+                if (package != null)
+                {
+                    blog.Type = nameof(EnumBlogType.PACKAGE);
+                    blog.No = package.Id;
+                }
+                else
+                {
+                    var maintenancePackage = await _unitOfWork.Repository<MaintenancePackage>().FindAsync(request.No.Value);
+                    if (maintenancePackage != null)
+                    {
+                        blog.Type = nameof(EnumBlogType.MAINTENANCE_PACKAGE);
+                        blog.No = maintenancePackage.Id;
+                    }
+                    else
+                    {
+                        // If No doesn't match any entity, set type to OTHER
+                        blog.Type = nameof(EnumBlogType.OTHER);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // If No is null, set type to OTHER
+            blog.Type = nameof(EnumBlogType.OTHER);
+        }
+
+        // Set the StaffId if a userId is provided
+        if (userId.HasValue)
+        {
+            var staff = await _unitOfWork.Repository<Staff>().SingleOrDefaultAsync(x => x.UserId == userId.Value);
+            if (staff != null)
+            {
+                blog.StaffId = staff.Id;
+            }
+            else
+            {
+                blog.StaffId = userId.Value;
+            }
+        }
 
         await _unitOfWork.Repository<Blog>().AddAsync(blog);
-        await _unitOfWork.SaveChangesAsync();
     }
 }
