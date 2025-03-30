@@ -1,0 +1,140 @@
+@startuml Promotion Module Class Diagram
+
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+package "API Layer" {
+  class PromotionsController {
+    - _promotionService: IPromotionService
+    + GetAllPromotions(filter: GetAllPromotionFilterRequest): Task<PagedApiResponse<GetAllPromotionResponse>>
+    + CreatePromotion(request: CommandPromotionRequest): Task<ApiResult>
+    + UpdatePromotion(id: Guid, request: CommandPromotionRequest): Task<ApiResult>
+    + DeletePromotion(id: Guid): Task<ApiResult>
+    + GetPromotionById(id: Guid): Task<ApiResult<GetAllPromotionResponse>>
+  }
+}
+
+package "Business Layer" {
+  interface IPromotionService {
+    + GetAllPromotions(filter: GetAllPromotionFilterRequest): Task<(IEnumerable<GetAllPromotionResponse> data, int total)>
+    + GetPromotionById(id: Guid): Task<GetAllPromotionResponse>
+    + CreatePromotion(request: CommandPromotionRequest): Task
+    + UpdatePromotion(id: Guid, request: CommandPromotionRequest): Task
+    + DeletePromotion(id: Guid): Task
+  }
+
+  class PromotionService {
+    - _unitOfWork: IUnitOfWork
+    - _backgroundService: IBackgroundService
+    - _mapper: IMapper
+    + GetAllPromotions(filter: GetAllPromotionFilterRequest): Task<(IEnumerable<GetAllPromotionResponse> data, int total)>
+    + GetPromotionById(id: Guid): Task<GetAllPromotionResponse>
+    + CreatePromotion(request: CommandPromotionRequest): Task
+    + UpdatePromotion(id: Guid, request: CommandPromotionRequest): Task
+    + DeletePromotion(id: Guid): Task
+    - DeterminePromotionStatus(startAt: DateTime, expiredAt: DateTime): string
+  }
+
+  class GetAllPromotionFilterRequest {
+    + Search: string
+    + Status: string
+    + Discount: int?
+    + StartAt: DateTime?
+    + ExpiredAt: DateTime?
+    + IsActive: bool?
+    + GetExpressions(): Expression<Func<Promotion, bool>>
+    + ApplySort(query: IQueryable<Promotion>): IOrderedQueryable<Promotion>
+  }
+
+  class CommandPromotionRequest {
+    + Name: string
+    + Code: string
+    + Description: string
+    + Discount: int
+    + StartAt: DateTime
+    + ExpiredAt: DateTime
+    + IsActive: bool?
+  }
+
+  class GetAllPromotionResponse {
+    + Id: Guid
+    + Name: string
+    + Code: string
+    + Description: string
+    + Discount: int
+    + StartAt: DateTime
+    + ExpiredAt: DateTime
+    + Status: string
+    + IsActive: bool
+    + CreatedAt: DateTime
+    + UpdatedAt: DateTime
+  }
+}
+
+package "Data Access Layer" {
+  interface IUnitOfWork {
+    + Promotions: IRepository<Promotion>
+    + SaveChangesAsync(): Task<int>
+  }
+  
+  interface IRepository<T> {
+    + GetByIdAsync(id: object): Task<T>
+    + GetAllAsync(): Task<IEnumerable<T>>
+    + FindAsync(expression: Expression<Func<T, bool>>): Task<IEnumerable<T>>
+    + FindOneAsync(expression: Expression<Func<T, bool>>): Task<T>
+    + AddAsync(entity: T, autoSave: bool): Task
+    + UpdateAsync(entity: T, autoSave: bool): Task
+    + RemoveAsync(entity: T, autoSave: bool): Task
+  }
+
+  class Promotion {
+    + Id: Guid
+    + Name: string
+    + Code: string
+    + Description: string
+    + Discount: int
+    + StartAt: DateTime
+    + ExpiredAt: DateTime
+    + Status: string
+    + IsActive: bool
+    + CreatedAt: DateTime
+    + UpdatedAt: DateTime
+  }
+}
+
+package "Common Utilities" {
+  class GlobalUtility {
+    + {static} GenerateRandomCode(length: int): string
+    + {static} GetCurrentSEATime(): DateTime
+    + {static} ConvertToSEATimeForPostgres(dateTime: DateTime?): DateTime?
+  }
+}
+
+package "Background Processing" {
+  interface IBackgroundService {
+    + DelayedExpirePromotionJob(timespanMinutes: int, promotionId: Guid): void
+    + DelayedActivatePromotionJob(timespanMinutes: int, promotionId: Guid): void
+  }
+  
+  class BackgroundService {
+    - _unitOfWork: IUnitOfWork
+    + DelayedExpirePromotionJob(timespanMinutes: int, promotionId: Guid): void
+    + DelayedActivatePromotionJob(timespanMinutes: int, promotionId: Guid): void
+    + SetPromotionStatusAsync(promotionId: Guid, status: string): Task
+  }
+}
+
+PromotionsController --> IPromotionService : depends on >
+IPromotionService <|.. PromotionService : implements
+PromotionService --> IUnitOfWork : uses >
+PromotionService --> IBackgroundService : uses >
+PromotionService ..> GlobalUtility : uses >
+IBackgroundService <|.. BackgroundService : implements
+BackgroundService --> IUnitOfWork : uses >
+IUnitOfWork --> IRepository : contains >
+IRepository --> Promotion : operates on >
+
+@enduml 

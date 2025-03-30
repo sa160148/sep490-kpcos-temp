@@ -6,11 +6,31 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KPCOS.Common.Utilities;
 
 public static class GlobalUtility
 {
+    /// <summary>
+    /// Generates a random code with the specified length consisting of uppercase letters and numbers
+    /// </summary>
+    /// <param name="length">The length of the code to generate</param>
+    /// <returns>A random alphanumeric code</returns>
+    public static string GenerateRandomCode(int length)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        var code = new StringBuilder(length);
+        
+        for (int i = 0; i < length; i++)
+        {
+            code.Append(chars[random.Next(chars.Length)]);
+        }
+        
+        return code.ToString();
+    }
+
     /// <summary>
     /// Get connection string from appsettings.json or environment variables,
     /// you should have .env file in your KPCOS.API folder or project root folder
@@ -124,7 +144,7 @@ public static class GlobalUtility
         var seaTimeZone = GetSEATimeZone();
         var seaTime = TimeZoneInfo.ConvertTime(dateTime.Value, seaTimeZone);
         
-        // Specify kind as Unspecified for PostgreSQL compatibility
+        // Specify kind as Unspecified for PostgreSQL compatibility with timestamp without time zone
         return DateTime.SpecifyKind(seaTime, DateTimeKind.Unspecified);
     }
 
@@ -469,5 +489,33 @@ public static class GlobalUtility
         }
 
         return (int)Math.Round(totalCost);
+    }
+
+    /// <summary>
+    /// Normalizes a DateTime for PostgreSQL timestamp without timezone storage.
+    /// This function handles all date conversions consistently by ensuring DateTimeKind.Unspecified
+    /// and proper timezone conversion if needed.
+    /// </summary>
+    /// <param name="dateTime">The DateTime to normalize</param>
+    /// <param name="ensureSEATimeZone">If true, converts the time to SEA timezone first (default: false)</param>
+    /// <returns>A DateTime with DateTimeKind.Unspecified suitable for PostgreSQL timestamp</returns>
+    public static DateTime? NormalizeDateTime(DateTime? dateTime, bool ensureSEATimeZone = false)
+    {
+        if (!dateTime.HasValue)
+        {
+            return null;
+        }
+
+        DateTime result = dateTime.Value;
+        
+        // Convert to SEA timezone if requested
+        if (ensureSEATimeZone && result.Kind != DateTimeKind.Unspecified)
+        {
+            var seaTimeZone = GetSEATimeZone();
+            result = TimeZoneInfo.ConvertTime(result, seaTimeZone);
+        }
+        
+        // Always ensure DateTimeKind.Unspecified for PostgreSQL compatibility
+        return DateTime.SpecifyKind(result, DateTimeKind.Unspecified);
     }
 }

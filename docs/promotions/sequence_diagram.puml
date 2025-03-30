@@ -1,0 +1,262 @@
+@startuml Promotion Module Sequence Diagram
+
+!theme plain
+skinparam responseMessageBelowArrow true
+
+actor "Client" as client
+participant "PromotionsController" as controller
+participant "PromotionService" as service
+participant "UnitOfWork" as unitOfWork
+participant "Repository<Promotion>" as repo
+participant "BackgroundService" as bgService
+participant "GlobalUtility" as util
+
+' Create Promotion Sequence
+group Create Promotion
+    client -> controller : POST /api/promotions\n(CommandPromotionRequest)
+    activate controller
+    
+    controller -> service : CreatePromotion(request)
+    activate service
+    
+    ' Check and generate a code if not provided
+    alt request.Code is null or empty
+        service -> util : GenerateRandomCode(6)
+        activate util
+        util --> service : random code
+        deactivate util
+    end
+    
+    ' Convert dates for database timezone compatibility
+    service -> util : ConvertToSEATimeForPostgres(request.StartAt)
+    activate util
+    util --> service : converted startAt
+    deactivate util
+    
+    service -> util : ConvertToSEATimeForPostgres(request.ExpiredAt)
+    activate util
+    util --> service : converted expiredAt
+    deactivate util
+    
+    ' Determine promotion status based on dates
+    service -> service : DeterminePromotionStatus(startAt, expiredAt)
+    activate service #DarkSalmon
+    
+    ' Check if dates are valid
+    alt startAt > expiredAt
+        service --> service : throw exception "Start date must be before end date"
+    else
+        ' Check current date against start and end dates
+        service -> util : GetCurrentSEATime()
+        activate util
+        util --> service : currentDate
+        deactivate util
+        
+        alt currentDate < startAt
+            service --> service : return "PENDING"
+        else currentDate > expiredAt
+            service --> service : return "EXPIRED"
+        else
+            service --> service : return "ACTIVE"
+        end
+    end
+    deactivate service
+    
+    ' Map request to entity and set status
+    note right of service
+      Create new Promotion entity with:
+      - Generated ID
+      - Data from request
+      - Determined status
+      - Current time for CreatedAt/UpdatedAt
+    end note
+    
+    ' Save promotion to database
+    service -> unitOfWork : Promotions.AddAsync(promotion, true)
+    activate unitOfWork
+    unitOfWork -> repo : AddAsync(promotion, true)
+    activate repo
+    
+    repo -> repo : Add entity to DbSet
+    repo -> unitOfWork : SaveChangesAsync()
+    unitOfWork --> repo : success
+    
+    repo --> unitOfWork : success
+    deactivate repo
+    unitOfWork --> service : success
+    deactivate unitOfWork
+    
+    ' Schedule background jobs if needed
+    alt status == "PENDING"
+        note right of service
+          Schedule activation job for later
+        end note
+        service -> bgService : DelayedActivatePromotionJob(minutes, promotion.Id)
+        activate bgService
+        bgService --> service : scheduled
+        deactivate bgService
+    else status == "ACTIVE"
+        note right of service
+          Schedule expiration job for later
+        end note
+        service -> bgService : DelayedExpirePromotionJob(minutes, promotion.Id)
+        activate bgService
+        bgService --> service : scheduled
+        deactivate bgService
+    end
+    
+    service --> controller : success
+    deactivate service
+    
+    controller --> client : 200 OK
+    deactivate controller
+end
+
+' Update Promotion Sequence
+group Update Promotion
+    client -> controller : PUT /api/promotions/{id}\n(CommandPromotionRequest)
+    activate controller
+    
+    controller -> service : UpdatePromotion(id, request)
+    activate service
+    
+    ' Get existing promotion
+    service -> unitOfWork : Promotions.GetByIdAsync(id)
+    activate unitOfWork
+    unitOfWork -> repo : GetByIdAsync(id)
+    activate repo
+    repo --> unitOfWork : promotion or null
+    deactivate repo
+    unitOfWork --> service : promotion or null
+    deactivate unitOfWork
+    
+    ' Check if promotion exists
+    alt promotion == null
+        service --> controller : throw exception "Promotion not found"
+        controller --> client : 404 Not Found
+    else
+        ' Convert dates for database timezone compatibility
+        service -> util : ConvertToSEATimeForPostgres(request.StartAt)
+        activate util
+        util --> service : converted startAt
+        deactivate util
+        
+        service -> util : ConvertToSEATimeForPostgres(request.ExpiredAt)
+        activate util
+        util --> service : converted expiredAt
+        deactivate util
+        
+        ' Determine new status based on updated dates
+        service -> service : DeterminePromotionStatus(startAt, expiredAt)
+        activate service #DarkSalmon
+        
+        ' Check if dates are valid
+        alt startAt > expiredAt
+            service --> service : throw exception "Start date must be before end date"
+        else
+            ' Check current date against start and end dates
+            service -> util : GetCurrentSEATime()
+            activate util
+            util --> service : currentDate
+            deactivate util
+            
+            alt currentDate < startAt
+                service --> service : return "PENDING"
+            else currentDate > expiredAt
+                service --> service : return "EXPIRED"
+            else
+                service --> service : return "ACTIVE"
+            end
+        end
+        deactivate service
+        
+        ' Update promotion properties
+        note right of service
+          Update Promotion properties:
+          - Name, Code, Description from request
+          - Updated status based on new dates
+          - StartAt and ExpiredAt with converted values
+        end note
+        
+        ' Save updated promotion
+        service -> unitOfWork : Promotions.UpdateAsync(promotion, true)
+        activate unitOfWork
+        unitOfWork -> repo : UpdateAsync(promotion, true)
+        activate repo
+        
+        repo -> repo : Update entity in DbSet
+        repo -> unitOfWork : SaveChangesAsync()
+        unitOfWork --> repo : success
+        
+        repo --> unitOfWork : success
+        deactivate repo
+        unitOfWork --> service : success
+        deactivate unitOfWork
+        
+        ' Update background jobs if status changed
+        alt status == "PENDING"
+            note right of service
+              Schedule activation job for later
+            end note
+            service -> bgService : DelayedActivatePromotionJob(minutes, promotion.Id)
+            activate bgService
+            bgService --> service : scheduled
+            deactivate bgService
+        else status == "ACTIVE"
+            note right of service
+              Schedule expiration job for later
+            end note
+            service -> bgService : DelayedExpirePromotionJob(minutes, promotion.Id)
+            activate bgService
+            bgService --> service : scheduled
+            deactivate bgService
+        end
+        
+        service --> controller : success
+        controller --> client : 200 OK
+    end
+    
+    deactivate service
+    deactivate controller
+end
+
+' Get Promotion By ID Sequence
+group Get Promotion By ID
+    client -> controller : GET /api/promotions/{id}
+    activate controller
+    
+    controller -> service : GetPromotionById(id)
+    activate service
+    
+    ' Get promotion from repository
+    service -> unitOfWork : Promotions.GetByIdAsync(id)
+    activate unitOfWork
+    unitOfWork -> repo : GetByIdAsync(id)
+    activate repo
+    repo --> unitOfWork : promotion or null
+    deactivate repo
+    unitOfWork --> service : promotion or null
+    deactivate unitOfWork
+    
+    ' Check if promotion exists and is active
+    alt promotion == null
+        service --> controller : throw exception "Promotion not found"
+        controller --> client : 404 Not Found
+    else promotion.IsActive == false
+        service --> controller : throw exception "Promotion is not active"
+        controller --> client : 400 Bad Request
+    else
+        ' Map entity to response model
+        note right of service
+          Map Promotion entity to GetAllPromotionResponse
+        end note
+        
+        service --> controller : GetAllPromotionResponse
+        controller --> client : 200 OK with promotion data
+    end
+    
+    deactivate service
+    deactivate controller
+end
+
+@enduml 
