@@ -160,7 +160,6 @@ namespace KPCOS.API.Controllers
         ///     {
         ///       "name": "Seasonal Koi Pond Maintenance Guide",
         ///       "description": "Comprehensive guidance on how to maintain your koi pond throughout the different seasons for optimal fish health and water quality",
-        ///       "type": "MAINTENANCE_PACKAGE",
         ///       "no": "7fa85f64-5717-4562-b3fc-2c963f66afa7"
         ///     }
         ///     
@@ -171,6 +170,12 @@ namespace KPCOS.API.Controllers
         ///       "statusCode": 201,
         ///       "message": "Blog post created successfully"
         ///     }
+        /// 
+        /// Note: The blog type will be automatically determined based on the "no" value:
+        /// - If "no" refers to a Project, type will be set to PROJECT
+        /// - If "no" refers to a Package, type will be set to PACKAGE
+        /// - If "no" refers to a MaintenancePackage, type will be set to MAINTENANCE_PACKAGE
+        /// - If "no" is null or doesn't match any entity, type will be set to OTHER
         /// </remarks>
         /// <param name="request">Blog post information</param>
         /// <returns>Result of the operation</returns>
@@ -187,16 +192,15 @@ namespace KPCOS.API.Controllers
             CommandBlogRequest request)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid? userId = null;
             
             if (!string.IsNullOrEmpty(userIdClaim))
             {
-                var userId = Guid.Parse(userIdClaim);
-                await _blogService.CreateBlog(request, userId);
-                return Ok();
+                userId = Guid.Parse(userIdClaim);
             }
             
-            await _blogService.CreateBlog(request);
-            return Ok();
+            await _blogService.CreateBlog(request, userId);
+            return new ApiResult(true, ApiResultStatusCode.Success, "Blog post created successfully");
         }
     }
 }
