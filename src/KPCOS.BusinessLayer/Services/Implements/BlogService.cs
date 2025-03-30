@@ -175,6 +175,5 @@ public class BlogService : IBlogService
         blog.StaffId = staff.Id;
 
         await _unitOfWork.Repository<Blog>().AddAsync(blog);
-        await _unitOfWork.SaveChangesAsync();
     }
 }
