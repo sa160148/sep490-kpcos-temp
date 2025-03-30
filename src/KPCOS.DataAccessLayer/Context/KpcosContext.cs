@@ -928,14 +928,18 @@ public partial class KpcosContext : DbContext
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Discount).HasColumnName("discount");
-            entity.Property(e => e.Exptime).HasColumnName("exptime");
+            entity.Property(e => e.ExpiredAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("expired_at");
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
-            entity.Property(e => e.Starttime).HasColumnName("starttime");
+            entity.Property(e => e.StartAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("start_at");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");

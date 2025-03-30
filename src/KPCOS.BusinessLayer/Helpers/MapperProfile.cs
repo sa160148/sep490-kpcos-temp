@@ -32,6 +32,8 @@ using KPCOS.BusinessLayer.DTOs.Request.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.Blogs;
 using KPCOS.BusinessLayer.DTOs.Request.Blogs;
+using KPCOS.BusinessLayer.DTOs.Request.Promotions;
+using KPCOS.BusinessLayer.DTOs.Response.Promotions;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -309,8 +311,7 @@ public class MapperProfile : Profile
         // Document mappings
         CreateMap<Doc, GetAllDocResponse>()
             .ForMember(dest => dest.DocType, opt => opt.MapFrom(src => src.DocType))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt ?? DateTime.MinValue))
-            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt ?? DateTime.MinValue));
+            ;
             
         CreateMap<DocType, GetDocTypeResponse>();
 
@@ -386,8 +387,16 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.Type, opt => opt.Ignore())
             .ForMember(dest => dest.No, opt => opt.MapFrom(src => src.No))
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive ?? true))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => GlobalUtility.GetCurrentSEATime()))
-            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => GlobalUtility.GetCurrentSEATime()));
+            ;
+
+        // Promotion mappings
+        CreateMap<Promotion, GetAllPromotionResponse>();
+        CreateMap<CommandPromotionRequest, Promotion>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+            .ForMember(dest => dest.StartAt, opt => opt.MapFrom(src => 
+                src.StartAt.HasValue ? GlobalUtility.NormalizeDateTime(src.StartAt, false) : null))
+            .ForMember(dest => dest.ExpiredAt, opt => opt.MapFrom(src => 
+                src.ExpiredAt.HasValue ? GlobalUtility.NormalizeDateTime(src.ExpiredAt, false) : null))
+                ;
     }
 }
