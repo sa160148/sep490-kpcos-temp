@@ -137,7 +137,40 @@ public class ContractService : IContractService
         
         var repo = _unitOfWork.Repository<Contract>();
         var contract = _mapper.Map<Contract>(request);
-        contract.ContractValue = request.ContractValue is null ? contract.ContractValue = quotation.TotalPrice : contract.ContractValue = request.ContractValue.Value;
+        
+        // Calculate contract value from quotation price
+        decimal contractValue = quotation.TotalPrice;
+        string discountNote = "";
+        
+        // Apply promotion discount if available
+        if (quotation.PromotionId.HasValue)
+        {
+            var promotion = await _unitOfWork.Repository<Promotion>().FindAsync(quotation.PromotionId.Value);
+            if (promotion != null && promotion.IsActive == true)
+            {
+                // Apply the discount percentage to the contract value
+                decimal discountAmount = contractValue * (promotion.Discount / 100m);
+                contractValue -= discountAmount;
+                
+                // Add promotion info to discount note
+                discountNote = $"Áp dụng khuyến mãi: {promotion.Name}, giảm {promotion.Discount}% tổng giá trị hợp đồng.";
+            }
+        }
+        
+        // Use provided contract value if specified, otherwise use calculated value
+        contract.ContractValue = request.ContractValue ?? (int)Math.Round(contractValue);
+        
+        // Add promotion info to note if no note was provided
+        if (string.IsNullOrEmpty(request.Note) && !string.IsNullOrEmpty(discountNote))
+        {
+            contract.Note = discountNote;
+        }
+        else if (!string.IsNullOrEmpty(discountNote))
+        {
+            // Append promotion info to existing note
+            contract.Note = string.IsNullOrEmpty(request.Note) ? discountNote : $"{request.Note}\n{discountNote}";
+        }
+        
         contract.Id = Guid.NewGuid();
         
         // Get level 1 construction items with IsPayment=true for the project, ordered by EstimateAt
