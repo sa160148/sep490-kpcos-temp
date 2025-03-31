@@ -11,6 +11,7 @@ public class QuotationCreateRequest
     public Guid TemplateConstructionId { get; set; }
     public List<Service> Services { get; set; }
     public List<Equipment> Equipments { get; set; }
+    public Guid? PromotionId { get; set; }
     
     public class Service 
     {

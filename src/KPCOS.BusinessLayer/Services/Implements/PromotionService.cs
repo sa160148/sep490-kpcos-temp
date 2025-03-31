@@ -61,6 +61,17 @@ public class PromotionService : IPromotionService
             throw new BadRequestException("Giảm giá phải lớn hơn 0");
         }
 
+        // Validate date logic
+        if (request.StartAt.HasValue && request.ExpiredAt.HasValue && request.StartAt > request.ExpiredAt)
+        {
+            throw new BadRequestException("Ngày bắt đầu không thể sau ngày kết thúc");
+        }
+
+        if (request.ExpiredAt.HasValue && request.DeadlineAt.HasValue && request.ExpiredAt > request.DeadlineAt)
+        {
+            throw new BadRequestException("Ngày kết thúc không thể sau ngày hết hạn sử dụng");
+        }
+
         var promotion = _mapper.Map<Promotion>(request);
         var promotionRepo = _unitOfWork.Repository<Promotion>();
 
@@ -85,17 +96,21 @@ public class PromotionService : IPromotionService
             }
         }
 
-        // Use GetCurrentSEATime for date handling, similar to PaymentVnpayCallback
+        // Get current date in SEA timezone
         var currentDate = GlobalUtility.GetCurrentSEATime();
         var normalizedCurrentDate = GlobalUtility.NormalizeDateTime(currentDate) ?? currentDate;
         
         // Handle StartAt and ExpiredAt dates using the new utility function
         promotion.StartAt = GlobalUtility.NormalizeDateTime(promotion.StartAt);
         promotion.ExpiredAt = GlobalUtility.NormalizeDateTime(promotion.ExpiredAt);
+        promotion.DeadlineAt = GlobalUtility.NormalizeDateTime(promotion.DeadlineAt);
 
-        // Set default status based on dates
-        if (promotion.StartAt != null && promotion.ExpiredAt != null)
-        {   
+        // Check if this is a date-based promotion or always active promotion
+        bool hasDateDefined = promotion.StartAt.HasValue && promotion.ExpiredAt.HasValue;
+
+        if (hasDateDefined)
+        {
+            // Case 1: Date-based promotion - set status based on dates
             if (promotion.StartAt > normalizedCurrentDate)
             {
                 promotion.Status = EnumPromotionStatus.PENDING.ToString();
@@ -129,6 +144,7 @@ public class PromotionService : IPromotionService
         }
         else
         {
+            // Case 2: Always active promotion - no dates defined
             promotion.Status = EnumPromotionStatus.ACTIVE.ToString();
         }
 
@@ -151,6 +167,21 @@ public class PromotionService : IPromotionService
             throw new BadRequestException("Giảm giá phải lớn hơn 0");
         }
 
+        // Validate date logic
+        DateTime? startAt = request.StartAt ?? promotion.StartAt;
+        DateTime? expiredAt = request.ExpiredAt ?? promotion.ExpiredAt;
+        DateTime? deadlineAt = request.DeadlineAt ?? promotion.DeadlineAt;
+
+        if (startAt.HasValue && expiredAt.HasValue && startAt > expiredAt)
+        {
+            throw new BadRequestException("Ngày bắt đầu không thể sau ngày kết thúc");
+        }
+
+        if (expiredAt.HasValue && deadlineAt.HasValue && expiredAt > deadlineAt)
+        {
+            throw new BadRequestException("Ngày kết thúc không thể sau ngày hết hạn sử dụng");
+        }
+
         // Check if code is being changed and if the new code already exists
         if (!string.IsNullOrEmpty(request.Code) && request.Code != promotion.Code)
         {
@@ -166,7 +197,7 @@ public class PromotionService : IPromotionService
         var normalizedCurrentDate = GlobalUtility.NormalizeDateTime(currentDate) ?? currentDate;
         
         // Update properties from request (excluding Status and dates that need special handling)
-        ReflectionUtil.UpdateProperties(request, promotion, new List<string> { "Status", "StartAt", "ExpiredAt" });
+        ReflectionUtil.UpdateProperties(request, promotion, new List<string> { "Status", "StartAt", "ExpiredAt", "DeadlineAt" });
         
         // Explicitly update date fields using the new utility function
         if (request.StartAt.HasValue)
@@ -178,6 +209,11 @@ public class PromotionService : IPromotionService
         {
             promotion.ExpiredAt = GlobalUtility.NormalizeDateTime(request.ExpiredAt);
         }
+
+        if (request.DeadlineAt.HasValue)
+        {
+            promotion.DeadlineAt = GlobalUtility.NormalizeDateTime(request.DeadlineAt);
+        }
         
         // Update name if discount changed and name was auto-generated
         if (request.Discount.HasValue && promotion.Name.Contains("Khuyến mãi"))
@@ -185,9 +221,12 @@ public class PromotionService : IPromotionService
             promotion.Name = $"Khuyến mãi {request.Discount}%";
         }
 
-        // Update status based on dates
-        if (promotion.StartAt != null && promotion.ExpiredAt != null)
-        {            
+        // Check if this is a date-based promotion or always active promotion
+        bool hasDateDefined = promotion.StartAt.HasValue && promotion.ExpiredAt.HasValue;
+
+        if (hasDateDefined)
+        {
+            // Case 1: Date-based promotion - update status based on dates
             if (promotion.StartAt > normalizedCurrentDate)
             {
                 promotion.Status = EnumPromotionStatus.PENDING.ToString();
@@ -218,6 +257,12 @@ public class PromotionService : IPromotionService
             {
                 promotion.Status = EnumPromotionStatus.EXPIRED.ToString();
             }
+        }
+        else if (request.Status != null)
+        {
+            // Case 2: Always active promotion - status updated manually
+            // Only update status if it's explicitly provided
+            promotion.Status = request.Status;
         }
 
         // Database will handle UpdatedAt

@@ -61,6 +61,7 @@ public class QuotationService : IQuotationService
             Version = await repoQuotation.Get().Where(q => q.ProjectId == request.ProjectId).CountAsync() + 1,
             Status = EnumQuotationStatus.OPEN.ToString(),
             TotalPrice = 0,
+            PromotionId = request.PromotionId ?? null
         };
         await repoQuotation.AddAsync(quotation, false);
      
@@ -128,8 +129,8 @@ public class QuotationService : IQuotationService
         
         var pageData =  repoQuotation.GetWithCount(
             filter.GetExpressions(),
-            null,
-            "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment",
+            filter.GetOrder(),
+            "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment,Promotion",
             filter.PageNumber,
             filter.PageSize
         );
@@ -145,7 +146,7 @@ public class QuotationService : IQuotationService
         
         var quotation = repoQuotation.Get(
             filter: q => q.Id == id,
-            includeProperties: "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment"
+            includeProperties: "QuotationDetails,QuotationEquipments,QuotationDetails.Service,QuotationEquipments.Equipment,Promotion"
         ).FirstOrDefault() ?? throw new NotFoundException("Báo giá không tồn tại");
         
         var data = _mapper.Map<QuotationResponse>(quotation);
@@ -309,6 +310,14 @@ public class QuotationService : IQuotationService
             };
             totalPrice += equipment.Price * equipment.Quantity;
             await repoQuotationEquiment.AddAsync(quotationEquipment,false);
+        }
+        
+        if (request.PromotionId.HasValue) {
+            var promotion = await _unitOfWork.Repository<Promotion>().FindAsync(request.PromotionId.Value);
+            if (promotion == null) {
+                throw new BadRequestException("Khuyến mãi không tồn tại");
+            }
+            quotation.PromotionId = request.PromotionId.Value;
         }
         
         quotation.TotalPrice = totalPrice;

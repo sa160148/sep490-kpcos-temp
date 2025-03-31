@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
 using LinqKit;
+using KPCOS.Common.Utilities;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Promotions;
 
@@ -29,12 +30,32 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
     /// <summary>
     /// Lọc theo thời gian bắt đầu (từ ngày này trở đi)
     /// </summary>
-    public DateTime? StartAt { get; set; }
+    public DateTime? StartAtFrom { get; set; }
+
+    /// <summary>
+    /// Lọc theo thời gian bắt đầu (từ ngày này trở đi)
+    /// </summary>
+    public DateTime? StartAtTo { get; set; }
     
     /// <summary>
     /// Lọc theo thời gian kết thúc (đến ngày này)
     /// </summary>
-    public DateTime? ExpiredAt { get; set; }
+    public DateTime? ExpiredAtFrom { get; set; }
+
+    /// <summary>
+    /// Lọc theo thời gian kết thúc (đến ngày này)
+    /// </summary>
+    public DateTime? ExpiredAtTo { get; set; }
+
+    /// <summary>
+    /// Lọc theo ngày giới hạn sử dụng khuyến mãi
+    /// </summary>
+    public DateTime? DeadlineAtFrom { get; set; }
+
+    /// <summary>
+    /// Lọc theo ngày giới hạn sử dụng khuyến mãi
+    /// </summary>
+    public DateTime? DeadlineAtTo { get; set; }
     
     /// <summary>
     /// Lọc theo trạng thái hoạt động
@@ -61,13 +82,35 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
         {
             predicate = predicate.And(x => x.Discount == Discount);
         }
-        if (StartAt != null)
+        if (StartAtFrom != null)
         {
-            predicate = predicate.And(x => x.StartAt >= StartAt);
+            DateTime? startAtFrom = GlobalUtility.NormalizeDateTime(StartAtFrom);
+            predicate = predicate.And(x => x.StartAt >= startAtFrom);
         }
-        if (ExpiredAt != null)
+        if (StartAtTo != null)
         {
-            predicate = predicate.And(x => x.ExpiredAt <= ExpiredAt);
+            DateTime? startAtTo = GlobalUtility.NormalizeDateTime(StartAtTo);
+            predicate = predicate.And(x => x.StartAt <= startAtTo);
+        }
+        if (ExpiredAtFrom != null)
+        {
+            DateTime? expiredAtFrom = GlobalUtility.NormalizeDateTime(ExpiredAtFrom);
+            predicate = predicate.And(x => x.ExpiredAt >= expiredAtFrom);
+        }
+        if (ExpiredAtTo != null)
+        {
+            DateTime? expiredAtTo = GlobalUtility.NormalizeDateTime(ExpiredAtTo);
+            predicate = predicate.And(x => x.ExpiredAt <= expiredAtTo);
+        }
+        if (DeadlineAtFrom != null)
+        {
+            DateTime? deadlineAtFrom = GlobalUtility.NormalizeDateTime(DeadlineAtFrom);
+            predicate = predicate.And(x => x.DeadlineAt >= deadlineAtFrom);
+        }
+        if (DeadlineAtTo != null)
+        {
+            DateTime? deadlineAtTo = GlobalUtility.NormalizeDateTime(DeadlineAtTo);
+            predicate = predicate.And(x => x.DeadlineAt <= deadlineAtTo);
         }
         if (IsActive.HasValue)
         {

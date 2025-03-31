@@ -397,6 +397,8 @@ public class MapperProfile : Profile
                 src.StartAt.HasValue ? GlobalUtility.NormalizeDateTime(src.StartAt, false) : null))
             .ForMember(dest => dest.ExpiredAt, opt => opt.MapFrom(src => 
                 src.ExpiredAt.HasValue ? GlobalUtility.NormalizeDateTime(src.ExpiredAt, false) : null))
+            .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => 
+                src.DeadlineAt.HasValue ? GlobalUtility.NormalizeDateTime(src.DeadlineAt, false) : null))
                 ;
     }
 }
