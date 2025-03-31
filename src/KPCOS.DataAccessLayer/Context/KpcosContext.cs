@@ -940,6 +940,9 @@ public partial class KpcosContext : DbContext
             entity.Property(e => e.StartAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("start_at");
+            entity.Property(e => e.DeadlineAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("deadline_at");
             entity.Property(e => e.Status)
                 .HasMaxLength(255)
                 .HasColumnName("status");

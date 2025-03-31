@@ -98,21 +98,26 @@ public class BackgroundService : IBackgroundService
             // Ensure we're comparing with normalized dates
             var normalizedCurrentTime = GlobalUtility.NormalizeDateTime(currentTime);
             
-            if (normalizedCurrentTime < promotion.StartAt)
+            // Only update status automatically if it's a date-based promotion
+            if (promotion.StartAt.HasValue && promotion.ExpiredAt.HasValue)
             {
-                promotion.Status = EnumPromotionStatus.PENDING.ToString();
+                if (normalizedCurrentTime < promotion.StartAt)
+                {
+                    promotion.Status = EnumPromotionStatus.PENDING.ToString();
+                }
+                else if (normalizedCurrentTime >= promotion.StartAt && normalizedCurrentTime <= promotion.ExpiredAt)
+                {
+                    promotion.Status = EnumPromotionStatus.ACTIVE.ToString();
+                }
+                else
+                {
+                    promotion.Status = EnumPromotionStatus.EXPIRED.ToString();
+                }
+                
+                // Cơ sở dữ liệu sẽ tự động cập nhật trường UpdatedAt
+                await promotionRepo.UpdateAsync(promotion);
             }
-            else if (normalizedCurrentTime >= promotion.StartAt && normalizedCurrentTime <= promotion.ExpiredAt)
-            {
-                promotion.Status = EnumPromotionStatus.ACTIVE.ToString();
-            }
-            else
-            {
-                promotion.Status = EnumPromotionStatus.EXPIRED.ToString();
-            }
-            
-            // Cơ sở dữ liệu sẽ tự động cập nhật trường UpdatedAt
-            await promotionRepo.UpdateAsync(promotion);
+            // If it's not a date-based promotion, don't update status automatically
         }
     }
     

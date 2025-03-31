@@ -44,6 +44,12 @@ public class GetAllPromotionResponse
     public DateTime? ExpiredAt { get; set; }
     
     /// <summary>
+    /// Ngày giới hạn sử dụng khuyến mãi (báo giá sau ngày này không thể sử dụng khuyến mãi)
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? DeadlineAt { get; set; }
+    
+    /// <summary>
     /// Trạng thái khuyến mãi (PENDING, ACTIVE, EXPIRED)
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

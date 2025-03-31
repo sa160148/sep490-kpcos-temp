@@ -33,6 +33,11 @@ public class CommandPromotionRequest
     public DateTime? ExpiredAt { get; set; }
     
     /// <summary>
+    /// Ngày giới hạn sử dụng khuyến mãi (báo giá sau ngày này không thể sử dụng khuyến mãi)
+    /// </summary>
+    public DateTime? DeadlineAt { get; set; }
+    
+    /// <summary>
     /// Trạng thái khuyến mãi (PENDING, ACTIVE, EXPIRED)
     /// </summary>
     public string? Status { get; set; }
