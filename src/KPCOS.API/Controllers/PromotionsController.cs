@@ -59,6 +59,7 @@ namespace KPCOS.API.Controllers
         ///   "discount": 15,
         ///   "startAt": "2023-06-01T00:00:00",
         ///   "expiredAt": "2023-08-31T23:59:59",
+        ///   "deadlineAt": "2023-09-30T23:59:59",
         ///   "description": "Khuyến mãi 15% cho tất cả dịch vụ xây dựng và bảo trì hồ cá Koi trong mùa hè"
         /// }
         /// ```
@@ -66,7 +67,7 @@ namespace KPCOS.API.Controllers
         [HttpPost]
         [SwaggerOperation(
             Summary = "Tạo khuyến mãi",
-            Description = "Tạo khuyến mãi mới với mã tự động nếu không được cung cấp. Trạng thái được xác định dựa trên ngày bắt đầu và kết thúc."
+            Description = "Tạo khuyến mãi mới với mã tự động nếu không được cung cấp. Có hai loại khuyến mãi: (1) Khuyến mãi có ngày bắt đầu/kết thúc - trạng thái tự động thay đổi, (2) Khuyến mãi không có ngày - luôn active và trạng thái thay đổi thủ công. Lưu ý: StartAt phải trước ExpiredAt, và ExpiredAt phải trước DeadlineAt."
         )]
         [SwaggerResponse(StatusCodes.Status200OK, "Khuyến mãi đã được tạo thành công")]
         [SwaggerResponse(StatusCodes.Status400BadRequest, "Lỗi yêu cầu không hợp lệ")]
@@ -93,6 +94,7 @@ namespace KPCOS.API.Controllers
         ///   "discount": 20,
         ///   "startAt": "2023-09-01T00:00:00",
         ///   "expiredAt": "2023-12-31T23:59:59",
+        ///   "deadlineAt": "2024-01-31T23:59:59",
         ///   "description": "Khuyến mãi 20% cho dịch vụ bảo trì hồ cá Koi mùa thu đông"
         /// }
         /// ```
@@ -100,7 +102,7 @@ namespace KPCOS.API.Controllers
         [HttpPut("{id}")]
         [SwaggerOperation(
             Summary = "Cập nhật khuyến mãi",
-            Description = "Cập nhật khuyến mãi theo id. Trạng thái sẽ được tự động cập nhật dựa trên ngày bắt đầu và kết thúc nếu có."
+            Description = "Cập nhật khuyến mãi theo id. Nếu khuyến mãi có ngày bắt đầu/kết thúc, trạng thái sẽ tự động cập nhật. Nếu không có ngày, trạng thái sẽ chỉ cập nhật khi được chỉ định trong request. Lưu ý: StartAt phải trước ExpiredAt, và ExpiredAt phải trước DeadlineAt."
         )]
         [SwaggerResponse(StatusCodes.Status200OK, "Khuyến mãi đã được cập nhật thành công")]
         [SwaggerResponse(StatusCodes.Status400BadRequest, "Lỗi yêu cầu không hợp lệ")]
