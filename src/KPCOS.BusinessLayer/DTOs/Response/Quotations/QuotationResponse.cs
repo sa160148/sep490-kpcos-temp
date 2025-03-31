@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using KPCOS.BusinessLayer.DTOs.Response.Equipments;
+using KPCOS.BusinessLayer.DTOs.Response.Promotions;
 using KPCOS.BusinessLayer.DTOs.Response.Services;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 
@@ -28,8 +29,10 @@ public class QuotationForProjectResponse
     public string? Reason { get; set; }
     
     public int? TotalPrice { get; set; }
-    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IEnumerable<GetAllStaffResponse>? Staffs { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GetAllPromotionResponse? Promotion { get; set; }
 }
 
 public class QuotationResponse : QuotationForProjectResponse
