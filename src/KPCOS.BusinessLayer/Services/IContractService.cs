@@ -46,6 +46,8 @@ public interface IContractService
     ///     <item><description>Validates that the project exists</description></item>
     ///     <item><description>Validates that the quotation exists and has APPROVED status</description></item>
     ///     <item><description>Creates a new contract with the provided details</description></item>
+    ///     <item><description>Applies any promotional discount if the quotation has an associated promotion</description></item>
+    ///     <item><description>Adds promotion information to the contract notes if a promotion was applied</description></item>
     ///     <item><description>Creates 4 payment batches automatically:</description>
     ///         <list type="bullet">
     ///             <item><description>Deposit payment batch (25% of contract value)</description></item>

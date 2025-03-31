@@ -34,12 +34,14 @@ public class ContractsController : BaseController
     /// 1. Validates that the project exists
     /// 2. Validates that the quotation exists and has APPROVED status
     /// 3. Creates a new contract with the provided details
-    /// 4. Automatically creates 4 payment batches (each 25% of contract value):
+    /// 4. Applies any promotion discount from the quotation to the contract value
+    /// 5. Adds promotion information to the contract notes if a promotion is applied
+    /// 6. Automatically creates 4 payment batches (each 25% of contract value):
     ///    * Deposit payment batch
     ///    * Pre-constructing payment batch
     ///    * Constructing payment batch
     ///    * Acceptance payment batch
-    /// 5. Links payment batches to construction items with IsPayment=true, ordered by EstimateAt date
+    /// 7. Links payment batches to construction items with IsPayment=true, ordered by EstimateAt date
     /// 
     /// Sample request:
     /// ```json
