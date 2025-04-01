@@ -23,13 +23,21 @@ public class FirebaseService : IFirebaseService
         _mapper = mapper;
         if (_firebaseApp == null)
         {
-            string authJsonFile = _config["FirebaseSettings:ConfigFile"];
-            var appOptions = new AppOptions()
+            try
             {
-                Credential = GoogleCredential.FromFile(authJsonFile)
-            };
+                string authJsonFile = _config["FirebaseSettings:ConfigFile"];
+                var appOptions = new AppOptions()
+                {
+                    Credential = GoogleCredential.FromFile(authJsonFile)
+                };
 
-            _firebaseApp = FirebaseApp.Create(appOptions);
+                _firebaseApp = FirebaseApp.Create(appOptions);
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("The default FirebaseApp already exists"))
+            {
+                // If the app is already initialized, just get the instance
+                _firebaseApp = FirebaseApp.DefaultInstance;
+            }
         }
         string path = AppDomain.CurrentDomain.BaseDirectory + @"firebase_app_settings.json";
         Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", path);
