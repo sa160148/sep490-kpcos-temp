@@ -40,9 +40,9 @@ namespace KPCOS.API.Controllers
             var promotions = await _promotionService.GetAllPromotions(filter);
             return new PagedApiResponse<GetAllPromotionResponse>(
                 promotions.data, 
-                promotions.total, 
                 filter.PageNumber, 
-                filter.PageSize);
+                filter.PageSize,
+                promotions.total);
         }
 
         /// <summary>

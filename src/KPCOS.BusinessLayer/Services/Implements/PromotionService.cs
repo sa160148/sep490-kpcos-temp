@@ -38,7 +38,7 @@ public class PromotionService : IPromotionService
             pageSize: filter.PageSize
         );
 
-        var promotionsResponse = _mapper.Map<IEnumerable<GetAllPromotionResponse>>(result.Data);
+        var promotionsResponse = _mapper.Map<List<GetAllPromotionResponse>>(result.Data);
         return (promotionsResponse, result.Count);
     }
 
