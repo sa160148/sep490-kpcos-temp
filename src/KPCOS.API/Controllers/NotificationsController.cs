@@ -19,50 +19,13 @@ namespace KPCOS.API.Controllers
             _notificationService = notificationService;
         }
 
-        [HttpGet]
-        [SwaggerOperation(Summary = "Lấy danh sách thông báo")]
-        public async Task<PagedApiResponse<GetAllNotificationResponse>> GetNotifications(
-            [FromQuery] GetAllNotificationFilterRequest filter
-        )
+        /*
+        [HttpPut("{id}")]
+        public async Task<ApiResult> UpdateNotificationRead(Guid id)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            (IEnumerable<GetAllNotificationResponse> notifications, int total) result;
-            if (!string.IsNullOrEmpty(userIdClaim))
-            {
-                var userId = Guid.Parse(userIdClaim);
-                result = await _notificationService.GetAllNotificationAsync(filter, userId);
-            }
-            else
-            {
-                result = await _notificationService.GetAllNotificationAsync(filter);
-            }
-            
-            return new PagedApiResponse<GetAllNotificationResponse>(
-                result.notifications,
-                filter.PageNumber,
-                filter.PageSize,
-                result.total
-            );
-        }
-
-        [HttpPost]
-        [SwaggerOperation(Summary = "Tạo thông báo")]
-        public async Task<ApiResult> CreateNotification(
-            [FromBody] CommandNotificationRequest request
-        )
-        {
-            await _notificationService.CreateNotificationAsync(request);
+            await _notificationService.UpdateNotificationRead(id);
             return Ok();
         }
-
-        [HttpGet("{id}")]
-        [SwaggerOperation(Summary = "Lấy thông báo theo id")]
-        public async Task<ApiResult<GetAllNotificationResponse>> GetNotificationById(
-            [FromRoute] Guid id
-        )
-        {
-            var notification = await _notificationService.GetNotificationByIdAsync(id);
-            return Ok(notification);
-        }
+        */
     }
 }
