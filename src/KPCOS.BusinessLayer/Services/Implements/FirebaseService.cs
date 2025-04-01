@@ -7,6 +7,9 @@ using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
 using Microsoft.Extensions.Configuration;
+using KPCOS.BusinessLayer.DTOs.Notifications;
+using LinqKit;
+using System.Linq.Expressions;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -277,6 +280,137 @@ public class FirebaseService : IFirebaseService
         var docRef = _dbFirestore.Collection("docs").Document(docId);
         var snapshot = await docRef.GetSnapshotAsync();
         return snapshot.Exists;
+    }
+    #endregion
+
+    #region Notifications
+    /// <summary>
+    /// Create a new notification in Firestore
+    /// </summary>
+    /// <param name="notification">Notification to save</param>
+    /// <exception cref="AppException">Error creating notification in Firestore</exception>
+    public async Task CreateNotificationAsync(Notification notification)
+    {
+        try
+        {
+            DocumentReference docRef = _dbFirestore.Collection("notifications").Document(notification.Id);
+            await docRef.SetAsync(notification);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error creating notification: {e.Message}");
+            throw new AppException("Error creating notification in Firestore");
+        }
+    }
+    
+    /// <summary>
+    /// Get a notification by ID
+    /// </summary>
+    /// <param name="id">Notification ID</param>
+    /// <returns>Notification if found</returns>
+    /// <exception cref="NotFoundException">Notification not found</exception>
+    public async Task<Notification> GetNotificationByIdAsync(string id)
+    {
+        try
+        {
+            DocumentReference docRef = _dbFirestore.Collection("notifications").Document(id);
+            DocumentSnapshot snapshot = await docRef.GetSnapshotAsync();
+            
+            if (!snapshot.Exists)
+            {
+                throw new NotFoundException($"Notification with ID {id} not found");
+            }
+            
+            return snapshot.ConvertTo<Notification>();
+        }
+        catch (NotFoundException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error getting notification by ID: {e.Message}");
+            throw new AppException($"Error retrieving notification {id} from Firestore");
+        }
+    }
+    
+    /// <summary>
+    /// Get notifications with filtering
+    /// </summary>
+    /// <param name="filter">Expression to filter notifications</param>
+    /// <returns>Collection of notifications and total count</returns>
+    /// <exception cref="AppException">Error retrieving notifications</exception>
+    public async Task<(IEnumerable<Notification> notifications, int total)> GetNotificationsAsync(
+        Expression<Func<Notification, bool>> filter = null,
+        int pageNumber = 1,
+        int pageSize = 10)
+    {
+        try
+        {
+            // Reference to the notifications collection
+            CollectionReference notificationsRef = _dbFirestore.Collection("notifications");
+            
+            // Execute query to get all notifications (Firestore doesn't support LINQ expressions directly)
+            QuerySnapshot snapshot = await notificationsRef.OrderByDescending("CreatedAt").GetSnapshotAsync();
+            
+            // Convert to Notification objects
+            var notifications = snapshot.Documents.Select(doc => doc.ConvertTo<Notification>()).ToList();
+            
+            // Apply filter in memory if provided
+            if (filter != null)
+            {
+                var compiledFilter = filter.Compile();
+                notifications = notifications.Where(compiledFilter).ToList();
+            }
+            
+            // Get total count
+            int totalCount = notifications.Count;
+            
+            // Apply pagination
+            notifications = notifications
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            
+            return (notifications, totalCount);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error getting notifications: {e.Message}");
+            throw new AppException("Error retrieving notifications from Firestore");
+        }
+    }
+    
+    /// <summary>
+    /// Update a notification's read status
+    /// </summary>
+    /// <param name="id">Notification ID</param>
+    /// <param name="isRead">Whether the notification is read</param>
+    /// <exception cref="NotFoundException">Notification not found</exception>
+    /// <exception cref="AppException">Error updating notification</exception>
+    public async Task UpdateNotificationReadStatusAsync(string id, bool isRead)
+    {
+        try
+        {
+            DocumentReference docRef = _dbFirestore.Collection("notifications").Document(id);
+            DocumentSnapshot snapshot = await docRef.GetSnapshotAsync();
+            
+            if (!snapshot.Exists)
+            {
+                throw new NotFoundException($"Notification with ID {id} not found");
+            }
+            
+            await docRef.UpdateAsync("IsRead", isRead);
+        }
+        catch (NotFoundException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error updating notification read status: {e.Message}");
+            throw new AppException($"Error updating notification {id} in Firestore");
+        }
     }
     #endregion
 }

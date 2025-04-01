@@ -1,5 +1,6 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
+using KPCOS.BusinessLayer.DTOs.Notifications;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -82,5 +83,42 @@ public interface IFirebaseService
     /// <param name="docId">string</param>
     /// <returns></returns>
     Task<bool> IsDocOtpInFirestore(string docId);
+    #endregion
+
+    #region Notifications
+    /// <summary>
+    /// Create a new notification in Firestore
+    /// </summary>
+    /// <param name="notification">Notification to save</param>
+    /// <exception cref="AppException">Error creating notification in Firestore</exception>
+    Task CreateNotificationAsync(Notification notification);
+    
+    /// <summary>
+    /// Get a notification by ID
+    /// </summary>
+    /// <param name="id">Notification ID</param>
+    /// <returns>Notification if found</returns>
+    /// <exception cref="NotFoundException">Notification not found</exception>
+    Task<Notification> GetNotificationByIdAsync(string id);
+    
+    /// <summary>
+    /// Get notifications with filtering
+    /// </summary>
+    /// <param name="filter">Expression to filter notifications</param>
+    /// <returns>Collection of notifications and total count</returns>
+    /// <exception cref="AppException">Error retrieving notifications</exception>
+    Task<(IEnumerable<Notification> notifications, int total)> GetNotificationsAsync(
+        System.Linq.Expressions.Expression<Func<Notification, bool>> filter = null,
+        int pageNumber = 1,
+        int pageSize = 10);
+    
+    /// <summary>
+    /// Update a notification's read status
+    /// </summary>
+    /// <param name="id">Notification ID</param>
+    /// <param name="isRead">Whether the notification is read</param>
+    /// <exception cref="NotFoundException">Notification not found</exception>
+    /// <exception cref="AppException">Error updating notification</exception>
+    Task UpdateNotificationReadStatusAsync(string id, bool isRead);
     #endregion
 }

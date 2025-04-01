@@ -34,6 +34,8 @@ using KPCOS.BusinessLayer.DTOs.Response.Blogs;
 using KPCOS.BusinessLayer.DTOs.Request.Blogs;
 using KPCOS.BusinessLayer.DTOs.Request.Promotions;
 using KPCOS.BusinessLayer.DTOs.Response.Promotions;
+using KPCOS.BusinessLayer.DTOs.Notifications;
+using KPCOS.BusinessLayer.DTOs.Response.Notifications;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -400,5 +402,16 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => 
                 src.DeadlineAt.HasValue ? GlobalUtility.NormalizeDateTime(src.DeadlineAt, false) : null))
                 ;
+
+        // Notification mappings
+        CreateMap<Notification, GetAllNotificationResponse>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.Link, opt => opt.MapFrom(src => src.Link))
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
+            .ForMember(dest => dest.RecipientId, opt => opt.MapFrom(src => src.RecipientId))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+            .ForMember(dest => dest.IsRead, opt => opt.MapFrom(src => src.IsRead));
     }
 }
