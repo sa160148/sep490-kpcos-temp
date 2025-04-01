@@ -119,6 +119,7 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
         return predicate;
     }
 
+    /*
     /// <summary>
     /// Áp dụng sắp xếp cho truy vấn dựa trên cột sắp xếp được chỉ định
     /// </summary>
@@ -162,4 +163,5 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
                 _ => query.OrderByDescending(p => p.CreatedAt)
             };
     }
+    */
 }
