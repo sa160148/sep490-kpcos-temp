@@ -627,7 +627,7 @@ public class ProjectService(
         }
 
         var advancedFilter = filter.GetExpressions();
-        advancedFilter.And(c => c.ProjectId == id);
+        advancedFilter = advancedFilter.And(c => c.ProjectId == id);
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
             .GetWithCount(
@@ -637,21 +637,8 @@ public class ProjectService(
                 pageIndex: filter.PageNumber,
                 pageSize: filter.PageSize
             );
-        
-        if (!contracts.Data.Any())
-        {
-            return (Enumerable.Empty<GetAllContractResponse>(), 0);
-        }
 
-        var contractResponses = contracts.Data.Select(contract =>
-        {
-            var response = mapper.Map<GetAllContractResponse>(contract);
-            
-            // Find the quotation associated with this contract and get its total price
-            var quotation = contract.Project.Quotations
-                .FirstOrDefault(q => q.Id == contract.QuotationId);
-            return response;
-        }).ToList();
+        var contractResponses = mapper.Map<List<GetAllContractResponse>>(contracts.Data);
 
         return (contractResponses, contracts.Count);
     }
