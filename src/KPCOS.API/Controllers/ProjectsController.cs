@@ -501,10 +501,17 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(Guid id, [FromQuery]GetAllContractFilterRequest filter)
+        public async Task<PagedApiResponse<GetAllContractResponse>> GetAllContractByProjectAsync(
+            Guid id, 
+            [FromQuery]
+            GetAllContractFilterRequest filter)
         {
             var contract = await service.GetContractByProjectAsync(id, filter);
-            return new PagedApiResponse<GetAllContractResponse>(contract.data, filter.PageNumber, filter.PageSize, contract.total);
+            return new PagedApiResponse<GetAllContractResponse>(
+                contract.data, 
+                filter.PageNumber, 
+                filter.PageSize, 
+                contract.total);
         }
         
         /// <summary>
