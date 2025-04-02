@@ -430,8 +430,8 @@ public class PaymentService : IPaymentService
         // Add customer ID filter if provided
         if (customerId.HasValue)
         {
-            var customerId1 = customerId.Value; // Capture variable for lambda expression
-            expression = expression.And(t => t.CustomerId == customerId1);
+            var customerId1 = await _unitOfWork.Repository<Customer>().SingleOrDefaultAsync(x => x.UserId == customerId.Value);
+            expression = expression.And(t => t.CustomerId == customerId1.Id);
         }
         
         // Get all transactions based on filters
