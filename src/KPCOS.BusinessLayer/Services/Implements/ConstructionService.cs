@@ -1096,6 +1096,7 @@ public class ConstructionService : IConstructionServices
         
         // Update the task status to DONE
         constructionTask.Status = EnumConstructionTaskStatus.DONE.ToString();
+        constructionTask.DeadlineActualAt = GlobalUtility.GetCurrentSEATime();
         await constructionTaskRepo.UpdateAsync(constructionTask, false);
         
         // Get the construction item level 2 (child) that contains this task
