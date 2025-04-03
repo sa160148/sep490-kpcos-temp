@@ -736,15 +736,16 @@ namespace KPCOS.API.Controllers
             KPCOS.BusinessLayer.DTOs.Request.Constructions.GetAllConstructionTaskFilterRequest filter)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
             (IEnumerable<GetAllConstructionTaskResponse> data, int total) constructionTasks;
-            if (userIdClaim != null)
+            if (userIdClaim != null && roleClaim != null && roleClaim == RoleEnum.CONSTRUCTOR.ToString())
             {
                 var userId = Guid.Parse(userIdClaim);
-                constructionTasks = await service.GetAllConstructionTaskByProjectAsync(id, filter, userId);
-                return new PagedApiResponse<GetAllConstructionTaskResponse>(constructionTasks.data, filter.PageNumber, filter.PageSize, constructionTasks.total);
-        
+                filter.StaffId = userId;
             }
-            constructionTasks = await service.GetAllConstructionTaskByProjectAsync(id, filter);
+            filter.ProjectId = id;
+            // constructionTasks = await constructionService.GetAllConstructionTaskAsync(filter);
+            constructionTasks = await service.GetAllConstructionTaskByProjectAsync(filter);
             return new PagedApiResponse<GetAllConstructionTaskResponse>(constructionTasks.data, filter.PageNumber, filter.PageSize, constructionTasks.total);
         }
 

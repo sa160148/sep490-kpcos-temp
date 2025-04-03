@@ -286,31 +286,17 @@ public class ConstructionService : IConstructionServices
         return (result, total);
     }
 
-    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(GetAllConstructionTaskFilterRequest filter, Guid? userId = null)
+    public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskAsync(
+        GetAllConstructionTaskFilterRequest filter)
     {
-        // Get the repository for ConstructionTask
-        var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
-        
-        // Apply the filter expression from the request
-        var filterExpression = filter.GetExpressions();
-        
-        // If userId is provided, check if the user is a constructor and filter by their staff ID
-        if (userId.HasValue)
+        if (filter.ProjectId.HasValue)
         {
-            var (isConstructor, staffId) = await CheckUserIsConstructorAsync(userId.Value);
-            
-            if (isConstructor && staffId.HasValue)
-            {
-                // Create a new filter expression that includes the staff ID filter
-                Guid staffIdValue = staffId.Value;
-                var staffFilter = PredicateBuilder.New<ConstructionTask>(task => task.StaffId == staffIdValue);
-                filterExpression = filterExpression.And(staffFilter);
-            }
+            await ValidateAndGetProject(filter.ProjectId.Value);
         }
         
         // Get the data with count using the repository's GetWithCount method
-        var result = constructionTaskRepo.GetWithCount(
-            filter: filterExpression,
+        var result = _unitOfWork.Repository<ConstructionTask>().GetWithCount(
+            filter: filter.GetExpressions(),
             orderBy: filter.GetOrder(),
             includeProperties: "Staff,Staff.User,ConstructionItem",
             pageIndex: filter.PageNumber,
@@ -1248,4 +1234,23 @@ public class ConstructionService : IConstructionServices
         // Save the new construction item
         await constructionItemRepo.AddAsync(newConstructionItem, true);
     }
+
+    #region Sub-Function
+    /// <summary>
+    /// Validates and retrieves a project by its ID
+    /// </summary>
+    /// <param name="projectId">The ID of the project to validate and retrieve</param>
+    /// <returns>The validated project</returns>
+    /// <exception cref="NotFoundException">Thrown when the project with the specified ID is not found</exception>
+    private async Task<Project> ValidateAndGetProject(Guid projectId)
+    {
+        var project = await _unitOfWork.Repository<Project>().FindAsync(projectId);
+        if (project == null)
+        {
+            throw new NotFoundException("Project không tồn tại");
+        }
+        return project;
+    }
+
+    #endregion
 }
