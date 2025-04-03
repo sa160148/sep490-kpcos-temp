@@ -1158,65 +1158,33 @@ public class ProjectService(
     }
 
     /// <summary>
-    /// Gets all construction tasks associated with a specific project with pagination and filtering
+    /// [DEPRECATED] Gets all construction tasks associated with a specific project with pagination and filtering
     /// </summary>
-    /// <param name="id">The project ID to get construction tasks for</param>
     /// <param name="filter">Filter criteria for construction tasks</param>
-    /// <param name="userId">Optional User ID to filter tasks assigned to a specific staff member</param>
     /// <returns>Tuple containing the list of construction tasks and total count</returns>
+    /// <remarks>
+    /// <para>This method is deprecated and will be removed in a future version.</para>
+    /// <para>Use the GetAllConstructionTaskAsync method in the ConstructionService instead.</para>
+    /// </remarks>
     public async Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
-        Guid id, 
-        GetAllConstructionTaskFilterRequest filter,
-        Guid? userId = null)
+        GetAllConstructionTaskFilterRequest filter)
     {
-        // Validate and get the project
-        var project = await ValidateAndGetProject(id);
+        // Validate project exists
+        await ValidateAndGetProject(filter.ProjectId.Value);
         
-        // Get all construction items for this project
-        var constructionItems = unitOfWork.Repository<ConstructionItem>().Get(
-            filter: ci => ci.ProjectId == id && ci.IsActive == true
-        ).Select(ci => ci.Id).ToList();
-        
-        if (!constructionItems.Any())
-        {
-            return (new List<GetAllConstructionTaskResponse>(), 0);
-        }
-        
-        // Create a combined filter expression that includes the project's construction items
-        var baseFilter = filter.GetExpressions();
-        var projectFilter = PredicateBuilder.New<ConstructionTask>(true)
-            .And(task => constructionItems.Contains(task.ConstructionItemId));
-        
-        // If userId is provided, check if user is a constructor
-        if (userId.HasValue)
-        {
-            // Find the staff with the given userId
-            var staff = await unitOfWork.Repository<Staff>().FirstOrDefaultAsync(s => s.UserId == userId.Value);
-            
-            // Only filter by staff ID if the user is a CONSTRUCTOR
-            if (staff != null && staff.Position == RoleEnum.CONSTRUCTOR.ToString())
-            {
-                // Add filter to only include tasks assigned to this staff
-                projectFilter = projectFilter.And(task => task.StaffId == staff.Id);
-            }
-        }
-        
-        // Combine with the filter from the request
-        var combinedFilter = baseFilter.And(projectFilter);
-        
-        // Get the data with count using the repository's GetWithCount method
+        // Execute the query with all filters, includes, and pagination
         var result = unitOfWork.Repository<ConstructionTask>().GetWithCount(
-            filter: combinedFilter,
+            filter: filter.GetExpressions(),
             orderBy: filter.GetOrder(),
             includeProperties: "Staff,Staff.User,ConstructionItem",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
         
-        // Map the entities to response DTOs
-        var mappedResult = mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
+        // Map to response DTOs
+        var response = mapper.Map<List<GetAllConstructionTaskResponse>>(result.Data);
         
-        return (mappedResult, result.Count);
+        return (response, result.Count);
     }
 
     /// <summary>

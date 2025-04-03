@@ -1,8 +1,10 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
 using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
+using KPCOS.DataAccessLayer.Enums;
 using LinqKit;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Constructions;
@@ -20,7 +22,7 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     /// <summary>
     /// Optional flag to filter tasks by active status
     /// </summary>
-    public bool? IsActive { get; set; }
+    public bool? IsActive { get; set; } = true;
     
     /// <summary>
     /// Optional status to filter tasks (e.g., "OPENING", "PROCESSING", "PREVIEWING", "DONE")
@@ -28,7 +30,7 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     public string? Status { get; set; }
     
     /// <summary>
-    /// Optional flag to filter tasks by overdue status.
+    /// Optional flag to filter tasks by overdue status, true will return tasks with deadlines in the past that are not marked as DONE, false will return tasks that are not overdue or are marked as DONE.
     /// <para>When true, returns tasks with deadlines in the past that are not marked as DONE.</para>
     /// When false, returns tasks that are not overdue or are marked as DONE.
     /// </summary>
@@ -38,7 +40,19 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     /// Optional construction item ID to filter tasks by their associated construction item
     /// </summary>
     public Guid? ConstructionItemId { get; set; }
-    
+
+    /// <summary>
+    /// Optional project ID to filter tasks by their associated project, if not provided, all tasks will be returned.
+    /// <para>If this filter is use in api/projects/{id}/construction-task, it will filter tasks by their associated project.</para>
+    /// </summary>
+    public Guid? ProjectId { get; set; }
+
+    /// <summary>
+    /// Optional staff ID to filter tasks by their associated staff.
+    /// <para>**IGNORE THIS FILTER**, it will auto set when login user is constructor, other case will return all tasks.</para>
+    /// </summary>
+    public Guid? StaffId { get; set; }
+
     /// <summary>
     /// Builds the filter expression based on the provided filter criteria
     /// </summary>
@@ -61,7 +75,9 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
         
         if (!string.IsNullOrEmpty(Status))
         {
-            predicate = predicate.And(task => task.Status == Status);
+            // Handle comma-separated status values
+            var statuses = Status.Split(',').ToList();
+            predicate = predicate.And(task => statuses.Contains(task.Status));
         }
         
         if (IsOverdue.HasValue)
@@ -75,23 +91,19 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
         {
             predicate = predicate.And(task => task.ConstructionItemId == ConstructionItemId);
         }
-        
-        if (!string.IsNullOrEmpty(Status))
+
+        if (ProjectId.HasValue)
         {
-            var statuses = Status.Split(',').ToList();
-            predicate = predicate.And(task => statuses.Contains(task.Status));
+            predicate = predicate.And(task => task.ConstructionItem.ProjectId == ProjectId);
+        }
+
+        if (StaffId.HasValue)
+        {
+            // Only filter by staff if they are a constructor
+            predicate = predicate.And(task => 
+                task.Staff.UserId == StaffId);
         }
         
         return predicate;
-        /*
-        return task => 
-            (string.IsNullOrEmpty(Search) || task.Name.Contains(Search)) &&
-            (!IsActive.HasValue || task.IsActive == IsActive) &&
-            (string.IsNullOrEmpty(Status) || task.Status == Status) &&
-            (!IsOverdue.HasValue || 
-                (IsOverdue.Value && task.DeadlineAt.HasValue && task.DeadlineAt.Value < currentSEATime && task.Status != "DONE") || 
-                (!IsOverdue.Value && (!task.DeadlineAt.HasValue || task.DeadlineAt.Value >= currentSEATime || task.Status == "DONE"))) &&
-            (!ConstructionItemId.HasValue || task.ConstructionItemId == ConstructionItemId);
-        */
     }
 }

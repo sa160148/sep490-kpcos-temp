@@ -296,12 +296,12 @@ public class ConstructionsController  : BaseController
         GetAllConstructionTaskFilterRequest filter)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
         (IEnumerable<GetAllConstructionTaskResponse> data, int total) result;
-        if (userIdClaim != null)
+        if (userIdClaim != null && roleClaim != null && roleClaim == RoleEnum.CONSTRUCTOR.ToString())
         {
             var userId = Guid.Parse(userIdClaim);
-            result = await _constructionService.GetAllConstructionTaskAsync(filter, userId);
-            return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
+            filter.StaffId = userId;
         }
         result = await _constructionService.GetAllConstructionTaskAsync(filter);
         return new PagedApiResponse<GetAllConstructionTaskResponse>(result.data, filter.PageNumber, filter.PageSize, result.total);
