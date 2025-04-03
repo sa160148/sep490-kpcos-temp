@@ -168,12 +168,8 @@ namespace KPCOS.API.Controllers
             if (userIdClaim != null && roleClaim != null)
             {
                 var userId = Guid.Parse(userIdClaim);
-                projects = await service.GetsAsync(filter, userId, roleClaim);
-                return new PagedApiResponse<ProjectForListResponse>(
-                    projects.Data,
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: projects.Count);
+                filter.UserId = userId;
+                filter.Role = roleClaim;
             }
             
             projects = await service.GetsAsync(filter);

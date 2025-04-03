@@ -51,15 +51,9 @@ public class ProjectService(
         Guid? userId = null,
         string? role = null)
     {
-        var advancedFilter = filter.GetExpressions();
-        if (userId != null && role != null)
-        {
-            advancedFilter = advancedFilter.And(filter.GetExpressionsV2(userId.Value, role));
-        }
-
         var repo = unitOfWork.Repository<Project>();
         var query = repo.GetWithCount(
-            filter: advancedFilter,
+            filter: filter.GetExpressions(),
             orderBy: filter.GetOrder(),
             includeProperties: "Package,ProjectStaffs.Staff.User",
             pageIndex: filter.PageNumber,
@@ -1304,9 +1298,10 @@ public class ProjectService(
     public async Task FinishProjectAsync(Guid id)
     {
         // Get the project and validate it exists
-        var project = unitOfWork.Repository<Project>()
-            .Get(p => p.Id == id,
-                includeProperties: "ConstructionItems,Doc"
+        var projectRepo = unitOfWork.Repository<Project>();
+        var project = projectRepo.Get(
+                p => p.Id == id,
+                includeProperties: "ConstructionItems,Docs"
                 )
             .SingleOrDefault()
             ;
@@ -1351,6 +1346,6 @@ public class ProjectService(
         project.Status = EnumProjectStatus.FINISHED.ToString();
         
         // Save changes
-        await unitOfWork.Repository<Project>().UpdateAsync(project);
+        await projectRepo.UpdateAsync(project);
     }
 }
