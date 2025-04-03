@@ -13,9 +13,14 @@ namespace KPCOS.BusinessLayer.DTOs.Request.Promotions;
 public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
 {
     /// <summary>
-    /// Từ khóa tìm kiếm (tìm theo tên khuyến mãi)
+    /// Từ khóa tìm kiếm (tìm theo tên khuyến mãi, mã khuyến mãi)
     /// </summary>
     public string? Search { get; set; }
+
+    /// <summary>
+    /// Mã khuyến mãi, có thể nhập nhiều mã, cách nhau bởi dấu phẩy, chính xác hơn tìm kiếm theo tên
+    /// </summary>
+    public string? Code { get; set; }
     
     /// <summary>
     /// Lọc theo trạng thái khuyến mãi (PENDING, ACTIVE, EXPIRED)
@@ -60,7 +65,7 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
     /// <summary>
     /// Lọc theo trạng thái hoạt động
     /// </summary>
-    public bool? IsActive { get; set; }
+    public bool? IsActive { get; set; } = true;
 
     /// <summary>
     /// Tạo biểu thức điều kiện lọc dựa trên các tham số đã cung cấp
@@ -71,7 +76,15 @@ public class GetAllPromotionFilterRequest : PaginationRequest<Promotion>
         var predicate = PredicateBuilder.New<Promotion>(true);
         if (!string.IsNullOrEmpty(Search))
         {
-            predicate = predicate.And(x => x.Name.Contains(Search));
+            predicate = predicate.And(x => 
+                x.Name.Contains(Search) ||
+                x.Code.Contains(Search)
+                );
+        }
+        if (!string.IsNullOrEmpty(Code))
+        {
+            var code = Code.Trim(',').ToLower();
+            predicate = predicate.And(x => x.Code == code);
         }
         if (!string.IsNullOrEmpty(Status))
         {
