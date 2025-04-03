@@ -949,3 +949,5 @@ $RECYCLE.BIN/
 /test/
 /src/KPCOS.API/appsettings.Development.json
 /docs/
+# Cursor editor directory
+.cursor/

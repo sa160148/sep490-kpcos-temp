@@ -2,6 +2,7 @@ using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request.Contracts;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Contracts;
+using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.Common.Exceptions;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
@@ -222,6 +223,21 @@ public class ContractService : IContractService
         await repo.AddAsync(contract);
     }
 
+    /// <summary>
+    /// Gets detailed information about a contract including its payment batches and their estimated payment dates
+    /// </summary>
+    /// <param name="id">The contract ID to retrieve</param>
+    /// <returns>Contract details with payment batches</returns>
+    /// <exception cref="NotFoundException">Thrown when contract is not found - "Hợp đồng không tồn tại"</exception>
+    /// <remarks>
+    /// This method:
+    /// 1. Retrieves the contract with its payment batches
+    /// 2. Gets all payment-related construction items for the project
+    /// 3. Maps payment batches to response DTOs, including:
+    ///    - Basic payment batch information
+    ///    - Estimated payment dates from linked construction items
+    /// 4. Orders payment batches by creation date
+    /// </remarks>
     public async Task<GetContractDetailResponse> GetContractDetailAsync(Guid id)
     {
         var repo = _unitOfWork.Repository<Contract>();
@@ -229,7 +245,47 @@ public class ContractService : IContractService
             filter: contract => contract.Id == id,
             includeProperties: "PaymentBatches,Project")
             .SingleOrDefault() ?? throw new NotFoundException("Hợp đồng không tồn tại");
+
         var response = _mapper.Map<GetContractDetailResponse>(contract);
+        
+        // Get all payment construction items for the project
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var paymentItems = constructionItemRepo.Get(
+            filter: item => item.ProjectId == contract.ProjectId && 
+                           item.IsPayment == true && 
+                           item.ParentId == null && 
+                           item.IsActive == true,
+            orderBy: query => query.OrderBy(item => item.EstimateAt))
+            .ToList();
+
+        // Ensure payment batches are included in response
+        if (contract.PaymentBatches != null && contract.PaymentBatches.Any())
+        {
+            var paymentBatchResponses = new List<GetAllPaymentBatchesResponse>();
+            var activeBatches = contract.PaymentBatches
+                .Where(pb => pb.IsActive == true)
+                .OrderBy(pb => pb.CreatedAt);
+
+            foreach (var batch in activeBatches)
+            {
+                var batchResponse = _mapper.Map<GetAllPaymentBatchesResponse>(batch);
+                
+                // If batch has a linked construction item, get its estimate date
+                if (batch.ConstructionItemId.HasValue)
+                {
+                    var constructionItem = paymentItems.FirstOrDefault(ci => ci.Id == batch.ConstructionItemId.Value);
+                    if (constructionItem != null)
+                    {
+                        batchResponse.PaymentEstimateAt = constructionItem.EstimateAt.ToDateTime(TimeOnly.MinValue);
+                    }
+                }
+                
+                paymentBatchResponses.Add(batchResponse);
+            }
+
+            response.PaymentBatches = paymentBatchResponses;
+        }
+
         return response;
     }
 

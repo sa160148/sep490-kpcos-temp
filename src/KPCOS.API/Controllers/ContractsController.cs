@@ -76,9 +76,18 @@ public class ContractsController : BaseController
     /// </summary>
     /// <param name="id">Contract ID to get</param>
     /// <remarks>
-    /// Get contract detail by id, include payment batches.
+    /// Get contract detail by id, including payment batches with their estimated payment dates.
+    /// Each payment batch may include:
+    /// - Basic information (id, name, status, etc.)
+    /// - Payment estimate date from its linked construction item (if available)
+    /// - Current payment status and value
+    /// 
+    /// Payment batches are ordered by creation date and only active batches are included.
+    /// The payment estimate date for each batch comes from its linked construction item's estimate date.
     /// </remarks>
-    /// <returns></returns>
+    /// <returns>Contract details including payment batches with their estimate dates</returns>
+    /// <response code="200">Returns the contract details with payment batches</response>
+    /// <response code="404">Hợp đồng không tồn tại</response>
     [HttpGet("{id}")]
     public async Task<ApiResult<GetContractDetailResponse>> GetContractDetail(Guid id)
     {
