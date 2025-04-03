@@ -602,7 +602,6 @@ public class ProjectService(
     /// <summary>
     /// Gets all contracts associated with a specific project with pagination
     /// </summary>
-    /// <param name="id">The project ID to get contracts for</param>
     /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
     /// <returns>Tuple containing the list of contracts and total count</returns>
     /// <remarks>
@@ -615,23 +614,20 @@ public class ProjectService(
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     public async Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(
-        Guid id, 
         GetAllContractFilterRequest filter)
     {
         // Validate project exists using existing method
-        var project = await IsExistById(id);
+        var project = await IsExistById(filter.ProjectId.Value);
         
         if (!project.IsActive == true)
         {
             throw new BadRequestException("Không tìm thấy Project");
         }
 
-        var advancedFilter = filter.GetExpressions();
-        advancedFilter = advancedFilter.And(c => c.ProjectId == id);
         // Get contracts with validation
         var contracts = unitOfWork.Repository<Contract>()
             .GetWithCount(
-                filter: advancedFilter,
+                filter: filter.GetExpressions(),
                 includeProperties: "Project.Quotations",
                 orderBy: filter.GetOrder(),
                 pageIndex: filter.PageNumber,
@@ -1308,7 +1304,16 @@ public class ProjectService(
     public async Task FinishProjectAsync(Guid id)
     {
         // Get the project and validate it exists
-        var project = await ValidateAndGetProject(id);
+        var project = unitOfWork.Repository<Project>()
+            .Get(p => p.Id == id,
+                includeProperties: "ConstructionItems,Doc"
+                )
+            .SingleOrDefault()
+            ;
+        if (project == null)
+        {
+            throw new NotFoundException("Dự án không tồn tại");
+        }
         
         // Check if project is in CONSTRUCTING status
         if (project.Status != EnumProjectStatus.CONSTRUCTING.ToString())
@@ -1346,7 +1351,6 @@ public class ProjectService(
         project.Status = EnumProjectStatus.FINISHED.ToString();
         
         // Save changes
-        var projectRepo = unitOfWork.Repository<Project>();
-        await projectRepo.UpdateAsync(project);
+        await unitOfWork.Repository<Project>().UpdateAsync(project);
     }
 }

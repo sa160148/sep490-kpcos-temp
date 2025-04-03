@@ -225,7 +225,6 @@ public interface IProjectService
     /// <summary>
     /// Gets all contracts associated with a specific project with pagination
     /// </summary>
-    /// <param name="id">The project ID to get contracts for</param>
     /// <param name="filter">Pagination parameters (pageNumber and pageSize)</param>
     /// <returns>Tuple containing the list of contracts and total count</returns>
     /// <remarks>
@@ -238,7 +237,6 @@ public interface IProjectService
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllContractResponse> data, int total)> GetContractByProjectAsync(
-        Guid id, 
         GetAllContractFilterRequest filter);
 
     /// <summary>

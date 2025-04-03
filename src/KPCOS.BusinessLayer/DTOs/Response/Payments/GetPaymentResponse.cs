@@ -11,6 +11,8 @@ public class GetPaymentResponse
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? PaymentAt { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? PaymentEstimateAt { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? IsActive { get; set; }
     public string Name { get; set; }
     public int TotalValue { get; set; }
