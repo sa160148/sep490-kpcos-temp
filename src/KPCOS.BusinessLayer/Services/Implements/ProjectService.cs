@@ -1304,7 +1304,16 @@ public class ProjectService(
     public async Task FinishProjectAsync(Guid id)
     {
         // Get the project and validate it exists
-        var project = await ValidateAndGetProject(id);
+        var project = unitOfWork.Repository<Project>()
+            .Get(p => p.Id == id,
+                includeProperties: "ConstructionItems,Doc"
+                )
+            .SingleOrDefault()
+            ;
+        if (project == null)
+        {
+            throw new NotFoundException("Dự án không tồn tại");
+        }
         
         // Check if project is in CONSTRUCTING status
         if (project.Status != EnumProjectStatus.CONSTRUCTING.ToString())
@@ -1342,7 +1351,6 @@ public class ProjectService(
         project.Status = EnumProjectStatus.FINISHED.ToString();
         
         // Save changes
-        var projectRepo = unitOfWork.Repository<Project>();
-        await projectRepo.UpdateAsync(project);
+        await unitOfWork.Repository<Project>().UpdateAsync(project);
     }
 }
