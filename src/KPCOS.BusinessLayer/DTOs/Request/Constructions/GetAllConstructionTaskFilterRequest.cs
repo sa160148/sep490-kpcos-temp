@@ -61,7 +61,7 @@ public class GetAllConstructionTaskFilterRequest : PaginationRequest<Constructio
     {
         // Get current SEA time for deadline comparison
         var currentSEATime = GlobalUtility.GetCurrentSEATime();
-        var predicate = PredicateBuilder.New<ConstructionTask>();
+        var predicate = PredicateBuilder.New<ConstructionTask>(true);
 
         if (!string.IsNullOrEmpty(Search))
         {
