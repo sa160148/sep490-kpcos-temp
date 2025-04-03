@@ -506,7 +506,8 @@ namespace KPCOS.API.Controllers
             [FromQuery]
             GetAllContractFilterRequest filter)
         {
-            var contract = await service.GetContractByProjectAsync(id, filter);
+            filter.ProjectId = id;
+            var contract = await service.GetContractByProjectAsync(filter);
             return new PagedApiResponse<GetAllContractResponse>(
                 contract.data, 
                 filter.PageNumber, 
