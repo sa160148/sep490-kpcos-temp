@@ -290,11 +290,9 @@ public interface IProjectService
         GetAllStaffRequest filter);
 
     /// <summary>
-    /// Gets all construction tasks associated with a specific project with pagination and filtering
+    /// [DEPRECATED] Gets all construction tasks associated with a specific project with pagination and filtering
     /// </summary>
-    /// <param name="id">The project ID to get construction tasks for</param>
     /// <param name="filter">Filter criteria for construction tasks including search, status, overdue status, etc.</param>
-    /// <param name="userId">Optional user ID to filter tasks by assigned staff (only applies for CONSTRUCTOR role)</param>
     /// <returns>Tuple containing the list of construction tasks and total count</returns>
     /// <remarks>
     /// <para>Returns construction tasks for a project with:</para>
@@ -317,9 +315,7 @@ public interface IProjectService
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is inactive</exception>
     Task<(IEnumerable<GetAllConstructionTaskResponse> data, int total)> GetAllConstructionTaskByProjectAsync(
-        Guid id, 
-        GetAllConstructionTaskFilterRequest filter,
-        Guid? userId = null);
+        GetAllConstructionTaskFilterRequest filter);
 
     /// <summary>
     /// Gets all project issues associated with a specific project with pagination and filtering
