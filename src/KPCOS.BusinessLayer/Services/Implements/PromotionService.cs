@@ -27,10 +27,8 @@ public class PromotionService : IPromotionService
 
     public async Task<(IEnumerable<GetAllPromotionResponse> data, int total)> GetAllPromotions(GetAllPromotionFilterRequest filter)
     {
-        var promotionRepo = _unitOfWork.Repository<Promotion>();
-        
         // Get paginated results directly using filter methods
-        var result = promotionRepo.GetWithCount(
+        var result = _unitOfWork.Repository<Promotion>().GetWithCount(
             filter.GetExpressions(),
             filter.GetOrder(),
             includeProperties: "",
@@ -44,8 +42,7 @@ public class PromotionService : IPromotionService
 
     public async Task<GetAllPromotionResponse> GetPromotionById(Guid id)
     {
-        var promotionRepo = _unitOfWork.Repository<Promotion>();
-        var promotion = await promotionRepo.FindAsync(id);
+        var promotion = await _unitOfWork.Repository<Promotion>().FindAsync(id);
         if (promotion == null || promotion.IsActive == false)
         {
             throw new NotFoundException("Promotion not found");
