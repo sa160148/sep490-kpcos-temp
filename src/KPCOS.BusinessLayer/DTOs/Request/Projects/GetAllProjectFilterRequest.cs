@@ -68,7 +68,17 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
     /// Filter by active status
     /// </summary>
     [Display(Name = "IsActive", Description = "Filter by active status (true/false)")]
-    public bool? IsActive { get; set; }
+    public bool? IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Filter by user ID, auto set when user is logged in
+    /// </summary>
+    public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Filter by user role, auto set when user is logged in
+    /// </summary>
+    public string? Role { get; set; }
 
     /// <summary>
     /// Builds the filter expression based on the provided criteria
@@ -121,6 +131,10 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
         {
             var templatedesignids = Templatedesignids.Split(',').Select(Guid.Parse).ToList();
             predicate = predicate.And(p => p.Templatedesignid.HasValue && templatedesignids.Contains(p.Templatedesignid.Value));
+        }
+        if (UserId.HasValue && !string.IsNullOrEmpty(Role))
+        {
+            predicate = predicate.And(GetExpressionsV2(UserId.Value, Role));
         }
         return predicate;
     }
