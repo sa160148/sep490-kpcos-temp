@@ -39,6 +39,18 @@ namespace KPCOS.BusinessLayer.Helpers;
 
 public class MapperProfile : Profile
 {
+    private static string GetThumbnailFromDesigns(Project project)
+    {
+        var firstPublishedDesign = project.Designs
+            .Where(d => d.Type == "3D" && 
+                       d.IsPublic == true && 
+                       d.Status == EnumDesignStatus.CONFIRMED.ToString() &&
+                       d.IsActive == true)
+            .SelectMany(d => d.DesignImages)
+            .FirstOrDefault();
+        return firstPublishedDesign != null ? firstPublishedDesign.ImageUrl : null;
+    }
+
     public MapperProfile()
     {
         CreateMap<AuthRequest, User>();
@@ -89,9 +101,11 @@ public class MapperProfile : Profile
         CreateMap<Project, ProjectForListResponse>()
             .ForMember(dest => dest.PackageName,
                 opt => opt.MapFrom(project => project.Package.Name))
-                .ForMember(dest => dest.Staffs,
+            .ForMember(dest => dest.Staffs,
                 opt => opt.MapFrom(project => project.ProjectStaffs.Select(ps => ps.Staff)))
-                ;
+            .ForMember(dest => dest.Thumbnail,
+                opt => opt.MapFrom(src => GetThumbnailFromDesigns(src)))
+            ;
         CreateMap<Project, GetAllProjectForQuotationResponse>();
         CreateMap<Project, GetAllProjectForDesignResponse>();
         
