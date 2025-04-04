@@ -235,6 +235,29 @@ public class DesignService : IDesignService
         return _mapper.Map<GetDesignDetailResponse>(design);
     }
 
+    public async Task PublishDesignAsync(Guid id)
+    {
+        var repo = _unitOfWork.Repository<Design>();
+        var design = await repo.FindAsync(id);
+        if (design == null)
+        {
+            throw new NotFoundException("Không tìm thấy Design");
+        }
+
+        if (design.Type != "3D")
+        {
+            throw new BadRequestException("Chỉ có thể xuất bản thiết kế 3D");
+        }
+
+        if (design.Status != EnumDesignStatus.CONFIRMED.ToString())
+        {
+            throw new BadRequestException("Chỉ có thể xuất bản thiết kế đã được xác nhận");
+        }
+
+        design.IsPublic = true;
+        await repo.UpdateAsync(design);
+    }
+
     private async Task UpdateDesignEditingAsync(
         Design design, 
         Guid userId, 

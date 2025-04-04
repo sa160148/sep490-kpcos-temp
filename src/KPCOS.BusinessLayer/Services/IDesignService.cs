@@ -62,4 +62,13 @@ public interface IDesignService
     Task UpdateDesignAsync(Guid id, Guid userId, UpdateDesignRequest request);
 
     Task<GetDesignDetailResponse> GetDesignDetailAsync(Guid id);
+
+    /// <summary>
+    /// Publishes a design as a showroom/template
+    /// </summary>
+    /// <param name="id">The ID of the design to publish</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="NotFoundException">Thrown when the design is not found</exception>
+    /// <exception cref="BadRequestException">Thrown when the design is not a 3D design or not in CONFIRMED status</exception>
+    Task PublishDesignAsync(Guid id);
 }
