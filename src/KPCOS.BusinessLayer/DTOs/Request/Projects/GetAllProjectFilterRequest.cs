@@ -63,6 +63,13 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
     /// </summary>
     [Display(Name = "Templatedesignids", Description = "Filter by comma-separated template design GUIDs")]
     public string? Templatedesignids { get; set; }
+
+    /// <summary>
+    /// Filter by design publish status, using as a showroom to showing template design, this use for get project with design publish for showing
+    /// project with design template.
+    /// </summary>
+    [Display(Name = "IsDesignPublish", Description = "Filter by design publish status (true/false)")]
+    public bool? IsDesignPublish { get; set; }
     
     /// <summary>
     /// Filter by active status
@@ -102,6 +109,15 @@ public class GetAllProjectFilterRequest : PaginationRequest<Project>
         if (IsActive.HasValue)
         {
             predicate = predicate.And(p => p.IsActive == IsActive.Value);
+        }
+
+        if (IsDesignPublish.HasValue)
+        {
+            predicate = predicate.And(p => p.Designs.Any(
+                d => d.IsPublic == true &&
+                d.Type == "3D" &&
+                d.Status == EnumDesignStatus.CONFIRMED.ToString()
+            ));
         }
 
         if (Area.HasValue)
