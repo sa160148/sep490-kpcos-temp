@@ -53,7 +53,7 @@ public class PaymentService : IPaymentService
         decimal amount = 0;
         string paymentInfo = "";
         Guid customerId = Guid.Empty;
-        string orderType = EnumBillType.HOA_DON_THANH_TOAN.ToString();
+        string orderType = EnumTransactionType.PAYMENT_BATCH.ToString();
         
         // Check if we have a batch payment ID or maintenance request ID
         if (request.BatchPaymentId.HasValue)
@@ -71,7 +71,7 @@ public class PaymentService : IPaymentService
             paymentInfo = $"Thanh toan dich vu bao tri {maintenanceRequest.Id}";
             amount = maintenanceRequest.TotalValue;
             customerId = maintenanceRequest.CustomerId;
-            orderType = EnumBillType.HOA_DON_DICH_VU.ToString();
+            orderType = EnumTransactionType.MAINTENANCE_REQUEST.ToString();
         }
         else
         {
@@ -255,7 +255,7 @@ public class PaymentService : IPaymentService
             No = batchPaymentId, // Link transaction to the payment batch
             Note = request.vnp_OrderInfo,
             Status = EnumTransactionStatus.SUCCESSFUL.ToString(),
-            Type = EnumBillType.HOA_DON_THANH_TOAN.ToString()
+            Type = EnumTransactionType.PAYMENT_BATCH.ToString()
         };
         
         // Add new transaction entity to context using repository pattern
@@ -307,7 +307,7 @@ public class PaymentService : IPaymentService
             No = maintenanceRequestId, // Link transaction to the maintenance request
             Note = request.vnp_OrderInfo,
             Status = EnumTransactionStatus.SUCCESSFUL.ToString(),
-            Type = EnumBillType.HOA_DON_DICH_VU.ToString()
+            Type = EnumTransactionType.MAINTENANCE_REQUEST.ToString()
         };
         
         // Add new transaction entity to context using repository pattern
