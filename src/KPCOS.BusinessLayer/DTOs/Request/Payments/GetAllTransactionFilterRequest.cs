@@ -13,6 +13,8 @@ public class GetAllTransactionFilterRequest : PaginationRequest<Transaction>
     public string? Type { get; set; }
     public string? Related { get; set; }
     public string? Status { get; set; }
+    public int? FromAmount { get; set; }
+    public int? ToAmount { get; set; }
     public override Expression<Func<Transaction, bool>> GetExpressions()
     {
         var expression = PredicateBuilder.New<Transaction>(true);
@@ -36,6 +38,14 @@ public class GetAllTransactionFilterRequest : PaginationRequest<Transaction>
         if (!string.IsNullOrEmpty(Status))
         {
             expression = expression.And(x => x.Status == Status);
+        }
+        if (FromAmount.HasValue)
+        {
+            expression = expression.And(x => x.Amount >= FromAmount.Value);
+        }
+        if (ToAmount.HasValue)
+        {
+            expression = expression.And(x => x.Amount <= ToAmount.Value);
         }
         return expression;
     }
