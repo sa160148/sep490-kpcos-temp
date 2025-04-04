@@ -1262,24 +1262,15 @@ public class ProjectService(
     /// <param name="projectId">Project ID to get documents for</param>
     /// <param name="filter">Filter criteria</param>
     /// <returns>Filtered documents and total count</returns>
-    public async Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(Guid projectId, GetAllDocFilterRequest filter)
+    public async Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(GetAllDocFilterRequest filter)
     {
         // Validate project exists
-        await ValidateAndGetProject(projectId);
-        
-        // Set the project ID in the filter
-        filter.ProjectId = projectId;
-        
-        // Get the filter expression
-        var predicate = filter.GetExpressions();
-        
-        // Get the ordering function
-        var orderBy = filter.GetOrder();
+        await ValidateAndGetProject(filter.ProjectId.Value);
         
         // Get the documents with DocType included
         var (documents, count) = unitOfWork.Repository<Doc>().GetWithCount(
-            filter: predicate,
-            orderBy: orderBy,
+            filter: filter.GetExpressions(),
+            orderBy: filter.GetOrder(),
             includeProperties: "DocType",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
