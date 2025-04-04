@@ -811,7 +811,8 @@ namespace KPCOS.API.Controllers
             [FromQuery]
             GetAllDocFilterRequest filter)
         {
-            var docs = await service.GetAllDocAsync(id, filter);
+            filter.ProjectId = id;
+            var docs = await service.GetAllDocAsync(filter);
             return new PagedApiResponse<GetAllDocResponse>(docs.data, filter.PageNumber, filter.PageSize, docs.total);
         }
 

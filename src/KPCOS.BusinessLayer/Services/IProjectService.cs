@@ -352,7 +352,6 @@ public interface IProjectService
     /// <summary>
     /// Gets all documents for a specific project with filtering and pagination
     /// </summary>
-    /// <param name="projectId">The ID of the project to get documents for</param>
     /// <param name="filter">Filter criteria including search term, document types, pagination</param>
     /// <returns>Tuple containing collection of documents and total count</returns>
     /// <remarks>
@@ -364,7 +363,7 @@ public interface IProjectService
     /// </list>
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
-    Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(Guid projectId, GetAllDocFilterRequest filter);
+    Task<(IEnumerable<GetAllDocResponse> data, int total)> GetAllDocAsync(GetAllDocFilterRequest filter);
     
     /// <summary>
     /// Changes a project's status to FINISHED
