@@ -20,4 +20,24 @@ public interface IStatisticsService
     /// <returns>Monthly transaction statistics grouped by year</returns>
     Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetStatisticsAsync(
         GetStatisticFilterRequest request);
+
+    /// <summary>
+    /// Gets total monthly transaction statistics combining both construction and maintenance transactions
+    /// </summary>
+    /// <param name="request">Filter criteria including years to get statistics for</param>
+    /// <returns>Total monthly transaction statistics grouped by year</returns>
+    Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetTotalTransactionStatisticsAsync(
+        GetStatisticFilterRequest request);
+
+    /// <summary>
+    /// Gets the year-over-year growth rate for total number of transactions
+    /// </summary>
+    /// <returns>Growth rate compared to previous year</returns>
+    Task<GetGrowthRateStatisticResponse> GetTransactionCountGrowthRateAsync();
+
+    /// <summary>
+    /// Gets the year-over-year growth rate for total transaction amount
+    /// </summary>
+    /// <returns>Growth rate compared to previous year</returns>
+    Task<GetGrowthRateStatisticResponse> GetTransactionAmountGrowthRateAsync();
 }

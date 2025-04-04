@@ -45,69 +45,78 @@ namespace KPCOS.API.Controllers
         IFeedbackService feedbackService) : BaseController
     {
         /// <summary>
-        /// Gets a paginated list of projects based on user role and filter criteria
+        /// Lấy danh sách dự án có phân trang dựa trên vai trò người dùng và các tiêu chí lọc
         /// </summary>
-        /// <param name="filter">Filter criteria for projects including:
-        /// - Search: Filters by project name or description
-        /// - Status: Filters by project status (REQUESTING, PROCESSING, DESIGNING, CONSTRUCTING, FINISHED)
-        /// - Area: Filters by minimum project area (in square meters)
-        /// - Depth: Filters by minimum project depth (in meters)
-        /// - PriceMin/PriceMax: Filters by confirmed quotation price range
-        /// - PackageIds: Filters by specific package IDs (comma-separated GUIDs)
-        /// - Templatedesignids: Filters by specific template design IDs (comma-separated GUIDs)
-        /// - IsActive: Filters by active status (true/false)
-        /// - PageNumber: Page number for pagination (1-based)
-        /// - PageSize: Number of items per page
+        /// <param name="filter">Các tiêu chí lọc cho dự án bao gồm:
+        /// - Search: Lọc theo tên hoặc mô tả dự án
+        /// - Status: Lọc theo trạng thái dự án (REQUESTING, PROCESSING, DESIGNING, CONSTRUCTING, FINISHED)
+        /// - Area: Lọc theo diện tích tối thiểu (mét vuông)
+        /// - Depth: Lọc theo độ sâu tối thiểu (mét)
+        /// - PriceMin/PriceMax: Lọc theo khoảng giá báo giá đã xác nhận
+        /// - PackageIds: Lọc theo ID gói dịch vụ (danh sách GUID phân cách bởi dấu phẩy)
+        /// - Templatedesignids: Lọc theo ID mẫu thiết kế (danh sách GUID phân cách bởi dấu phẩy)
+        /// - IsActive: Lọc theo trạng thái hoạt động (true/false)
+        /// - IsDesignPublish: Khi true, API sẽ trả về các dự án như một showroom/template (chỉ trả về các dự án đã hoàn thành)
+        /// - PageNumber: Số trang (bắt đầu từ 1)
+        /// - PageSize: Số lượng item trên mỗi trang
         /// </param>
-        /// <returns>A paginated list of projects with basic information and assigned staff</returns>
+        /// <returns>Danh sách dự án có phân trang với thông tin cơ bản và nhân viên được phân công</returns>
         /// <remarks>
-        /// This endpoint returns projects based on the user's role and permissions:
+        /// API này trả về dự án dựa trên vai trò của người dùng và quyền hạn:
         /// 
-        /// Role-based access:
-        /// - ADMINISTRATOR: Can see all projects
-        /// - CUSTOMER: Can only see their own projects
-        /// - Staff roles (CONSULTANT, DESIGNER, MANAGER, CONSTRUCTOR): Can only see projects they are assigned to
+        /// Quyền truy cập theo vai trò:
+        /// - ADMINISTRATOR: Có thể xem tất cả dự án
+        /// - CUSTOMER: Chỉ có thể xem dự án của họ
+        /// - Nhân viên (CONSULTANT, DESIGNER, MANAGER, CONSTRUCTOR): Chỉ có thể xem dự án được phân công
         /// 
-        /// Each project includes:
-        /// - Basic project information (name, address, area, etc.)
-        /// - Package information
-        /// - Assigned staff details
+        /// Mỗi dự án bao gồm:
+        /// - Thông tin cơ bản (tên, địa chỉ, diện tích, v.v.)
+        /// - Thông tin gói dịch vụ
+        /// - Chi tiết nhân viên được phân công
+        /// - Hình ảnh thumbnail (khi IsDesignPublish=true và có thiết kế 3D được công bố)
         /// 
-        /// Available status values:
-        /// - REQUESTING: Initial status for new projects
-        /// - PROCESSING: Projects in consultation phase
-        /// - DESIGNING: Projects in design phase
-        /// - CONSTRUCTING: Projects in construction phase
-        /// - FINISHED: Completed projects
+        /// Chức năng Showroom/Template (IsDesignPublish=true):
+        /// - Tự động lọc chỉ lấy các dự án đã FINISHED
+        /// - Hiển thị hình ảnh thumbnail từ thiết kế 3D đầu tiên được công bố
+        /// - Bỏ qua các điều kiện về quyền truy cập của người dùng
+        /// - Chỉ hiển thị các dự án có thiết kế đã được công bố (IsPublic=true)
         /// 
-        /// Sample request:
+        /// Các giá trị trạng thái có thể:
+        /// - REQUESTING: Trạng thái ban đầu cho dự án mới
+        /// - PROCESSING: Dự án trong giai đoạn tư vấn
+        /// - DESIGNING: Dự án trong giai đoạn thiết kế
+        /// - CONSTRUCTING: Dự án trong giai đoạn thi công
+        /// - FINISHED: Dự án đã hoàn thành
         /// 
-        ///     GET /api/projects?Search=modern&amp;Status=PROCESSING,DESIGNING&amp;Area=100&amp;IsActive=true&amp;PageNumber=1&amp;PageSize=10
+        /// Ví dụ request:
         /// 
-        /// Sample response:
+        ///     GET /api/projects?Search=modern&amp;Status=FINISHED&amp;IsDesignPublish=true&amp;PageNumber=1&amp;PageSize=10
+        /// 
+        /// Ví dụ response:
         /// ```json
         /// {
         ///   "data": [
         ///     {
         ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        ///       "name": "John Doe project",
-        ///       "customerName": "John Doe",
-        ///       "email": "john.doe@example.com",
+        ///       "name": "Dự án của Nguyễn Văn A",
+        ///       "customerName": "Nguyễn Văn A",
+        ///       "email": "nguyenvana@example.com",
         ///       "phone": "+84909123456",
-        ///       "note": "This is a note for the project",
-        ///       "address": "123 Main St",
+        ///       "note": "Ghi chú cho dự án",
+        ///       "address": "123 Đường ABC",
         ///       "area": 150,
         ///       "depth": 3.5,
-        ///       "status": "PROCESSING",
-        ///       "packageName": "Premium Package",
+        ///       "status": "FINISHED",
+        ///       "packageName": "Gói Premium",
+        ///       "thumbnail": "https://example.com/designs/3d-view.jpg",
         ///       "isActive": true,
         ///       "createdAt": "2024-01-01T00:00:00Z",
         ///       "updatedAt": "2024-01-01T00:00:00Z",
         ///       "staffs": [
         ///         {
         ///           "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        ///           "fullName": "Jane Smith",
-        ///           "position": "CONSULTANT",
+        ///           "fullName": "Trần Thị B",
+        ///           "position": "DESIGNER",
         ///           "avatar": "https://example.com/avatar.jpg"
         ///         }
         ///       ]
@@ -120,29 +129,30 @@ namespace KPCOS.API.Controllers
         /// }
         /// ```
         /// 
-        /// Parameters:
-        /// - Search (string): Search term to filter by project name (e.g., "modern", "house")
-        /// - Status (string): Comma-separated list of project statuses (e.g., "PROCESSING,DESIGNING")
-        /// - Area (number): Minimum project area in square meters (e.g., 100)
-        /// - Depth (number): Minimum project depth in meters (e.g., 3.5)
-        /// - PriceMin (number): Minimum confirmed quotation price (e.g., 10000)
-        /// - PriceMax (number): Maximum confirmed quotation price (e.g., 50000)
-        /// - PackageIds (string): Comma-separated list of package GUIDs
-        /// - Templatedesignids (string): Comma-separated list of template design GUIDs
-        /// - IsActive (boolean): Filter by active status (true/false)
-        /// - PageNumber (integer): Page number for pagination, starting from 1
-        /// - PageSize (integer): Number of items per page (e.g., 10)
+        /// Tham số:
+        /// - Search (string): Từ khóa tìm kiếm theo tên dự án (ví dụ: "modern", "house")
+        /// - Status (string): Danh sách trạng thái dự án, phân cách bởi dấu phẩy (ví dụ: "PROCESSING,DESIGNING")
+        /// - Area (number): Diện tích tối thiểu tính bằng mét vuông (ví dụ: 100)
+        /// - Depth (number): Độ sâu tối thiểu tính bằng mét (ví dụ: 3.5)
+        /// - PriceMin (number): Giá tối thiểu của báo giá đã xác nhận (ví dụ: 10000)
+        /// - PriceMax (number): Giá tối đa của báo giá đã xác nhận (ví dụ: 50000)
+        /// - PackageIds (string): Danh sách ID gói dịch vụ, phân cách bởi dấu phẩy
+        /// - Templatedesignids (string): Danh sách ID mẫu thiết kế, phân cách bởi dấu phẩy
+        /// - IsActive (boolean): Lọc theo trạng thái hoạt động (true/false)
+        /// - IsDesignPublish (boolean): Khi true, trả về dự án như showroom/template
+        /// - PageNumber (integer): Số trang, bắt đầu từ 1
+        /// - PageSize (integer): Số lượng item trên mỗi trang (ví dụ: 10)
         /// </remarks>
-        /// <response code="200">Success. Returns paginated list of projects</response>
-        /// <response code="401">Unauthorized. User is not authenticated</response>
-        /// <response code="500">Internal server error</response>
+        /// <response code="200">Thành công. Trả về danh sách dự án có phân trang</response>
+        /// <response code="401">Không được phép. Người dùng chưa đăng nhập</response>
+        /// <response code="500">Lỗi server</response>
         [HttpGet("")]
         [ProducesResponseType(typeof(PagedApiResponse<ProjectForListResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [SwaggerOperation(
-            Summary = "Gets a paginated list of projects based on user role and filter criteria",
-            Description = "Returns projects based on the user's role (ADMINISTRATOR sees all, others see only assigned/owned projects) and the provided filter criteria. Includes project details and assigned staff information.",
+            Summary = "Lấy danh sách dự án có phân trang với chức năng showroom",
+            Description = "Trả về dự án dựa trên vai trò người dùng hoặc như một showroom khi IsDesignPublish=true. Bao gồm thông tin dự án và hình ảnh thumbnail từ thiết kế 3D được công bố.",
             OperationId = "GetsAsync",
             Tags = new[] { "Projects" }
         )]
@@ -156,6 +166,7 @@ namespace KPCOS.API.Controllers
                             "- Depth: Minimum depth in m (e.g., 3.5)\n" +
                             "- PriceMin/Max: Price range for confirmed quotations\n" +
                             "- IsActive: Active status (true/false)\n" +
+                            "- IsDesignPublish: When true, returns projects as a showroom/template (only finished projects)\n" +
                             "- PageNumber/PageSize: Pagination parameters",
                 Required = false
             )]
@@ -170,6 +181,14 @@ namespace KPCOS.API.Controllers
                 var userId = Guid.Parse(userIdClaim);
                 filter.UserId = userId;
                 filter.Role = roleClaim;
+            }
+
+            // for case get all project with design publish status and using as a showroom, ignore user and role and hardcode status to finished.
+            if (filter.IsDesignPublish.HasValue && filter.IsDesignPublish == true)
+            {
+                filter.UserId = null;
+                filter.Role = null;
+                filter.Status = EnumProjectStatus.FINISHED.ToString();
             }
             
             projects = await service.GetsAsync(filter);

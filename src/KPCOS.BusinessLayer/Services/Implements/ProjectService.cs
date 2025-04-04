@@ -55,7 +55,7 @@ public class ProjectService(
         var query = repo.GetWithCount(
             filter: filter.GetExpressions(),
             orderBy: filter.GetOrder(),
-            includeProperties: "Package,ProjectStaffs.Staff.User",
+            includeProperties: "Package,ProjectStaffs.Staff.User,Designs.DesignImages",
             pageIndex: filter.PageNumber,
             pageSize: filter.PageSize
         );
