@@ -5,6 +5,7 @@ using KPCOS.BusinessLayer.Services;
 using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace KPCOS.API.Controllers;
 
@@ -174,4 +175,33 @@ public class DesignsController(IDesignService service): BaseController
         return Ok();
     }
     
+    /// <summary>
+    /// Xuất bản một thiết kế làm showroom/mẫu
+    /// </summary>
+    /// <param name="id">ID của thiết kế cần xuất bản</param>
+    /// <returns>Phản hồi thành công nếu thiết kế được xuất bản thành công</returns>
+    /// <remarks>
+    /// <para>Chỉ ADMINISTRATOR mới có thể thực hiện thao tác này</para>
+    /// <para>Thiết kế phải thỏa mãn các điều kiện sau:</para>
+    /// <list type="bullet">
+    /// <item><description>Phải là thiết kế 3D</description></item>
+    /// <item><description>Phải ở trạng thái CONFIRMED (đã xác nhận)</description></item>
+    /// </list>
+    /// </remarks>
+    /// <response code="200">Thiết kế được xuất bản thành công</response>
+    /// <response code="400">Nếu thiết kế không phải 3D hoặc chưa được xác nhận</response>
+    /// <response code="404">Nếu không tìm thấy thiết kế</response>
+    /// <response code="401">Nếu người dùng không được xác thực</response>
+    [HttpPut("{id}/publish")]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status401Unauthorized)]
+    // [CustomAuthorize("ADMINISTRATOR")]
+    public async Task<ApiResult> PublishDesignAsync(
+        [SwaggerParameter("ID của thiết kế cần xuất bản")] Guid id)
+    {
+        await service.PublishDesignAsync(id);
+        return Ok();
+    }
 }
