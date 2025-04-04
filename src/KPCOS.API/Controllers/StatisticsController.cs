@@ -48,6 +48,109 @@ namespace KPCOS.API.Controllers
                 statistics.totalRecords
             );
         }
+
+        [HttpGet("total-transaction")]
+        [SwaggerOperation(
+            Summary = "Lấy thống kê tổng số tiền của các giao dịch",
+            Description = "Lấy thống kê tổng số tiền của các giao dịch",
+            OperationId = "GetTotalTransactionStatistics",
+            Tags = new[] { "Statistics" }
+        )]
+        public async Task<PagedApiResponse<GetStatisticsResponse>> GetTotalTransactionStatisticsAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for statistics including Year",
+                Required = false
+            )]
+            GetStatisticFilterRequest request
+        )
+        {
+            var statistics = await _statisticsService.GetTotalTransactionStatisticsAsync(request);
+            return new PagedApiResponse<GetStatisticsResponse>(
+                statistics.data,
+                request.PageNumber,
+                request.PageSize,
+                statistics.totalRecords
+            );
+        }
+
+        [HttpGet("transaction-count-growth")]
+        [SwaggerOperation(
+            Summary = "Lấy tỷ lệ tăng trưởng số lượng giao dịch",
+            Description = @"Lấy tỷ lệ tăng trưởng số lượng giao dịch so với năm trước.
+
+Phản hồi bao gồm:
+- GrowthRate: Tỷ lệ tăng trưởng (%). Null nếu không thể tính (năm trước không có giao dịch)
+- CurrentValue: Số lượng giao dịch năm hiện tại
+- PreviousValue: Số lượng giao dịch năm trước
+- IsNewActivity: True nếu năm nay có giao dịch mới và năm trước không có
+
+Các trường hợp đặc biệt:
+1. Không có giao dịch cả 2 năm: GrowthRate = 0%
+2. Năm trước không có, năm nay có: GrowthRate = null, IsNewActivity = true
+3. Có dữ liệu cả 2 năm: GrowthRate = ((CurrentValue - PreviousValue) / PreviousValue) * 100
+
+Ví dụ phản hồi:
+```json
+{
+    ""isSuccess"": true,
+    ""statusCode"": 200,
+    ""data"": {
+        ""growthRate"": 25.5,        // hoặc null nếu là hoạt động mới
+        ""currentValue"": 125,       // số lượng giao dịch năm nay
+        ""previousValue"": 100,      // số lượng giao dịch năm trước
+        ""isNewActivity"": false     // true nếu là hoạt động mới
+    }
+}
+```",
+            OperationId = "GetTransactionCountGrowthRate",
+            Tags = new[] { "Statistics" }
+        )]
+        [ProducesResponseType(typeof(ApiResult<GetGrowthRateStatisticResponse>), StatusCodes.Status200OK)]
+        public async Task<ApiResult<GetGrowthRateStatisticResponse>> GetTransactionCountGrowthRateAsync()
+        {
+            var response = await _statisticsService.GetTransactionCountGrowthRateAsync();
+            return Ok(response);
+        }
+
+        [HttpGet("transaction-amount-growth")]
+        [SwaggerOperation(
+            Summary = "Lấy tỷ lệ tăng trưởng tổng tiền giao dịch",
+            Description = @"Lấy tỷ lệ tăng trưởng tổng tiền giao dịch so với năm trước.
+
+Phản hồi bao gồm:
+- GrowthRate: Tỷ lệ tăng trưởng (%). Null nếu không thể tính (năm trước không có giao dịch)
+- CurrentValue: Tổng tiền giao dịch năm hiện tại (VND)
+- PreviousValue: Tổng tiền giao dịch năm trước (VND)
+- IsNewActivity: True nếu năm nay có giao dịch mới và năm trước không có
+
+Các trường hợp đặc biệt:
+1. Không có giao dịch cả 2 năm: GrowthRate = 0%
+2. Năm trước không có, năm nay có: GrowthRate = null, IsNewActivity = true
+3. Có dữ liệu cả 2 năm: GrowthRate = ((CurrentValue - PreviousValue) / PreviousValue) * 100
+
+Ví dụ phản hồi:
+```json
+{
+    ""isSuccess"": true,
+    ""statusCode"": 200,
+    ""data"": {
+        ""growthRate"": 33.33,      // hoặc null nếu là hoạt động mới
+        ""currentValue"": 4000000,   // tổng tiền năm nay (VND)
+        ""previousValue"": 3000000,  // tổng tiền năm trước (VND)
+        ""isNewActivity"": false     // true nếu là hoạt động mới
+    }
+}
+```",
+            OperationId = "GetTransactionAmountGrowthRate",
+            Tags = new[] { "Statistics" }
+        )]
+        [ProducesResponseType(typeof(ApiResult<GetGrowthRateStatisticResponse>), StatusCodes.Status200OK)]
+        public async Task<ApiResult<GetGrowthRateStatisticResponse>> GetTransactionAmountGrowthRateAsync()
+        {
+            var response = await _statisticsService.GetTransactionAmountGrowthRateAsync();
+            return Ok(response);
+        }
         
         /*
         [HttpGet("contract")]
