@@ -14,18 +14,36 @@ public interface IStatisticsService
     Task<GetUserStatisticResponse> GetUserStatisticsAsync();
 
     /// <summary>
-    /// Gets monthly transaction statistics for specified years
+    /// Gets monthly statistics for finished projects and completed maintenance requests
+    /// </summary>
+    /// <param name="request">Filter criteria including years to get statistics for</param>
+    /// <returns>Monthly statistics grouped by year</returns>
+    Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetProjectAndMaintenanceStatisticsAsync(
+        GetStatisticFilterRequest request);
+
+    /// <summary>
+    /// Gets total monthly statistics combining both finished projects and completed maintenance requests
+    /// </summary>
+    /// <param name="request">Filter criteria including years to get statistics for</param>
+    /// <returns>Total monthly statistics grouped by year</returns>
+    Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetTotalProjectAndMaintenanceStatisticsAsync(
+        GetStatisticFilterRequest request);
+
+    /// <summary>
+    /// [DEPRECATED] Gets monthly transaction statistics for specified years
     /// </summary>
     /// <param name="request">Filter criteria including years to get statistics for</param>
     /// <returns>Monthly transaction statistics grouped by year</returns>
+    [Obsolete("This method is deprecated. Use GetProjectAndMaintenanceStatisticsAsync instead.")]
     Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetStatisticsAsync(
         GetStatisticFilterRequest request);
 
     /// <summary>
-    /// Gets total monthly transaction statistics combining both construction and maintenance transactions
+    /// [DEPRECATED] Gets total monthly transaction statistics combining both construction and maintenance transactions
     /// </summary>
     /// <param name="request">Filter criteria including years to get statistics for</param>
     /// <returns>Total monthly transaction statistics grouped by year</returns>
+    [Obsolete("This method is deprecated. Use GetTotalProjectAndMaintenanceStatisticsAsync instead.")]
     Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetTotalTransactionStatisticsAsync(
         GetStatisticFilterRequest request);
 

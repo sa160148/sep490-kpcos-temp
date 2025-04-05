@@ -253,8 +253,13 @@ public class DesignService : IDesignService
         {
             throw new BadRequestException("Chỉ có thể xuất bản thiết kế đã được xác nhận");
         }
-
-        design.IsPublic = true;
+        if (design.IsPublic == false || design.IsPublic == null)
+        {
+            design.IsPublic = true;
+        } 
+        else {
+            design.IsPublic = false;
+        }
         await repo.UpdateAsync(design);
     }
 

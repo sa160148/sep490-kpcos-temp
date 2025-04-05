@@ -74,6 +74,236 @@ public class StatisticsService : IStatisticsService
         };
     }
 
+    public async Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetProjectAndMaintenanceStatisticsAsync(
+        GetStatisticFilterRequest request)
+    {
+        // Get current year and month
+        var today = DateTime.Now;
+        int currentYear = today.Year;
+        int currentMonth = today.Month;
+
+        // Generate list of years to show
+        var years = string.IsNullOrEmpty(request.Year) 
+            ? Enumerable.Range(0, request.PageSize)
+                .Select(i => currentYear - i)
+                .OrderBy(y => y)
+                .ToList()
+            : request.Year.Split(',')
+                .Select(int.Parse)
+                .OrderBy(y => y)
+                .ToList();
+
+        // Get finished projects and completed maintenance requests
+        var projectRepo = _unitOfWork.Repository<Project>();
+        var maintenanceRepo = _unitOfWork.Repository<MaintenanceRequest>();
+
+        var response = new List<GetStatisticsResponse>();
+
+        foreach (var year in years)
+        {
+            // Determine number of months to show
+            int monthsToShow = year < currentYear ? 12 : currentMonth;
+
+            var yearlyStats = new GetStatisticsResponse
+            {
+                Year = year.ToString(),
+                Data = new List<GetStatisticDetailResponse>
+                {
+                    // Construction project count
+                    new GetStatisticDetailResponse
+                    {
+                        Name = "Đơn xây dựng",
+                        Data = Enumerable.Range(1, monthsToShow)
+                            .Select(month => projectRepo.Get(
+                                filter: p => p.Status == "FINISHED" && 
+                                           p.UpdatedAt.HasValue && 
+                                           p.UpdatedAt.Value.Year == year && 
+                                           p.UpdatedAt.Value.Month == month
+                            ).Count())
+                            .ToList()
+                    },
+                    // Maintenance request count
+                    new GetStatisticDetailResponse
+                    {
+                        Name = "Đơn bảo trì/bảo dưỡng",
+                        Data = Enumerable.Range(1, monthsToShow)
+                            .Select(month => maintenanceRepo.Get(
+                                filter: m => m.Status == "DONE" && 
+                                           m.UpdatedAt.HasValue && 
+                                           m.UpdatedAt.Value.Year == year && 
+                                           m.UpdatedAt.Value.Month == month
+                            ).Count())
+                            .ToList()
+                    }
+                }
+            };
+
+            response.Add(yearlyStats);
+        }
+
+        // Update total count if we're generating default years
+        int totalCount = string.IsNullOrEmpty(request.Year) 
+            ? currentYear - (currentYear - request.PageSize) + 1 
+            : years.Count;
+
+        return (response, totalCount);
+    }
+
+    public async Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetTotalProjectAndMaintenanceStatisticsAsync(
+        GetStatisticFilterRequest request)
+    {
+        // Get current year and month
+        var today = DateTime.Now;
+        int currentYear = today.Year;
+        int currentMonth = today.Month;
+
+        // Generate list of years to show
+        var years = string.IsNullOrEmpty(request.Year) 
+            ? Enumerable.Range(0, request.PageSize)
+                .Select(i => currentYear - i)
+                .OrderBy(y => y)
+                .ToList()
+            : request.Year.Split(',')
+                .Select(int.Parse)
+                .OrderBy(y => y)
+                .ToList();
+
+        // Get finished projects and completed maintenance requests
+        var projectRepo = _unitOfWork.Repository<Project>();
+        var maintenanceRepo = _unitOfWork.Repository<MaintenanceRequest>();
+
+        var response = new List<GetStatisticsResponse>();
+
+        foreach (var year in years)
+        {
+            // Determine number of months to show
+            int monthsToShow = year < currentYear ? 12 : currentMonth;
+
+            var yearlyStats = new GetStatisticsResponse
+            {
+                Year = year.ToString(),
+                Data = new List<GetStatisticDetailResponse>
+                {
+                    // Total count (projects + maintenance)
+                    new GetStatisticDetailResponse
+                    {
+                        Name = "Tổng",
+                        Data = Enumerable.Range(1, monthsToShow)
+                            .Select(month => 
+                                projectRepo.Get(
+                                    filter: p => p.Status == "FINISHED" && 
+                                               p.UpdatedAt.HasValue && 
+                                               p.UpdatedAt.Value.Year == year && 
+                                               p.UpdatedAt.Value.Month == month
+                                ).Count() +
+                                maintenanceRepo.Get(
+                                    filter: m => m.Status == "DONE" && 
+                                               m.UpdatedAt.HasValue && 
+                                               m.UpdatedAt.Value.Year == year && 
+                                               m.UpdatedAt.Value.Month == month
+                                ).Count()
+                            )
+                            .ToList()
+                    }
+                }
+            };
+
+            response.Add(yearlyStats);
+        }
+
+        // Update total count if we're generating default years
+        int totalCount = string.IsNullOrEmpty(request.Year) 
+            ? currentYear - (currentYear - request.PageSize) + 1 
+            : years.Count;
+
+        return (response, totalCount);
+    }
+
+    public async Task<GetGrowthRateStatisticResponse> GetTransactionCountGrowthRateAsync()
+    {
+        var currentYear = DateTime.Now.Year;
+        var lastYear = currentYear - 1;
+
+        var transactionRepo = _unitOfWork.Repository<Transaction>();
+
+        // Get transactions count for current and last year
+        var currentYearCount = transactionRepo.Get(
+            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == currentYear
+        ).Count();
+
+        var lastYearCount = transactionRepo.Get(
+            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == lastYear
+        ).Count();
+
+        var response = new GetGrowthRateStatisticResponse
+        {
+            CurrentValue = currentYearCount,
+            PreviousValue = lastYearCount,
+            IsNewActivity = lastYearCount == 0 && currentYearCount > 0
+        };
+
+        // If both years have no transactions, return 0% growth
+        if (currentYearCount == 0 && lastYearCount == 0)
+        {
+            response.GrowthRate = 0;
+            return response;
+        }
+
+        // If last year had no transactions, growth rate is undefined
+        if (lastYearCount == 0)
+        {
+            response.GrowthRate = null;
+            return response;
+        }
+
+        // Calculate growth rate
+        response.GrowthRate = ((double)(currentYearCount - lastYearCount) / lastYearCount) * 100;
+        return response;
+    }
+
+    public async Task<GetGrowthRateStatisticResponse> GetTransactionAmountGrowthRateAsync()
+    {
+        var currentYear = DateTime.Now.Year;
+        var lastYear = currentYear - 1;
+
+        var transactionRepo = _unitOfWork.Repository<Transaction>();
+
+        // Get total amount for current and last year
+        var currentYearAmount = transactionRepo.Get(
+            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == currentYear
+        ).Sum(t => t.Amount);
+
+        var lastYearAmount = transactionRepo.Get(
+            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == lastYear
+        ).Sum(t => t.Amount);
+
+        var response = new GetGrowthRateStatisticResponse
+        {
+            CurrentValue = currentYearAmount,
+            PreviousValue = lastYearAmount,
+            IsNewActivity = lastYearAmount == 0 && currentYearAmount > 0
+        };
+
+        // If both years have no transactions, return 0% growth
+        if (currentYearAmount == 0 && lastYearAmount == 0)
+        {
+            response.GrowthRate = 0;
+            return response;
+        }
+
+        // If last year had no transactions, growth rate is undefined
+        if (lastYearAmount == 0)
+        {
+            response.GrowthRate = null;
+            return response;
+        }
+
+        // Calculate growth rate
+        response.GrowthRate = ((double)(currentYearAmount - lastYearAmount) / lastYearAmount) * 100;
+        return response;
+    }
+
+    [Obsolete("This method is deprecated. Use GetProjectAndMaintenanceStatisticsAsync instead.")]
     public async Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetStatisticsAsync(
         GetStatisticFilterRequest request)
     {
@@ -168,6 +398,7 @@ public class StatisticsService : IStatisticsService
         return (response, totalCount);
     }
 
+    [Obsolete("This method is deprecated. Use GetTotalProjectAndMaintenanceStatisticsAsync instead.")]
     public async Task<(IEnumerable<GetStatisticsResponse> data, int totalRecords)> GetTotalTransactionStatisticsAsync(
         GetStatisticFilterRequest request)
     {
@@ -250,89 +481,5 @@ public class StatisticsService : IStatisticsService
         }
 
         return (response, totalCount);
-    }
-
-    public async Task<GetGrowthRateStatisticResponse> GetTransactionCountGrowthRateAsync()
-    {
-        var currentYear = DateTime.Now.Year;
-        var lastYear = currentYear - 1;
-
-        var transactionRepo = _unitOfWork.Repository<Transaction>();
-
-        // Get transactions count for current and last year
-        var currentYearCount = transactionRepo.Get(
-            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == currentYear
-        ).Count();
-
-        var lastYearCount = transactionRepo.Get(
-            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == lastYear
-        ).Count();
-
-        var response = new GetGrowthRateStatisticResponse
-        {
-            CurrentValue = currentYearCount,
-            PreviousValue = lastYearCount,
-            IsNewActivity = lastYearCount == 0 && currentYearCount > 0
-        };
-
-        // If both years have no transactions, return 0% growth
-        if (currentYearCount == 0 && lastYearCount == 0)
-        {
-            response.GrowthRate = 0;
-            return response;
-        }
-
-        // If last year had no transactions, growth rate is undefined
-        if (lastYearCount == 0)
-        {
-            response.GrowthRate = null;
-            return response;
-        }
-
-        // Calculate growth rate
-        response.GrowthRate = ((double)(currentYearCount - lastYearCount) / lastYearCount) * 100;
-        return response;
-    }
-
-    public async Task<GetGrowthRateStatisticResponse> GetTransactionAmountGrowthRateAsync()
-    {
-        var currentYear = DateTime.Now.Year;
-        var lastYear = currentYear - 1;
-
-        var transactionRepo = _unitOfWork.Repository<Transaction>();
-
-        // Get total amount for current and last year
-        var currentYearAmount = transactionRepo.Get(
-            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == currentYear
-        ).Sum(t => t.Amount);
-
-        var lastYearAmount = transactionRepo.Get(
-            filter: t => t.CreatedAt.HasValue && t.CreatedAt.Value.Year == lastYear
-        ).Sum(t => t.Amount);
-
-        var response = new GetGrowthRateStatisticResponse
-        {
-            CurrentValue = currentYearAmount,
-            PreviousValue = lastYearAmount,
-            IsNewActivity = lastYearAmount == 0 && currentYearAmount > 0
-        };
-
-        // If both years have no transactions, return 0% growth
-        if (currentYearAmount == 0 && lastYearAmount == 0)
-        {
-            response.GrowthRate = 0;
-            return response;
-        }
-
-        // If last year had no transactions, growth rate is undefined
-        if (lastYearAmount == 0)
-        {
-            response.GrowthRate = null;
-            return response;
-        }
-
-        // Calculate growth rate
-        response.GrowthRate = ((double)(currentYearAmount - lastYearAmount) / lastYearAmount) * 100;
-        return response;
     }
 }
