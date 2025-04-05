@@ -31,13 +31,14 @@ namespace KPCOS.API.Controllers
         /// 
         /// **Quy tắc và hành vi:**
         /// - Khách hàng phải đăng nhập để sử dụng API này
-        /// - Yêu cầu bảo trì mới được tạo với trạng thái OPENING
+        /// - Yêu cầu bảo trì thông thường được tạo với trạng thái OPENING
+        /// - Yêu cầu bảo trì sau dự án (totalValue = 0) được tạo với trạng thái REQUESTING và tên có thêm "bảo trì/bảo dưỡng sau dự án"
         /// - Nếu loại bảo trì là UNSCHEDULED, số lượng công việc bảo trì không được vượt quá 2
         /// - Ngày bảo trì sẽ được tự động sắp xếp để tránh cuối tuần và ngày lễ
         /// - Giá dịch vụ được tính dựa trên diện tích, độ sâu và gói bảo trì
         /// - Có thể áp dụng giảm giá theo nhóm tháng (6 tháng và 12 tháng)
         /// 
-        /// **Mẫu yêu cầu:**
+        /// **Mẫu yêu cầu thông thường:**
         /// 
         ///     {
         ///       "maintenancePackageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -51,6 +52,20 @@ namespace KPCOS.API.Controllers
         ///       "totalValue": null
         ///     }
         /// 
+        /// **Mẫu yêu cầu bảo trì sau dự án:**
+        /// 
+        ///     {
+        ///       "maintenancePackageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///       "name": "Bảo trì hồ cá Koi",
+        ///       "area": 15.5,
+        ///       "depth": 1.2,
+        ///       "address": "123 Đường Lê Lợi, Quận 1, TP.HCM",
+        ///       "type": "SCHEDULED",
+        ///       "duration": 6,
+        ///       "estimateAt": "2024-08-15",
+        ///       "totalValue": 0
+        ///     }
+        /// 
         /// **Các tham số:**
         /// - maintenancePackageId: ID của gói bảo trì (bắt buộc)
         /// - name: Tên yêu cầu bảo trì (bắt buộc)
@@ -60,7 +75,10 @@ namespace KPCOS.API.Controllers
         /// - type: Loại bảo trì (SCHEDULED, UNSCHEDULED hoặc OTHER) (bắt buộc)
         /// - duration: Số lượng công việc bảo trì (tháng) (tùy chọn, mặc định là 1)
         /// - estimateAt: Ngày dự kiến bắt đầu bảo trì (tùy chọn)
-        /// - totalValue: Tổng giá trị của yêu cầu bảo trì (tùy chọn, sẽ được tính tự động nếu không cung cấp)
+        /// - totalValue: Tổng giá trị của yêu cầu bảo trì (tùy chọn)
+        ///   - null: giá trị sẽ được tính tự động dựa trên diện tích, độ sâu và gói bảo trì
+        ///   - 0: đánh dấu là yêu cầu bảo trì sau dự án, trạng thái sẽ là REQUESTING
+        ///   - khác 0: sử dụng giá trị được cung cấp
         /// </remarks>
         /// <param name="request">Thông tin chi tiết về yêu cầu bảo trì</param>
         /// <response code="200">Yêu cầu bảo trì được tạo thành công</response>
