@@ -641,7 +641,10 @@ public class ConstructionsController  : BaseController
         + "**Lưu ý:**\n"
         + "- Không thể xóa công việc đang được gán cho nhân viên.\n"
         + "- Chỉ có thể xóa công việc đang ở trạng thái OPENING.\n"
-        ,
+        + "- Sau khi xóa công việc, hệ thống sẽ tự động kiểm tra và cập nhật trạng thái của hạng mục xây dựng(construction item):\n"
+        + "  - Nếu tất cả các công việc còn lại trong hạng mục xây dựng(construction item lv2) đều ở trạng thái DONE, hạng mục xây dựng(construction item lv2) sẽ được chuyển sang trạng thái DONE.\n"
+        + "  - Nếu tất cả các hạng mục xây dựng(construction item lv2) trong hạng mục xây dựng cha(construction item lv1) đều ở trạng thái DONE và không có vấn đề(project issue) nào đang mở, hạng mục xây dựng cha(construction item lv1) sẽ được chuyển sang trạng thái DONE.\n"
+        + "  - Khi chuyển trạng thái sang DONE, hệ thống sẽ tự động cập nhật ngày hoàn thành thực tế(actualAt) cho hạng mục xây dựng.",
         OperationId = "DeleteConstructionTask",
         Tags = new[] { "Constructions" }
     )]
