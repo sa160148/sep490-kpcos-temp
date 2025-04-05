@@ -152,10 +152,21 @@ public class MaintenanceService : IMaintenanceService
 
         // Calculate the total value
         int totalValue;
+        bool isPostProjectMaintenance = false;
+
         if (request.TotalValue.HasValue)
         {
-            // Use the specified total value if provided
-            totalValue = request.TotalValue.Value;
+            if (request.TotalValue.Value == 0)
+            {
+                // This is a post-project maintenance request
+                isPostProjectMaintenance = true;
+                totalValue = 0;
+            }
+            else
+            {
+                // Use the specified total value if provided
+                totalValue = request.TotalValue.Value;
+            }
         }
         else
         {
@@ -179,7 +190,9 @@ public class MaintenanceService : IMaintenanceService
         var maintenanceRequest = new MaintenanceRequest
         {
             Id = Guid.NewGuid(),
-            Name = request.Name,
+            Name = isPostProjectMaintenance 
+                ? $"{request.Name} - bảo trì/bảo dưỡng sau dự án"
+                : request.Name,
             Area = request.Area ?? 0,
             Depth = request.Depth ?? 0,
             Address = request.Address,
@@ -188,7 +201,9 @@ public class MaintenanceService : IMaintenanceService
             IsPaid = false,
             CustomerId = customer.Id,
             MaintenancePackageId = request.MaintenancePackageId.Value,
-            Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+            Status = isPostProjectMaintenance 
+                ? EnumMaintenanceRequestStatus.REQUESTING.ToString()
+                : EnumMaintenanceRequestStatus.OPENING.ToString()
         };
         
         // Add the maintenance request
@@ -220,7 +235,9 @@ public class MaintenanceService : IMaintenanceService
                     EstimateAt = date,
                     ParentId = null, // Level 1 tasks have no parent
                     MaintenanceItemId = null, // Level 1 tasks have no maintenance item
-                    Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                    Status = isPostProjectMaintenance 
+                        ? EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                        : EnumMaintenanceRequestTaskStatus.OPENING.ToString()
                 };
                 
                 await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(parentTask, false);
@@ -246,7 +263,9 @@ public class MaintenanceService : IMaintenanceService
                         EstimateAt = date, // Same date as parent
                         ParentId = parentTask.Id, // Reference to parent task
                         MaintenanceItemId = maintenanceItem.Id,
-                        Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                        Status = isPostProjectMaintenance 
+                            ? EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                            : EnumMaintenanceRequestTaskStatus.OPENING.ToString()
                     };
                     
                     await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(childTask, false);
@@ -703,9 +722,9 @@ public class MaintenanceService : IMaintenanceService
                     var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
                         .FindAsync(maintenanceRequestId);
                         
-                    if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestTaskStatus.PROCESSING.ToString())
+                    if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestStatus.PROCESSING.ToString())
                     {
-                        maintenanceRequest.Status = EnumMaintenanceRequestTaskStatus.DONE.ToString();
+                        maintenanceRequest.Status = EnumMaintenanceRequestStatus.DONE.ToString();
                         await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
                     }
                 }
