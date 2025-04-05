@@ -950,8 +950,10 @@ public class ConstructionService : IConstructionServices
     /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
     public async Task DeleteConstructionTaskAsync(Guid id)
     {
-        // Get the repository for ConstructionTask
+        // Get the repositories
         var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var projectIssueRepo = _unitOfWork.Repository<ProjectIssue>();
         
         // Find the construction task by ID
         var constructionTask = await constructionTaskRepo.FindAsync(id);
@@ -974,10 +976,20 @@ public class ConstructionService : IConstructionServices
             throw new BadRequestException("Không thể xóa công việc xây dựng đang được gán cho nhân viên");
         }
         
+        // Get the construction item level 2 (child) that contains this task
+        var constructionItemLv2 = await constructionItemRepo.FindAsync(constructionTask.ConstructionItemId);
+        if (constructionItemLv2 == null)
+        {
+            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {constructionTask.ConstructionItemId}");
+        }
+        
         // Delete the construction task
         await constructionTaskRepo.RemoveAsync(constructionTask, false);
         
-        // Save changes to the database
+        // Check if all remaining tasks are done and update construction items accordingly
+        await AutoUpdateConstructionItemsAsync(constructionItemLv2, constructionItemRepo, constructionTaskRepo, projectIssueRepo);
+        
+        // Save all changes to the database
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -1250,6 +1262,88 @@ public class ConstructionService : IConstructionServices
             throw new NotFoundException("Project không tồn tại");
         }
         return project;
+    }
+
+    /// <summary>
+    /// Helper function to auto-update construction items when all tasks are done
+    /// </summary>
+    /// <param name="constructionItemLv2">The level 2 construction item to check</param>
+    /// <param name="constructionItemRepo">Repository for construction items</param>
+    /// <param name="constructionTaskRepo">Repository for construction tasks</param>
+    /// <param name="projectIssueRepo">Repository for project issues</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    private async Task AutoUpdateConstructionItemsAsync(
+        ConstructionItem constructionItemLv2,
+        IRepository<ConstructionItem> constructionItemRepo,
+        IRepository<ConstructionTask> constructionTaskRepo,
+        IRepository<ProjectIssue> projectIssueRepo)
+    {
+        // Check if all tasks in the construction item level 2 are DONE
+        var allTasksInItemLv2 = constructionTaskRepo.Get(
+            filter: t => t.ConstructionItemId == constructionItemLv2.Id && t.IsActive == true,
+            includeProperties: ""
+        ).ToList();
+        
+        var allTasksDone = allTasksInItemLv2.All(t => t.Status == EnumConstructionTaskStatus.DONE.ToString());
+        
+        // If all tasks are DONE, update the construction item level 2 status to DONE
+        if (allTasksDone && allTasksInItemLv2.Count > 0)
+        {
+            constructionItemLv2.Status = EnumConstructionItemStatus.DONE.ToString();
+            
+            // Set the actual completion date to the current SEA time
+            var currentDate = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
+            constructionItemLv2.ActualAt = currentDate;
+            
+            await constructionItemRepo.UpdateAsync(constructionItemLv2, false);
+            
+            // Check if this level 2 item has a parent (level 1 item)
+            if (constructionItemLv2.ParentId.HasValue)
+            {
+                var parentId = constructionItemLv2.ParentId.Value;
+                var constructionItemLv1 = await constructionItemRepo.FindAsync(parentId);
+                
+                if (constructionItemLv1 != null)
+                {
+                    // Get all level 2 items that belong to this level 1 item
+                    var allChildItems = constructionItemRepo.Get(
+                        filter: i => i.ParentId == parentId && i.IsActive == true,
+                        includeProperties: ""
+                    ).ToList();
+                    
+                    // Check if all level 2 items are DONE
+                    var allChildItemsDone = allChildItems.All(i => i.Status == EnumConstructionItemStatus.DONE.ToString());
+                    
+                    // If all level 2 items are DONE, then check if all project issues are also DONE
+                    if (allChildItemsDone && allChildItems.Count > 0)
+                    {
+                        // Get all project issues for the construction item level 1
+                        var allProjectIssues = projectIssueRepo.Get(
+                            filter: i => i.ConstructionItemId == parentId && i.IsActive == true,
+                            includeProperties: ""
+                        ).ToList();
+                        
+                        // Check if there are any project issues that are not in DONE status
+                        var allIssuesDone = true;
+                        if (allProjectIssues.Count > 0)
+                        {
+                            allIssuesDone = allProjectIssues.All(i => i.Status == EnumProjectIssueStatus.DONE.ToString());
+                        }
+                        
+                        // Only update the construction item level 1 to DONE if all child items and all project issues are DONE
+                        if (allIssuesDone)
+                        {
+                            constructionItemLv1.Status = EnumConstructionItemStatus.DONE.ToString();
+                            
+                            // Set the actual completion date to the current SEA time
+                            constructionItemLv1.ActualAt = currentDate;
+                            
+                            await constructionItemRepo.UpdateAsync(constructionItemLv1, false);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #endregion
