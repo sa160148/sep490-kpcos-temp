@@ -235,9 +235,7 @@ public class MaintenanceService : IMaintenanceService
                     EstimateAt = date,
                     ParentId = null, // Level 1 tasks have no parent
                     MaintenanceItemId = null, // Level 1 tasks have no maintenance item
-                    Status = isPostProjectMaintenance 
-                        ? EnumMaintenanceRequestTaskStatus.OPENING.ToString()
-                        : EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                    Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
                 };
                 
                 await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(parentTask, false);
@@ -263,9 +261,7 @@ public class MaintenanceService : IMaintenanceService
                         EstimateAt = date, // Same date as parent
                         ParentId = parentTask.Id, // Reference to parent task
                         MaintenanceItemId = maintenanceItem.Id,
-                        Status = isPostProjectMaintenance 
-                            ? EnumMaintenanceRequestTaskStatus.OPENING.ToString()
-                            : EnumMaintenanceRequestTaskStatus.OPENING.ToString()
+                        Status = EnumMaintenanceRequestTaskStatus.OPENING.ToString()
                     };
                     
                     await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(childTask, false);
