@@ -191,25 +191,14 @@ namespace KPCOS.API.Controllers
                 );
             }
 
-            if (userIdClaim != null && roleClaim != null && filter.IsDesignPublish == null)
-            {
-                var userId = Guid.Parse(userIdClaim);
-                filter.UserId = userId;
-                filter.Role = roleClaim;
-                projects = await service.GetsAsync(filter);
-                return new PagedApiResponse<ProjectForListResponse>(
-                    projects.Data,
-                    pageNumber: filter.PageNumber,
-                    pageSize: filter.PageSize,
-                    totalRecords: projects.Count
-                );
-            }
-
             if (userIdClaim == null && roleClaim == null && filter.IsDesignPublish == null)
             {
                 throw new UnauthorizedAccessException("Không được phép truy cập");
             }
 
+            var userId = Guid.Parse(userIdClaim);
+            filter.UserId = userId;
+            filter.Role = roleClaim;
             projects = await service.GetsAsync(filter);
             return new PagedApiResponse<ProjectForListResponse>(
                 projects.Data,
