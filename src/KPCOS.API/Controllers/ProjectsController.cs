@@ -176,27 +176,47 @@ namespace KPCOS.API.Controllers
             var roleClaim = User.FindFirstValue(ClaimTypes.Role);
             (IEnumerable<ProjectForListResponse> Data, int Count) projects;
 
-            if (userIdClaim != null && roleClaim != null)
-            {
-                var userId = Guid.Parse(userIdClaim);
-                filter.UserId = userId;
-                filter.Role = roleClaim;
-            }
-
             // for case get all project with design publish status and using as a showroom, ignore user and role and hardcode status to finished.
             if (filter.IsDesignPublish.HasValue && filter.IsDesignPublish == true)
             {
                 filter.UserId = null;
                 filter.Role = null;
                 filter.Status = EnumProjectStatus.FINISHED.ToString();
+                projects = await service.GetsAsync(filter);
+                return new PagedApiResponse<ProjectForListResponse>(
+                    projects.Data,
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: projects.Count
+                );
             }
-            
+
+            if (userIdClaim != null && roleClaim != null && filter.IsDesignPublish == null)
+            {
+                var userId = Guid.Parse(userIdClaim);
+                filter.UserId = userId;
+                filter.Role = roleClaim;
+                projects = await service.GetsAsync(filter);
+                return new PagedApiResponse<ProjectForListResponse>(
+                    projects.Data,
+                    pageNumber: filter.PageNumber,
+                    pageSize: filter.PageSize,
+                    totalRecords: projects.Count
+                );
+            }
+
+            if (userIdClaim == null && roleClaim == null && filter.IsDesignPublish == null)
+            {
+                throw new UnauthorizedAccessException("Không được phép truy cập");
+            }
+
             projects = await service.GetsAsync(filter);
             return new PagedApiResponse<ProjectForListResponse>(
                 projects.Data,
                 pageNumber: filter.PageNumber,
                 pageSize: filter.PageSize,
-                totalRecords: projects.Count);
+                totalRecords: projects.Count
+            );
         }
         
         /// <summary>
