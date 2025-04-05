@@ -7,6 +7,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.BusinessLayer.DTOs.Response.Statistics;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
+using KPCOS.Common;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,31 @@ namespace KPCOS.API.Controllers
             GetStatisticFilterRequest request
         )
         {
+            var statistics = await _statisticsService.GetProjectAndMaintenanceStatisticsAsync(request);
+            return new PagedApiResponse<GetStatisticsResponse>(
+                statistics.data,
+                request.PageNumber,
+                request.PageSize,
+                statistics.totalRecords
+            );
+        }
+
+        [HttpGet("transactions")]
+        [SwaggerOperation(
+            Summary = "Lấy thống kê số lượng và tổng tiền của các giao dịch",
+            Description = "Lấy thống kê số lượng và tổng tiền của các giao dịch",
+            OperationId = "GetTransactionsStatistics",
+            Tags = new[] { "Statistics" }
+        )]
+        public async Task<PagedApiResponse<GetStatisticsResponse>> GetTransactionsAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for statistics including Year",
+                Required = false
+            )]
+            GetStatisticFilterRequest request
+        )
+        {
             var statistics = await _statisticsService.GetStatisticsAsync(request);
             return new PagedApiResponse<GetStatisticsResponse>(
                 statistics.data,
@@ -49,14 +75,14 @@ namespace KPCOS.API.Controllers
             );
         }
 
-        [HttpGet("total-transaction")]
+        [HttpGet("transactions-total")]
         [SwaggerOperation(
             Summary = "Lấy thống kê tổng số tiền của các giao dịch",
             Description = "Lấy thống kê tổng số tiền của các giao dịch",
-            OperationId = "GetTotalTransactionStatistics",
+            OperationId = "GetTotalTransactionsStatistics",
             Tags = new[] { "Statistics" }
         )]
-        public async Task<PagedApiResponse<GetStatisticsResponse>> GetTotalTransactionStatisticsAsync(
+        public async Task<PagedApiResponse<GetStatisticsResponse>> GetTotalTransactionsAsync(
             [FromQuery]
             [SwaggerParameter(
                 Description = "Filter criteria for statistics including Year",
@@ -152,82 +178,125 @@ Ví dụ phản hồi:
             return Ok(response);
         }
         
-        /*
-        [HttpGet("contract")]
+        /// <summary>
+        /// Gets monthly statistics for finished projects and completed maintenance requests
+        /// </summary>
+        /// <param name="request">Filter criteria including years to get statistics for</param>
+        /// <returns>Monthly statistics grouped by year</returns>
+        [HttpGet("project-and-maintenance")]
+        [ProducesResponseType(typeof(ApiResult<GetStatisticsListResponse>), StatusCodes.Status200OK)]
         [SwaggerOperation(
-            Summary = "Lấy thống kê số lượng và tổng tiền của các dự án",
-            Description = "Lấy thống kê số lượng và tổng tiền của các dự án dựa trên các thanh toán từ contract-payment batch",
-            OperationId = "GetProjectStatistics",
-            Tags = new[] { "Payments" }
+            Summary = "Gets monthly statistics for finished projects and completed maintenance requests",
+            Description = "Returns monthly statistics for finished projects and completed maintenance requests grouped by year. " +
+                         "For the current year, only shows months up to the current month. " +
+                         "For past years, shows all 12 months. " +
+                         "Each month shows the count of finished projects and completed maintenance requests.",
+            OperationId = "GetProjectAndMaintenanceStatistics",
+            Tags = new[] { "Statistics" }
         )]
-        public async Task<PagedApiResponse<GetStatisticsResponse>> GetProjectStatisticsAsync(
-            [FromQuery]
-            [SwaggerParameter(
-                Description = "Filter criteria for statistics including Year",
-                Required = false
-            )]
-            GetProjectStatisticsFilterRequest request
-        )
+        public async Task<ApiResult<GetStatisticsListResponse>> GetProjectAndMaintenanceStatisticsAsync(
+            [FromQuery] GetStatisticFilterRequest request)
         {
-            var statistics = await _statisticsService.GetProjectStatisticsAsync(request);
-            return new PagedApiResponse<GetStatisticsResponse>(
-                statistics.data,
-                request.PageNumber,
-                request.PageSize,
-                statistics.total
-            );
-        }
-        
-        [HttpGet("maintenance")]
-        [SwaggerOperation(
-            Summary = "Lấy thống kê số lượng và tổng tiền của các maintenance request",
-            Description = "Lấy thống kê số lượng và tổng tiền của các maintenance request dựa trên các thanh toán từ maintenance request",
-            OperationId = "GetProjectStatistics",
-            Tags = new[] { "Payments" }
-        )]
-        public async Task<PagedApiResponse<GetStatisticsResponse>> GetMaintenanceStatisticsAsync(
-            [FromQuery]
-            [SwaggerParameter(
-                Description = "Filter criteria for statistics including Year",
-                Required = false
-            )]
-            GetMaintenanceStatisticsFilterRequest request
-        )
-        {
-            var statistics = await _statisticsService.GetMaintenanceStatisticsAsync(request);
-            return new PagedApiResponse<GetStatisticsResponse>(
-                statistics.data,
-                request.PageNumber,
-                request.PageSize,
-                statistics.total
+            var (data, totalRecords) = await _statisticsService.GetProjectAndMaintenanceStatisticsAsync(request);
+            return new ApiResult<GetStatisticsListResponse>(
+                true,
+                ApiResultStatusCode.Success,
+                new GetStatisticsListResponse
+                {
+                    Data = data,
+                    TotalRecords = totalRecords
+                }
             );
         }
 
-        [HttpGet("transaction")]
+        /// <summary>
+        /// Gets total monthly statistics combining both finished projects and completed maintenance requests
+        /// </summary>
+        /// <param name="request">Filter criteria including years to get statistics for</param>
+        /// <returns>Total monthly statistics grouped by year</returns>
+        [HttpGet("total-project-and-maintenance")]
+        [ProducesResponseType(typeof(ApiResult<GetStatisticsListResponse>), StatusCodes.Status200OK)]
         [SwaggerOperation(
-            Summary = "Lấy thống kê số lượng và tổng tiền của các giao dịch",
-            Description = "Lấy thống kê số lượng và tổng tiền của các giao dịch",
-            OperationId = "GetProjectStatistics",
-            Tags = new[] { "Payments" }
+            Summary = "Gets total monthly statistics for finished projects and completed maintenance requests",
+            Description = "Returns total monthly statistics combining both finished projects and completed maintenance requests grouped by year. " +
+                         "For the current year, only shows months up to the current month. " +
+                         "For past years, shows all 12 months. " +
+                         "Each month shows the total count of finished projects and completed maintenance requests.",
+            OperationId = "GetTotalProjectAndMaintenanceStatistics",
+            Tags = new[] { "Statistics" }
         )]
-        public async Task<PagedApiResponse<GetStatisticsResponse>> GetTransactionStatisticsAsync(
-            [FromQuery]
-            [SwaggerParameter(
-                Description = "Filter criteria for statistics including Year",
-                Required = false
-            )]
-            GetAllTransactionFilterRequest request
-        )
+        public async Task<ApiResult<GetStatisticsListResponse>> GetTotalProjectAndMaintenanceStatisticsAsync(
+            [FromQuery] GetStatisticFilterRequest request)
         {
-            var statistics = await _statisticsService.GetTransactionStatisticsAsync(request);
-            return new PagedApiResponse<GetStatisticsResponse>(
-                statistics.data,
-                request.PageNumber,
-                request.PageSize,
-                statistics.total
+            var (data, totalRecords) = await _statisticsService.GetTotalProjectAndMaintenanceStatisticsAsync(request);
+            return new ApiResult<GetStatisticsListResponse>(
+                true,
+                ApiResultStatusCode.Success,
+                new GetStatisticsListResponse
+                {
+                    Data = data,
+                    TotalRecords = totalRecords
+                }
             );
         }
-        */
+
+        /// <summary>
+        /// [DEPRECATED] Gets monthly transaction statistics for specified years
+        /// </summary>
+        /// <param name="request">Filter criteria including years to get statistics for</param>
+        /// <returns>Monthly transaction statistics grouped by year</returns>
+        [Obsolete("This endpoint is deprecated. Use GetProjectAndMaintenanceStatisticsAsync instead.")]
+        [HttpGet("transactions-old")]
+        [ProducesResponseType(typeof(ApiResult<GetStatisticsListResponse>), StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "[DEPRECATED] Gets monthly transaction statistics",
+            Description = "This endpoint is deprecated. Use GetProjectAndMaintenanceStatisticsAsync instead.",
+            OperationId = "GetStatisticsOld",
+            Tags = new[] { "Statistics" }
+        )]
+        public async Task<ApiResult<GetStatisticsListResponse>> GetStatisticsOldAsync(
+            [FromQuery] GetStatisticFilterRequest request)
+        {
+            var (data, totalRecords) = await _statisticsService.GetStatisticsAsync(request);
+            return new ApiResult<GetStatisticsListResponse>(
+                true,
+                ApiResultStatusCode.Success,
+                new GetStatisticsListResponse
+                {
+                    Data = data,
+                    TotalRecords = totalRecords
+                }
+            );
+        }
+
+        /// <summary>
+        /// [DEPRECATED] Gets total monthly transaction statistics combining both construction and maintenance transactions
+        /// </summary>
+        /// <param name="request">Filter criteria including years to get statistics for</param>
+        /// <returns>Total monthly transaction statistics grouped by year</returns>
+        [Obsolete("This endpoint is deprecated. Use GetTotalProjectAndMaintenanceStatisticsAsync instead.")]
+        [HttpGet("total-transactions-old")]
+        [ProducesResponseType(typeof(ApiResult<GetStatisticsListResponse>), StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "[DEPRECATED] Gets total monthly transaction statistics",
+            Description = "This endpoint is deprecated. Use GetTotalProjectAndMaintenanceStatisticsAsync instead.",
+            OperationId = "GetTotalTransactionStatisticsOld",
+            Tags = new[] { "Statistics" }
+        )]
+        public async Task<ApiResult<GetStatisticsListResponse>> GetTotalTransactionStatisticsOldAsync(
+            [FromQuery] GetStatisticFilterRequest request)
+        {
+            var (data, totalRecords) = await _statisticsService.GetTotalTransactionStatisticsAsync(request);
+            return new ApiResult<GetStatisticsListResponse>(
+                true,
+                ApiResultStatusCode.Success,
+                new GetStatisticsListResponse
+                {
+                    Data = data,
+                    TotalRecords = totalRecords
+                }
+            );
+        }
 
         [HttpGet("user")]
         [SwaggerOperation(
