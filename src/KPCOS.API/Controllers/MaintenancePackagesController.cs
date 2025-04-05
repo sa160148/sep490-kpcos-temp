@@ -52,6 +52,7 @@ namespace KPCOS.API.Controllers
             OperationId = "CreateMaintenanceItem",
             Tags = new[] { "MaintenancePackages" }
         )]
+        //[CustomAuthorize("ADMINISTRATOR")]
         public async Task<ApiResult> CreateMaintenancePackageItemAsync(
             [SwaggerParameter(
                 Description = "Thông tin chi tiết về mục bảo trì mới, bao gồm tên và mô tả",
@@ -93,6 +94,7 @@ namespace KPCOS.API.Controllers
             OperationId = "GetMaintenanceItems",
             Tags = new[] { "MaintenancePackages" }
         )]
+        //[CustomAuthorize("ADMINISTRATOR")]
         public async Task<PagedApiResponse<GetAllMaintenanceItemResponse>> GetAllMaintenanceItemAsync(
             [FromQuery] 
             [SwaggerParameter(
@@ -156,6 +158,7 @@ namespace KPCOS.API.Controllers
             OperationId = "CreateMaintenancePackage",
             Tags = new[] { "MaintenancePackages" }
         )]
+        //[CustomAuthorize("ADMINISTRATOR")]
         public async Task<ApiResult> CreateMaintenancePackageAsync(
             [SwaggerParameter(
                 Description = "Thông tin chi tiết về gói bảo trì mới, bao gồm tên, mô tả, giá, tỷ lệ và danh sách mục bảo trì",
@@ -211,6 +214,140 @@ namespace KPCOS.API.Controllers
             request.PageNumber, 
             request.PageSize, 
             maintenancePackages.total);
+        }
+
+        /// <summary>
+        /// Lấy thông tin chi tiết gói bảo trì theo ID
+        /// </summary>
+        /// <remarks>
+        /// API này cho phép lấy thông tin chi tiết của một gói bảo trì dựa trên ID.
+        /// 
+        /// **Mẫu phản hồi:**
+        /// 
+        ///     {
+        ///       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///       "name": "Gói bảo trì cao cấp",
+        ///       "description": "Gói bảo trì đầy đủ dành cho hồ cá Koi cao cấp",
+        ///       "priceList": [1000000, 950000, 902500, 857375, 814506],
+        ///       "maintenanceItems": [
+        ///         {
+        ///           "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///           "name": "Kiểm tra và xử lý tảo",
+        ///           "description": "Kiểm tra nồng độ tảo trong nước, xử lý và loại bỏ tảo có hại"
+        ///         },
+        ///         {
+        ///           "id": "7b2c1c48-776f-49a0-86c5-25e9ec628f17",
+        ///           "name": "Kiểm tra hệ thống lọc",
+        ///           "description": "Kiểm tra và vệ sinh hệ thống lọc, thay thế vật liệu lọc nếu cần"
+        ///         }
+        ///       ],
+        ///       "status": "ACTIVE",
+        ///       "isActive": true,
+        ///       "createdAt": "2024-03-20T10:00:00Z",
+        ///       "updatedAt": "2024-03-20T10:00:00Z"
+        ///     }
+        /// </remarks>
+        /// <param name="id">ID của gói bảo trì cần lấy thông tin</param>
+        /// <returns>Thông tin chi tiết của gói bảo trì</returns>
+        /// <response code="200">Trả về thông tin chi tiết của gói bảo trì</response>
+        /// <response code="404">Không tìm thấy gói bảo trì với ID được cung cấp</response>
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(GetAllMaintenancePackageResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Lấy thông tin gói bảo trì theo ID",
+            Description = "Truy vấn thông tin gói bảo trì dựa trên ID",
+            OperationId = "GetMaintenancePackageById",
+            Tags = new[] { "MaintenancePackages" }
+        )]
+        public async Task<ApiResult<GetAllMaintenancePackageResponse>> GetDetailMaintenancePackageByIdAsync(
+            [FromRoute] Guid id)
+        {
+            var maintenancePackage = await _maintenanceService.GetDetailMaintenancePackageByIdAsync(id);
+            return Ok(maintenancePackage);
+        }
+
+        /// <summary>
+        /// Xóa mục bảo trì khỏi gói bảo trì
+        /// </summary>
+        /// <remarks>
+        /// API này cho phép xóa một mục bảo trì khỏi gói bảo trì.
+        /// 
+        /// **Quy tắc và hành vi:**
+        /// - Chỉ có thể xóa mục bảo trì khỏi gói bảo trì
+        /// - Không thể xóa mục bảo trì nếu nó đang được sử dụng trong các yêu cầu bảo trì đang hoạt động
+        /// 
+        /// **Mẫu yêu cầu:**
+        /// 
+        ///     DELETE /api/maintenance-packages/3fa85f64-5717-4562-b3fc-2c963f66afa6/item/7b2c1c48-776f-49a0-86c5-25e9ec628f17
+        /// </remarks>
+        /// <param name="id">ID của gói bảo trì</param>
+        /// <param name="itemId">ID của mục bảo trì cần xóa</param>
+        /// <response code="200">Mục bảo trì đã được xóa khỏi gói bảo trì</response>
+        /// <response code="404">Không tìm thấy mục bảo trì trong gói bảo trì</response>
+        [HttpDelete("{id}/item/{itemId}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Xóa mục bảo trì khỏi gói bảo trì",
+            Description = "API này cho phép xóa mục bảo trì khỏi gói bảo trì theo ID",
+            OperationId = "DeleteMaintenancePackageItem",
+            Tags = new[] { "MaintenancePackages" }
+        )]
+        [CustomAuthorize("ADMINISTRATOR")]
+        public async Task<ApiResult> DeleteMaintenancePackageItemAsync(
+            [FromRoute] Guid id,
+            [FromRoute] Guid itemId)
+        {
+            await _maintenanceService.DeleteMaintenancePackageItemAsync(id, itemId);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Cập nhật thông tin gói bảo trì
+        /// </summary>
+        /// <remarks>
+        /// API này cho phép cập nhật thông tin của một gói bảo trì.
+        /// 
+        /// **Quy tắc và hành vi:**
+        /// - Có thể cập nhật tên, mô tả, giá, tỷ lệ và trạng thái của gói bảo trì
+        /// - Có thể thêm mới các mục bảo trì vào gói
+        /// - Không thể xóa mục bảo trì hiện có (phải sử dụng API xóa mục bảo trì)
+        /// 
+        /// **Mẫu yêu cầu:**
+        /// 
+        ///     {
+        ///       "name": "Gói bảo trì cao cấp (Cập nhật)",
+        ///       "description": "Gói bảo trì đầy đủ dành cho hồ cá Koi cao cấp với các dịch vụ mới",
+        ///       "price": 1200000,
+        ///       "rate": 15,
+        ///       "maintenanceItems": [
+        ///         "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        ///         "7b2c1c48-776f-49a0-86c5-25e9ec628f17",
+        ///         "9d3e2f1a-8b7c-6d5e-4f3a-2b1c-0d9e8f7a6b5c"
+        ///       ]
+        ///     }
+        /// </remarks>
+        /// <param name="id">ID của gói bảo trì cần cập nhật</param>
+        /// <param name="request">Thông tin cập nhật của gói bảo trì</param>
+        /// <response code="200">Gói bảo trì đã được cập nhật thành công</response>
+        /// <response code="404">Không tìm thấy gói bảo trì với ID được cung cấp</response>
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Cập nhật gói bảo trì",
+            Description = "API này cho phép cập nhật gói bảo trì theo ID",
+            OperationId = "UpdateMaintenancePackage",
+            Tags = new[] { "MaintenancePackages" }
+        )]
+        [CustomAuthorize("ADMINISTRATOR")]
+        public async Task<ApiResult> UpdateMaintenancePackageAsync(
+            [FromRoute] Guid id,
+            [FromBody] CommandMaintenancePackageRequest request)
+        {
+            await _maintenanceService.UpdateMaintenancePackageAsync(id, request);
+            return Ok();
         }
     }
 }

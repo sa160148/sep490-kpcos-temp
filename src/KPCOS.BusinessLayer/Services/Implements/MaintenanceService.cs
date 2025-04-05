@@ -1145,6 +1145,86 @@ public class MaintenanceService : IMaintenanceService
         return response;
     }
 
+    public async Task<GetAllMaintenancePackageResponse> GetDetailMaintenancePackageByIdAsync(Guid id)
+    {
+        var maintenancePackage = _unitOfWork.Repository<MaintenancePackage>()
+            .Get(
+                filter: mp => mp.Id == id,
+                includeProperties: "MaintenancePackageItems,MaintenancePackageItems.MaintenanceItem"
+            )
+            .SingleOrDefault();
+
+        if (maintenancePackage == null)
+        {
+            throw new NotFoundException($"Không tìm thấy gói bảo trì với ID {id}");
+        }
+
+        return _mapper.Map<GetAllMaintenancePackageResponse>(maintenancePackage);
+    }
+
+    public async Task DeleteMaintenancePackageItemAsync(Guid maintenancePackageId, Guid maintenanceItemId)
+    {
+        var maintenancePackageItem = await _unitOfWork.Repository<MaintenancePackageItem>()
+            .FirstOrDefaultAsync(x => x.MaintenancePackageId == maintenancePackageId && 
+                                    x.MaintenanceItemId == maintenanceItemId);
+
+        if (maintenancePackageItem == null)
+        {
+            throw new NotFoundException($"Không tìm thấy mục bảo trì {maintenanceItemId} trong gói bảo trì {maintenancePackageId}");
+        }
+
+        await _unitOfWork.Repository<MaintenancePackageItem>().RemoveAsync(maintenancePackageItem);
+    }
+
+    public async Task UpdateMaintenancePackageAsync(Guid id, CommandMaintenancePackageRequest request)
+    {
+        var maintenancePackage = await _unitOfWork.Repository<MaintenancePackage>()
+            .FindAsync(id);
+
+        if (maintenancePackage == null)
+        {
+            throw new NotFoundException($"Không tìm thấy gói bảo trì với ID {id}");
+        }
+
+        // Use ReflectionUtil to update properties
+        ReflectionUtil.UpdateProperties(request, maintenancePackage, new List<string> { "MaintenanceItems" });
+        maintenancePackage.UpdatedAt = DateTime.UtcNow;
+
+        // Handle maintenance items if provided
+        if (request.MaintenanceItems != null && request.MaintenanceItems.Any())
+        {
+            // Get existing package items
+            var existingPackageItems = _unitOfWork.Repository<MaintenancePackageItem>()
+                .Get(x => x.MaintenancePackageId == id)
+                .ToList();
+
+            // Add new items that don't exist yet
+            var existingItemIds = existingPackageItems.Select(x => x.MaintenanceItemId).ToList();
+            var newItemIds = request.MaintenanceItems.Where(x => !existingItemIds.Contains(x)).ToList();
+
+            foreach (var itemId in newItemIds)
+            {
+                // Validate that the maintenance item exists
+                var maintenanceItem = await _unitOfWork.Repository<MaintenanceItem>().FindAsync(itemId);
+                if (maintenanceItem == null)
+                {
+                    throw new NotFoundException($"Không tìm thấy mục bảo trì với ID {itemId}");
+                }
+
+                var newPackageItem = new MaintenancePackageItem
+                {
+                    Id = Guid.NewGuid(),
+                    MaintenancePackageId = id,
+                    MaintenanceItemId = itemId
+                };
+
+                await _unitOfWork.Repository<MaintenancePackageItem>().AddAsync(newPackageItem, false);
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     // Helper method to get maintenance request task by ID with related entities
     private async Task<MaintenanceRequestTask?> GetMaintenanceRequestTaskById(Guid id)
     {
