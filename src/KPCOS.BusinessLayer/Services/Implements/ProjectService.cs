@@ -32,6 +32,8 @@ using System.Linq.Dynamic.Core;
 using Google.Cloud.Firestore;
 using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
+using KPCOS.Common.Utilities;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -39,7 +41,8 @@ public class ProjectService(
     IUnitOfWork unitOfWork, 
     IMapper mapper, 
     IEmailService emailService, 
-    IFirebaseService firebaseService) : IProjectService
+    IFirebaseService firebaseService,
+    IMaintenanceService maintenanceService) : IProjectService
 {
     private string GetQuotationRequiredIncludes => 
         "Package,Customer.User,ProjectStaffs.Staff.User,Quotations,Contracts";
@@ -1286,13 +1289,15 @@ public class ProjectService(
     /// </summary>
     /// <param name="id">The ID of the project to finish</param>
     /// <returns>Task representing the operation</returns>
-    public async Task FinishProjectAsync(Guid id)
+    public async Task FinishProjectAsync(
+        Guid id,
+        CommandMaintenanceRequest maintenanceOptionalRequest)
     {
         // Get the project and validate it exists
         var projectRepo = unitOfWork.Repository<Project>();
         var project = projectRepo.Get(
                 p => p.Id == id,
-                includeProperties: "ConstructionItems,Docs"
+                includeProperties: "ConstructionItems,Docs,Customer"
                 )
             .SingleOrDefault()
             ;
@@ -1335,8 +1340,28 @@ public class ProjectService(
         
         // Update project status to FINISHED
         project.Status = EnumProjectStatus.FINISHED.ToString();
+
+        // Auto create maintenance request with hardcoded values when maintenance package ID is provided, no validate maintenance package ID
+        if (maintenanceOptionalRequest.MaintenancePackageId.HasValue)
+        {
+            // Get current time in SEA timezone and add 1 day
+            var currentTime = GlobalUtility.GetCurrentSEATime();
+            var estimateAt = currentTime.AddDays(1);
+            
+            maintenanceOptionalRequest.Name = "Bảo dưỡng/bảo trì " + project.Name;
+            maintenanceOptionalRequest.Address = project.Address;
+            maintenanceOptionalRequest.Area = project.Area;
+            maintenanceOptionalRequest.Depth = project.Depth;
+            maintenanceOptionalRequest.Duration = 3;
+            maintenanceOptionalRequest.TotalValue = 0;
+            maintenanceOptionalRequest.Type = EnumMaintenanceRequestType.SCHEDULED.ToString();
+            maintenanceOptionalRequest.EstimateAt = DateOnly.FromDateTime(estimateAt);
+            
+            // Create maintenance request and save to database
+            await maintenanceService.CreateMaintenanceRequestAsync(maintenanceOptionalRequest, project.Customer.UserId);
+        }
         
-        // Save changes
+        // Save changes of project to database
         await projectRepo.UpdateAsync(project);
     }
 }

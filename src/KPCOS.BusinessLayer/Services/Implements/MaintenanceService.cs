@@ -198,7 +198,7 @@ public class MaintenanceService : IMaintenanceService
             Address = request.Address,
             TotalValue = totalValue,
             Type = request.Type,
-            IsPaid = false,
+            IsPaid = isPostProjectMaintenance,
             CustomerId = customer.Id,
             MaintenancePackageId = request.MaintenancePackageId.Value,
             Status = isPostProjectMaintenance 
