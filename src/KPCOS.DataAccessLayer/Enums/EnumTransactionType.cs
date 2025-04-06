@@ -9,4 +9,6 @@ public enum EnumTransactionType
     PAYMENT_BATCH,
     [EnumMember(Value = "MAINTENANCE_REQUEST")]
     MAINTENANCE_REQUEST,
+    [EnumMember(Value = "DOC")]
+    DOC
 }

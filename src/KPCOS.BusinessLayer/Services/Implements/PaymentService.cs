@@ -346,67 +346,67 @@ public class PaymentService : IPaymentService
         // Map transaction to response DTO using AutoMapper
         var response = _mapper.Map<GetTransactionDetailResponse>(transaction);
 
-        // The No field in Transaction can reference either a PaymentBatch, a MaintenanceRequest, or a Doc
-        // First, try to find a PaymentBatch with this ID
-        var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
-            .Get(
-                filter: x => x.Id == transaction.No,
-                includeProperties: "Contract.Project"
-            )
-            .FirstOrDefault();
-
-        if (paymentBatch != null)
+        // Use transaction type to determine which related entity to fetch
+        switch (transaction.Type)
         {
-            // This transaction is related to a payment batch
-            response.PaymentBatch = _mapper.Map<GetPaymentForTransactionResponse>(paymentBatch);
-            
-            if (paymentBatch.Contract != null)
-            {
-                var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(paymentBatch.Contract);
-                
-                if (paymentBatch.Contract.Project != null)
+            case "PAYMENT_BATCH":
+                var paymentBatch = _unitOfWork.Repository<PaymentBatch>()
+                    .Get(
+                        filter: x => x.Id == transaction.No,
+                        includeProperties: "Contract.Project"
+                    )
+                    .FirstOrDefault();
+
+                if (paymentBatch != null)
                 {
-                    contractResponse.Project = _mapper.Map<GetProjectForTransactionResponse>(paymentBatch.Contract.Project);
+                    response.PaymentBatch = _mapper.Map<GetPaymentForTransactionResponse>(paymentBatch);
+                    
+                    if (paymentBatch.Contract != null)
+                    {
+                        var contractResponse = _mapper.Map<GetContractForPaymentBatchResponse>(paymentBatch.Contract);
+                        
+                        if (paymentBatch.Contract.Project != null)
+                        {
+                            contractResponse.Project = _mapper.Map<GetProjectForTransactionResponse>(paymentBatch.Contract.Project);
+                        }
+                        
+                        response.PaymentBatch.Contract = contractResponse;
+                    }
                 }
-                
-                response.PaymentBatch.Contract = contractResponse;
-            }
-            
-            return response;
-        }
+                break;
 
-        // If not a payment batch, check if it's a maintenance request
-        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
-            .Get(
-                filter: x => x.Id == transaction.No,
-                includeProperties: "MaintenancePackage"
-            )
-            .FirstOrDefault();
-            
-        if (maintenanceRequest != null)
-        {
-            // This transaction is related to a maintenance request
-            response.MaintenanceRequest = _mapper.Map<GetMaintenanceRequestForTransactionResponse>(maintenanceRequest);
-            return response;
-        }
+            case "MAINTENANCE_REQUEST":
+                var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+                    .Get(
+                        filter: x => x.Id == transaction.No,
+                        includeProperties: "MaintenancePackage"
+                    )
+                    .FirstOrDefault();
+                    
+                if (maintenanceRequest != null)
+                {
+                    response.MaintenanceRequest = _mapper.Map<GetMaintenanceRequestForTransactionResponse>(maintenanceRequest);
+                }
+                break;
 
-        // If not a maintenance request, check if it's a doc
-        var doc = _unitOfWork.Repository<Doc>()
-            .Get(
-                filter: x => x.Id == transaction.No,
-                includeProperties: "Project"
-            )
-            .FirstOrDefault();
+            case "DOC":
+                var doc = _unitOfWork.Repository<Doc>()
+                    .Get(
+                        filter: x => x.Id == transaction.No,
+                        includeProperties: "Project"
+                    )
+                    .FirstOrDefault();
 
-        if (doc != null)
-        {
-            // This transaction is related to a document
-            response.Doc = _mapper.Map<GetDocResponse>(doc);
-            
-            if (doc.Project != null)
-            {
-                response.Doc.Project = _mapper.Map<GetProjectForTransactionResponse>(doc.Project);
-            }
+                if (doc != null)
+                {
+                    response.Doc = _mapper.Map<GetDocResponse>(doc);
+                    
+                    if (doc.Project != null)
+                    {
+                        response.Doc.Project = _mapper.Map<GetProjectForTransactionResponse>(doc.Project);
+                    }
+                }
+                break;
         }
 
         return response;
@@ -427,13 +427,6 @@ public class PaymentService : IPaymentService
         var repository = _unitOfWork.Repository<Transaction>();
         var expression = request.GetExpressions();
         
-        // Add customer ID filter if provided
-        if (customerId.HasValue)
-        {
-            var customerId1 = await _unitOfWork.Repository<Customer>().SingleOrDefaultAsync(x => x.UserId == customerId.Value);
-            expression = expression.And(t => t.CustomerId == customerId1.Id);
-        }
-        
         // Get all transactions based on filters
         var (transactions, total) = repository.GetWithCount(
             filter: expression,
@@ -453,50 +446,10 @@ public class PaymentService : IPaymentService
         // Get all transaction IDs to use in subsequent queries for related entities
         var transactionIds = transactions.Select(t => t.No).ToList();
         
-        // Check if we need to filter by related entity type
-        bool shouldFilterByRelated = !string.IsNullOrEmpty(request.Related);
-        string relatedType = shouldFilterByRelated ? request.Related.ToLower() : string.Empty;
-        
-        // Always process related data - but apply filters if Related is specified
-        // This ensures all transactions have their related data loaded
-        
-        // Process payment batch related transactions
-        if (!shouldFilterByRelated || relatedType == "batch")
-        {
-            ProcessBatchRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
-        }
-        
-        // Process maintenance request related transactions
-        if (!shouldFilterByRelated || relatedType == "maintenance")
-        {
-            ProcessMaintenanceRelatedTransactions(transactions, responses, transactionIds);
-        }
-        
-        // Process doc related transactions
-        if (!shouldFilterByRelated || relatedType == "doc")
-        {
-            ProcessDocRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
-        }
-        
-        // If filtering by related type is requested, remove responses without the specified related entity
-        if (shouldFilterByRelated)
-        {
-            switch (relatedType)
-            {
-                case "batch":
-                    responses.RemoveAll(r => r.PaymentBatch == null);
-                    break;
-                case "maintenance":
-                    responses.RemoveAll(r => r.MaintenanceRequest == null);
-                    break;
-                case "doc":
-                    responses.RemoveAll(r => r.Doc == null);
-                    break;
-            }
-            
-            // Update total count after filtering
-            total = responses.Count;
-        }
+        // Process all related data based on transaction type
+        ProcessBatchRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
+        ProcessMaintenanceRelatedTransactions(transactions, responses, transactionIds);
+        ProcessDocRelatedTransactions(transactions, responses, transactionIds, projectId, ref total);
         
         return (responses, total);
     }

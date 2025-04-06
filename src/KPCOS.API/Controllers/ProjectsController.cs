@@ -896,11 +896,7 @@ namespace KPCOS.API.Controllers
             )]
             GetAllTransactionFilterRequest filter)
         {
-            // Set Related to "batch" if not already specified, to ensure we get payment batch transactions
-            if (string.IsNullOrEmpty(filter.Related))
-            {
-                filter.Related = "batch";
-            }
+            filter.Type = EnumTransactionType.PAYMENT_BATCH.ToString() + "," + EnumTransactionType.DOC.ToString();
             
             var payments = await paymentService.GetTransactionsAsync(filter, projectId: id);
             return new PagedApiResponse<GetTransactionDetailResponse>(
