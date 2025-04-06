@@ -121,31 +121,53 @@ namespace KPCOS.API.Controllers
 
         [HttpGet("transaction")]
         [SwaggerOperation(
-            Summary = "Get a filtered list of payment transactions",
-            Description = "Retrieves a paginated list of payment transactions with optional filtering by customer, amount range, type, status, and related entity type (batch, maintenance, doc). For the current user, transactions are automatically filtered by their customer ID.",
+            Summary = "Lấy danh sách giao dịch thanh toán",
+            Description = "Lấy danh sách giao dịch thanh toán với các bộ lọc và phân trang. Hỗ trợ lọc theo loại giao dịch, số tiền, trạng thái và người dùng.\n\n" +
+                        "Quy tắc truy cập:\n" +
+                        "- ADMINISTRATOR: Có thể xem tất cả giao dịch\n" +
+                        "- CUSTOMER: Chỉ xem được các giao dịch của mình\n" +
+                        "- STAFF: Có thể xem tất cả giao dịch, nhưng nó là lỗi\n\n" +
+                        "Lưu ý:\n" +
+                        "- Các trường Role và UserId **được tự động thiết lập** dựa trên người dùng đang đăng nhập\n" +
+                        "- **Không cần nhập giá trị cho các trường Role và UserId**",
             OperationId = "GetAllTransactions",
             Tags = new[] { "Payments" }
         )]
+        [SwaggerResponse(200, "Danh sách giao dịch thanh toán", typeof(PagedApiResponse<GetTransactionDetailResponse>))]
+        [SwaggerResponse(400, "Yêu cầu không hợp lệ", typeof(ApiResult))]
+        [SwaggerResponse(401, "Chưa xác thực", typeof(ApiResult))]
+        [SwaggerResponse(403, "Không có quyền truy cập", typeof(ApiResult))]
         public async Task<PagedApiResponse<GetTransactionDetailResponse>> GetTransactionsAsync(
            [FromQuery]
            [SwaggerParameter(
-                Description = "Filter criteria for transactions including AmountMin, AmountMax, Type, Status, and Related. The Related parameter can be 'batch', 'maintenance', or 'doc' to filter by transaction type.",
+                Description = "Bộ lọc giao dịch thanh toán:\n" +
+                            "- AmountMin: Số tiền tối thiểu\n" +
+                            "- AmountMax: Số tiền tối đa\n" +
+                            "- Type: Loại giao dịch (PAYMENT_BATCH, MAINTENANCE_REQUEST, DOC)\n" +
+                            "- Status: Trạng thái giao dịch (SUCCESSFUL, FAILED)\n" +
+                            "- FromAmount: Số tiền bắt đầu khoảng tìm kiếm\n" +
+                            "- ToAmount: Số tiền kết thúc khoảng tìm kiếm\n" +
+                            "- PageNumber: Số trang\n" +
+                            "- PageSize: Số phần tử trên mỗi trang\n\n" +
+                            "Lưu ý:\n" +
+                            "- Role và UserId được tự động thiết lập, không cần nhập\n" +
+                            "- Quyền truy cập được kiểm soát dựa trên vai trò người dùng",
                 Required = false
             )]
             GetAllTransactionFilterRequest request
         )
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
             (IEnumerable<GetTransactionDetailResponse> data, int total) transactions;
-            if (userIdClaim != null)
+            if (userIdClaim != null && roleClaim != null)
             {
                 var userId = Guid.Parse(userIdClaim);
-                transactions = await _paymentService.GetTransactionsAsync(request, userId);
+                request.Role = roleClaim;
+                request.UserId = userId;
             }
-            else
-            {
-                transactions = await _paymentService.GetTransactionsAsync(request);
-            }
+            
+            transactions = await _paymentService.GetTransactionsAsync(request);
             return new PagedApiResponse<GetTransactionDetailResponse>(
                 transactions.data, 
                 request.PageNumber, 
