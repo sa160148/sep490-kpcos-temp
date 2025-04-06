@@ -17,6 +17,7 @@ using KPCOS.BusinessLayer.DTOs.Response.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.ProjectIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Docs;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 
 namespace KPCOS.BusinessLayer.Services;
 
@@ -376,5 +377,7 @@ public interface IProjectService
     /// </remarks>
     /// <exception cref="NotFoundException">Thrown when project is not found</exception>
     /// <exception cref="BadRequestException">Thrown when project is not in a state that can be finished</exception>
-    Task FinishProjectAsync(Guid id);
+    Task FinishProjectAsync(
+        Guid id,
+        CommandMaintenanceRequest maintenanceOptionalRequest);
 }

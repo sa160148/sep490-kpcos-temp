@@ -28,6 +28,7 @@ using KPCOS.BusinessLayer.DTOs.Response.Docs;
 using KPCOS.BusinessLayer.DTOs.Response.Payments;
 using KPCOS.BusinessLayer.DTOs.Request.Payments;
 using LinqKit;
+using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 
 namespace KPCOS.API.Controllers
 {
@@ -815,14 +816,42 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation(
+            Summary = "Hoàn thành dự án và tạo yêu cầu bảo trì tự động",
+            Description = "Chuyển trạng thái dự án sang FINISHED và tạo yêu cầu bảo trì tự động nếu có MaintenancePackageId.\n" +
+                         "Lưu ý: Chỉ cần cung cấp MaintenancePackageId, các trường khác sẽ được hệ thống tự động điền.",
+            OperationId = "FinishProjectAsync",
+            Tags = new[] { "Projects" }
+        )]
         public async Task<ApiResult> FinishProjectAsync(
             [SwaggerParameter(
-                Description = "The ID of the project to finish",
+                Description = "ID của dự án cần hoàn thành",
                 Required = true
             )]
-            Guid id)
+            Guid id,
+            [FromBody]
+            [SwaggerParameter(
+                Description = "Thông tin yêu cầu bảo trì (tùy chọn).\n" +
+                            "Chỉ cần cung cấp MaintenancePackageId, các trường khác sẽ được hệ thống tự động điền:\n" +
+                            "- Tên: 'Bảo dưỡng/bảo trì' + tên dự án\n" +
+                            "- Địa chỉ: Địa chỉ của dự án\n" +
+                            "- Diện tích: Diện tích của dự án\n" +
+                            "- Độ sâu: Độ sâu của dự án\n" +
+                            "- Thời gian: 3 tháng\n" +
+                            "- Tổng giá trị: 0\n" +
+                            "- Loại: SCHEDULED\n" +
+                            "- Ngày dự kiến: Ngày hiện tại + 1 ngày\n\n" +
+                            "Ví dụ request:\n" +
+                            "```json\n" +
+                            "{\n" +
+                            "  \"maintenancePackageId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                            "}\n" +
+                            "```",
+                Required = false
+            )]
+            CommandMaintenanceRequest maintenanceOptionalRequest)
         {
-            await service.FinishProjectAsync(id);
+            await service.FinishProjectAsync(id, maintenanceOptionalRequest);
             return Ok();
         }
 
