@@ -950,45 +950,90 @@ public class ConstructionService : IConstructionServices
     /// <exception cref="BadRequestException">Thrown when the task is not in OPENING status or is assigned to a staff member</exception>
     public async Task DeleteConstructionTaskAsync(Guid id)
     {
-        // Get the repositories
+        // Get all necessary repositories
         var constructionTaskRepo = _unitOfWork.Repository<ConstructionTask>();
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
         var projectIssueRepo = _unitOfWork.Repository<ProjectIssue>();
-        
-        // Find the construction task by ID
-        var constructionTask = await constructionTaskRepo.FindAsync(id);
-        
-        // If the task doesn't exist, throw NotFoundException
+
+        // Get the construction task
+        var constructionTask = await constructionTaskRepo.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
         if (constructionTask == null)
         {
-            throw new NotFoundException($"Không tìm thấy công việc xây dựng với ID {id}");
+            throw new NotFoundException("Construction task not found");
         }
-        
+
         // Check if the task is in OPENING status
         if (constructionTask.Status != EnumConstructionTaskStatus.OPENING.ToString())
         {
-            throw new BadRequestException($"Chỉ có thể xóa công việc xây dựng có trạng thái OPENING. Trạng thái hiện tại: {constructionTask.Status}");
+            throw new BadRequestException("Cannot delete a task that is not in OPENING status");
         }
-        
+
         // Check if the task is assigned to a staff member
         if (constructionTask.StaffId != null)
         {
-            throw new BadRequestException("Không thể xóa công việc xây dựng đang được gán cho nhân viên");
+            throw new BadRequestException("Cannot delete a task that is assigned to a staff member");
         }
-        
-        // Get the construction item level 2 (child) that contains this task
-        var constructionItemLv2 = await constructionItemRepo.FindAsync(constructionTask.ConstructionItemId);
+
+        // Get the associated level 2 construction item
+        var constructionItemLv2 = await constructionItemRepo.FirstOrDefaultAsync(x => x.Id == constructionTask.ConstructionItemId);
         if (constructionItemLv2 == null)
         {
-            throw new NotFoundException($"Không tìm thấy hạng mục xây dựng với ID {constructionTask.ConstructionItemId}");
+            throw new NotFoundException("Associated construction item not found");
         }
-        
+
         // Delete the construction task
         await constructionTaskRepo.RemoveAsync(constructionTask, false);
-        
+
         // Check if all remaining tasks are done and update construction items accordingly
-        await AutoUpdateConstructionItemsAsync(constructionItemLv2, constructionItemRepo, constructionTaskRepo, projectIssueRepo);
-        
+        var remainingTasks = await constructionTaskRepo.Where(x => 
+            x.ConstructionItemId == constructionItemLv2.Id && 
+            x.IsActive == true && 
+            x.Id != id
+        ).ToListAsync();
+
+        // If there are no remaining tasks or all remaining tasks are DONE
+        if (!remainingTasks.Any() || remainingTasks.All(x => x.Status == EnumConstructionTaskStatus.DONE.ToString()))
+        {
+            // Update the level 2 construction item to DONE
+            constructionItemLv2.Status = EnumConstructionItemStatus.DONE.ToString();
+            constructionItemLv2.ActualAt = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
+            await constructionItemRepo.UpdateAsync(constructionItemLv2, false);
+
+            // Check if the level 2 item has a parent (level 1)
+            if (constructionItemLv2.ParentId != null)
+            {
+                var constructionItemLv1 = await constructionItemRepo.FirstOrDefaultAsync(x => 
+                    x.Id == constructionItemLv2.ParentId && 
+                    x.IsActive == true
+                );
+
+                if (constructionItemLv1 != null)
+                {
+                    // Get all child items of the level 1 item
+                    var childItems = await constructionItemRepo.Where(x => 
+                        x.ParentId == constructionItemLv1.Id && 
+                        x.IsActive == true
+                    ).ToListAsync();
+
+                    // Get all project issues for the level 1 item
+                    var projectIssues = await projectIssueRepo.Where(x => 
+                        x.ConstructionItemId == constructionItemLv1.Id && 
+                        x.IsActive == true
+                    ).ToListAsync();
+
+                    // If all child items are DONE and there are no open project issues
+                    if (childItems.All(x => x.Status == EnumConstructionItemStatus.DONE.ToString()) &&
+                        !projectIssues.Any(x => x.Status == EnumProjectIssueStatus.OPENING.ToString()))
+                    {
+                        // Update the level 1 construction item to DONE
+                        constructionItemLv1.Status = EnumConstructionItemStatus.DONE.ToString();
+                        constructionItemLv1.ActualAt = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
+                        await constructionItemRepo.UpdateAsync(constructionItemLv1, false);
+                    }
+                }
+            }
+        }
+
         // Save all changes to the database
         await _unitOfWork.SaveChangesAsync();
     }
@@ -1262,88 +1307,6 @@ public class ConstructionService : IConstructionServices
             throw new NotFoundException("Project không tồn tại");
         }
         return project;
-    }
-
-    /// <summary>
-    /// Helper function to auto-update construction items when all tasks are done
-    /// </summary>
-    /// <param name="constructionItemLv2">The level 2 construction item to check</param>
-    /// <param name="constructionItemRepo">Repository for construction items</param>
-    /// <param name="constructionTaskRepo">Repository for construction tasks</param>
-    /// <param name="projectIssueRepo">Repository for project issues</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    private async Task AutoUpdateConstructionItemsAsync(
-        ConstructionItem constructionItemLv2,
-        IRepository<ConstructionItem> constructionItemRepo,
-        IRepository<ConstructionTask> constructionTaskRepo,
-        IRepository<ProjectIssue> projectIssueRepo)
-    {
-        // Check if all tasks in the construction item level 2 are DONE
-        var allTasksInItemLv2 = constructionTaskRepo.Get(
-            filter: t => t.ConstructionItemId == constructionItemLv2.Id && t.IsActive == true,
-            includeProperties: ""
-        ).ToList();
-        
-        var allTasksDone = allTasksInItemLv2.All(t => t.Status == EnumConstructionTaskStatus.DONE.ToString());
-        
-        // If all tasks are DONE, update the construction item level 2 status to DONE
-        if (allTasksDone && allTasksInItemLv2.Count > 0)
-        {
-            constructionItemLv2.Status = EnumConstructionItemStatus.DONE.ToString();
-            
-            // Set the actual completion date to the current SEA time
-            var currentDate = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
-            constructionItemLv2.ActualAt = currentDate;
-            
-            await constructionItemRepo.UpdateAsync(constructionItemLv2, false);
-            
-            // Check if this level 2 item has a parent (level 1 item)
-            if (constructionItemLv2.ParentId.HasValue)
-            {
-                var parentId = constructionItemLv2.ParentId.Value;
-                var constructionItemLv1 = await constructionItemRepo.FindAsync(parentId);
-                
-                if (constructionItemLv1 != null)
-                {
-                    // Get all level 2 items that belong to this level 1 item
-                    var allChildItems = constructionItemRepo.Get(
-                        filter: i => i.ParentId == parentId && i.IsActive == true,
-                        includeProperties: ""
-                    ).ToList();
-                    
-                    // Check if all level 2 items are DONE
-                    var allChildItemsDone = allChildItems.All(i => i.Status == EnumConstructionItemStatus.DONE.ToString());
-                    
-                    // If all level 2 items are DONE, then check if all project issues are also DONE
-                    if (allChildItemsDone && allChildItems.Count > 0)
-                    {
-                        // Get all project issues for the construction item level 1
-                        var allProjectIssues = projectIssueRepo.Get(
-                            filter: i => i.ConstructionItemId == parentId && i.IsActive == true,
-                            includeProperties: ""
-                        ).ToList();
-                        
-                        // Check if there are any project issues that are not in DONE status
-                        var allIssuesDone = true;
-                        if (allProjectIssues.Count > 0)
-                        {
-                            allIssuesDone = allProjectIssues.All(i => i.Status == EnumProjectIssueStatus.DONE.ToString());
-                        }
-                        
-                        // Only update the construction item level 1 to DONE if all child items and all project issues are DONE
-                        if (allIssuesDone)
-                        {
-                            constructionItemLv1.Status = EnumConstructionItemStatus.DONE.ToString();
-                            
-                            // Set the actual completion date to the current SEA time
-                            constructionItemLv1.ActualAt = currentDate;
-                            
-                            await constructionItemRepo.UpdateAsync(constructionItemLv1, false);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     #endregion
