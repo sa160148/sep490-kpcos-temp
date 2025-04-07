@@ -573,16 +573,21 @@ public class MaintenanceService : IMaintenanceService
         {
             level1Task.Status = EnumMaintenanceRequestTaskStatus.PROCESSING.ToString();
             await _unitOfWork.Repository<MaintenanceRequestTask>().UpdateAsync(level1Task, false);
+        }
+        
+        // Get the maintenance request
+        var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
+            .FindAsync(level1Task.MaintenanceRequestId);
+        if(maintenanceRequest.Status == EnumMaintenanceRequestStatus.OPENING.ToString())
+        {
+            throw new BadRequestException("Yêu cầu bảo trì đang ở trạng thái OPENING. Không thể phân công nhân viên cho công việc bảo trì cấp 1.");
+        }
             
-            // Update parent request status if needed
-            var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
-                .FindAsync(level1Task.MaintenanceRequestId);
-                
-            if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestStatus.OPENING.ToString())
-            {
-                maintenanceRequest.Status = EnumMaintenanceRequestStatus.PROCESSING.ToString();
-                await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
-            }
+        if (maintenanceRequest != null && maintenanceRequest.Status == EnumMaintenanceRequestStatus.REQUESTING.ToString())
+        {
+            // Update maintenance request status to PROCESSING
+            maintenanceRequest.Status = EnumMaintenanceRequestStatus.PROCESSING.ToString();
+            await _unitOfWork.Repository<MaintenanceRequest>().UpdateAsync(maintenanceRequest, false);
         }
         
         await _unitOfWork.SaveChangesAsync();
