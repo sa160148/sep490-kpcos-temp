@@ -139,6 +139,7 @@ public class ConstructionService : IConstructionServices
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
         var constructionTemplateItemRepo = _unitOfWork.Repository<ConstructionTemplateItem>();
         var projectRepo = _unitOfWork.Repository<Project>();
+        var paymentBatchRepo = _unitOfWork.Repository<PaymentBatch>();
         
         // Validate project exists
         var project = await projectRepo.FindAsync(request.ProjectId);
@@ -154,19 +155,34 @@ public class ConstructionService : IConstructionServices
             throw new BadRequestException("Số lượng hạng mục thanh toán phải bằng 3");
         }
 
-        // Check if construction items already exist for this project
-        var existingItems = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).Any();
-        if (existingItems)
+        // Get all existing construction items for this project
+        var existingItems = constructionItemRepo.Get(x => x.ProjectId == request.ProjectId).ToList();
+        
+        if (existingItems.Any())
         {
-            throw new BadRequestException("Dự án này đã có hạng mục xây dựng. Không thể tạo mới.");
+            // Get all level 1 (parent) items
+            var level1Items = existingItems.Where(x => x.ParentId == null).ToList();
+            
+            // Check if any level 1 items are referenced by payment batches
+            foreach (var level1Item in level1Items)
+            {
+                var hasPaymentBatch = paymentBatchRepo.Get(x => x.ConstructionItemId == level1Item.Id).Any();
+                if (hasPaymentBatch)
+                {
+                    throw new BadRequestException($"Không thể xóa hạng mục xây dựng vì đã có đợt thanh toán liên quan đến hạng mục '{level1Item.Name}'");
+                }
+            }
+            
+            // Remove all existing construction items at once using RemoveRange
+            constructionItemRepo.RemoveRange(existingItems);
         }
-
+        
         // Create new construction items
         foreach (var item in request.Items)
         {
             await CreateConstructionItemAsync(item, request.ProjectId, null, constructionItemRepo, constructionTemplateItemRepo, isParent: true);
         }
-
+        
         await _unitOfWork.SaveChangesAsync();
     }
 
