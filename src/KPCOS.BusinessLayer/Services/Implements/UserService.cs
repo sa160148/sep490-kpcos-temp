@@ -5,6 +5,7 @@ using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
 using KPCOS.Common.Pagination;
+using KPCOS.Common.Utilities;
 using KPCOS.DataAccessLayer.Entities;
 using KPCOS.DataAccessLayer.Enums;
 using KPCOS.DataAccessLayer.Repositories;
@@ -179,5 +180,82 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         var isUser = await unitOfWork.Repository<User>()
             .SingleOrDefaultAsync(user => user.Email == email);
         return isUser;
+    }
+
+    /// <summary>
+    /// Lấy thông tin chi tiết người dùng theo ID
+    /// </summary>
+    /// <param name="id">ID người dùng</param>
+    /// <returns>Thông tin chi tiết người dùng</returns>
+    public async Task<GetDetailUserResponse> GetUserByIdAsync(Guid id)
+    {
+        var user =  unitOfWork.Repository<User>()
+            .Get(   
+                filter: u => u.Id == id,
+                includeProperties: "Staff,Customers"
+            )
+            .SingleOrDefault();
+
+        if (user == null)
+        {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+
+        var response = mapper.Map<GetDetailUserResponse>(user);
+        return response;
+    }
+
+    /// <summary>
+    /// Lấy danh sách tất cả người dùng
+    /// </summary>
+    /// <param name="filter">Bộ lọc phân trang</param>
+    /// <returns>Danh sách người dùng</returns>
+    public async Task<(IEnumerable<GetDetailUserResponse> Data, int TotalRecords)> GetAllUsersAsync(
+        GetAllUserFilterRequest filter)
+    {
+        var repo = unitOfWork.Repository<User>();
+        var users = repo.GetWithCount(
+            filter: filter.GetExpressions(),
+            orderBy: filter.GetOrder(),
+            includeProperties: "Staff,Customers",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize);
+
+        var response = mapper.Map<IEnumerable<GetDetailUserResponse>>(users.Data);
+        return (response, users.Count);
+    }
+
+    /// <summary>
+    /// Cập nhật thông tin người dùng
+    /// </summary>
+    /// <param name="id">ID người dùng</param>
+    /// <param name="request">Thông tin cập nhật</param>
+    public async Task UpdateUserAsync(
+        Guid id, 
+        CommandUserRequest request)
+    {
+        var user = unitOfWork.Repository<User>()
+            .Get(
+                filter: u => u.Id == id,
+                includeProperties: "Staff,Customers"
+            )
+            .SingleOrDefault();
+
+        if (user == null)
+        {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+
+        // Use ReflectionUtil to update properties
+        ReflectionUtil.UpdateProperties(request, user);
+
+        // If position is being updated and user is staff
+        if (!string.IsNullOrEmpty(request.Position) && user.Staff.Any())
+        {
+            var staff = user.Staff.First();
+            staff.Position = request.Position;
+        }
+
+        await unitOfWork.Repository<User>().UpdateAsync(user);
     }
 }
