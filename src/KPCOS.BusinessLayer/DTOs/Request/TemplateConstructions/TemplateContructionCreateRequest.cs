@@ -24,6 +24,8 @@ public class TemplateContructionItemCreateRequest
     
     public int Duration { get; set; }
     
+    public string? Category { get; set; } = null;
+    
     public Guid IdTemplateContruction { get; set; }
 
     public Guid? IdParent { get; set; } = null;
