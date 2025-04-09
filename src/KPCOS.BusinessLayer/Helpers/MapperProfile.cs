@@ -83,7 +83,14 @@ public class MapperProfile : Profile
                 ;
         CreateMap<User, GetDetailUserResponse>()
             .ForMember(dest => dest.Position, 
-                opt => opt.MapFrom(src => GetUserPosition(src)));
+                opt => opt.MapFrom(src => GetUserPosition(src)))
+            .ForMember(dest => dest.Dob, 
+                opt => opt.MapFrom(src => src.Customers.FirstOrDefault().Dob))
+            .ForMember(dest => dest.Gender, 
+                opt => opt.MapFrom(src => src.Customers.FirstOrDefault().Gender))
+            .ForMember(dest => dest.Address, 
+                opt => opt.MapFrom(src => src.Customers.FirstOrDefault().Address))
+                ;
 
         CreateMap<Staff, GetAllStaffForDesignResponse>()
             .ForMember(dest => dest.Avatar, 
