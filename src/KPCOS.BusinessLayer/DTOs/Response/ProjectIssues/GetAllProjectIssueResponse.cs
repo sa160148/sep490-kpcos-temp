@@ -21,6 +21,8 @@ public class GetAllProjectIssueResponse
     */
     public GetConstructionItemForTaskResponse? ConstructionItem { get; set; }
     public GetAllStaffResponse? Staff { get; set; }
-    public string CreatedAt { get; set; }
-    public string UpdatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public DateOnly? EstimateAt { get; set; }
+    public DateOnly? ActualAt { get; set; }
 }
