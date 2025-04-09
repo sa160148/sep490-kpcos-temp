@@ -60,6 +60,7 @@ public class TemplateContructionService : ITemplateContructionService
         
         var templateContructionItem = new ConstructionTemplateItem
         {
+            Category = request.Category,
             Name = request.Name,
             Description = request.Description,
             Idparent = request.IdParent,
