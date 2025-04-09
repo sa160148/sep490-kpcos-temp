@@ -51,6 +51,19 @@ public class MapperProfile : Profile
         return firstPublishedDesign != null ? firstPublishedDesign.ImageUrl : null;
     }
 
+    private static string GetUserPosition(User user)
+    {
+        if (user.Staff.Any())
+        {
+            return user.Staff.First().Position;
+        }
+        else if (user.Customers.Any())
+        {
+            return RoleEnum.CUSTOMER.ToString();
+        }
+        return null;
+    }
+
     public MapperProfile()
     {
         CreateMap<AuthRequest, User>();
@@ -68,6 +81,10 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.Position,
                 opt => opt.MapFrom(src => src.Position))
                 ;
+        CreateMap<User, GetDetailUserResponse>()
+            .ForMember(dest => dest.Position, 
+                opt => opt.MapFrom(src => GetUserPosition(src)));
+
         CreateMap<Staff, GetAllStaffForDesignResponse>()
             .ForMember(dest => dest.Avatar, 
                 opt => opt.MapFrom(src => src.User.Avatar))
