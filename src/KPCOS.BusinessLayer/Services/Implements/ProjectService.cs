@@ -392,13 +392,29 @@ public class ProjectService(
         Guid userId)
     {
         var projectRepo = unitOfWork.Repository<Project>();
-        Project? project = mapper.Map<Project>(request);    
-        var customer = await unitOfWork.Repository<Customer>()
-            .SingleOrDefaultAsync(customer => customer.UserId == userId);
+        
+        // Get customer with User information
+        var customer = unitOfWork.Repository<Customer>()
+            .Get(filter: c => c.UserId == userId, includeProperties: "User")
+            .FirstOrDefault();
 
+        if (customer == null)
+        {
+            throw new NotFoundException("Customer not found");
+        }
+
+        // Create project with request data
+        Project? project = mapper.Map<Project>(request);
+
+        // Fill in missing data from customer if needed
+        project.CustomerName = request.CustomerName ?? customer.User.FullName;
+        project.Email = request.Email ?? customer.User.Email;
+        project.Phone = request.Phone ?? customer.User.Phone;
+        project.Address = request.Address ?? customer.Address;
+        project.Name = project.CustomerName + " project";
         project.CustomerId = customer.Id;
-        project.IsActive = true;
         project.Status = EnumProjectStatus.REQUESTING.ToString();
+        
         await projectRepo.AddAsync(project);
     }
 
