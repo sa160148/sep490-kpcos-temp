@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using KPCOS.API.Extensions.ServicesAddIn;
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
@@ -13,6 +14,7 @@ using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace KPCOS.API.Controllers
 {   
@@ -77,24 +79,27 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(PagedApiResponse<StaffResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [HttpGet]
+        [SwaggerOperation(
+            Summary = "Get all staff",
+            Description = "Get all staff",
+            OperationId = "GetsStaffAsync",
+            Tags = new[] { "Staffs" }
+        )]
         // [CustomAuthorize("ADMINISTRATOR")]
-        public async Task<PagedApiResponse<StaffResponse>> GetsStaffAsync([FromQuery]PaginationFilter filter)
+        public async Task<PagedApiResponse<StaffResponse>> GetsStaffAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Filter criteria for staff including Search, Position, Status, IsActive, IsIdle",
+                Required = false
+            )]
+            GetAllStaffRequest filter)
         {
-            var count = await userService.CountStaffAsync();
-            if (count == 0)
-            {
-                return new PagedApiResponse<StaffResponse>(new List<StaffResponse>(),
-                    filter.PageNumber,
-                    filter.PageSize,
-                    count);
-            }
-
             var response = await userService.GetsStaffAsync(filter);
             return new PagedApiResponse<StaffResponse>(
-                response,
+                response.Data,
                 filter.PageNumber,
                 filter.PageSize,
-                count);
+                response.TotalRecords);
         }
         
         /// <summary>
@@ -117,10 +122,16 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [HttpGet("manager")]
         // [CustomAuthorize("ADMINISTRATOR")]
-        public async Task<PagedApiResponse<StaffResponse>> GetAllManagers([FromQuery] PaginationFilter filter)
+        public async Task<PagedApiResponse<StaffResponse>> GetAllManagers(
+            [FromQuery] 
+            GetAllStaffRequest filter)
         {
             var response = await userService.GetsManagerAsync(filter);
-            return new PagedApiResponse<StaffResponse>(response.data, filter.PageNumber, filter.PageSize, response.total);
+            return new PagedApiResponse<StaffResponse>(
+                response.data, 
+                filter.PageNumber, 
+                filter.PageSize, 
+                response.total);
         }
         
         /// <summary>
