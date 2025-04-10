@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Exceptions;
@@ -45,28 +46,19 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         await unitOfWork.Repository<User>().AddAsync(user);
     }
 
-    public async Task<IEnumerable<StaffResponse>> GetsStaffAsync(PaginationFilter filter)
+    public async Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsStaffAsync(GetAllStaffRequest filter)
     {
         var repo = unitOfWork.Repository<Staff>();
-        var staffs = repo.Get(
-            filter: null,
-            orderBy: null,
-            "User",
-            filter.PageNumber,
-            filter.PageSize);
+        var staffs = repo.GetWithCount(
+            filter: filter.GetExpressions(),
+            orderBy: filter.GetOrder(),
+            includeProperties: "User",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize);
 
-        var staffResponses = staffs.Select(staff => new StaffResponse
-        {
-            Id = staff.Id,
-            FullName = staff.User.FullName,
-            Email = staff.User.Email,
-            Phone = staff.User.Phone,
-            Position = staff.Position,
-            Avatar = staff.User.Avatar,
-            IsActive = staff.User.IsActive
-        });
+        var staffResponses = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
 
-        return staffResponses;
+        return (staffResponses, staffs.Count);
     }
 
     public async Task<int> CountStaffAsync()
@@ -112,21 +104,21 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         return (data, totalRecords);
     }
 
-    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(PaginationFilter filter)
+    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(GetAllStaffRequest filter)
     {
         var repo = unitOfWork.Repository<Staff>();
-        Expression<Func<Staff, bool>> advanceFilter = staff => 
-            staff.Position == RoleEnum.MANAGER.ToString() &&
-            staff.User.IsActive == true &&
-            !staff.ProjectStaffs.Any(ps => 
-                ps.Project.IsActive == true && 
-                ps.Project.Status != EnumProjectStatus.FINISHED.ToString());
+        // Expression<Func<Staff, bool>> advanceFilter = staff => 
+        //     staff.Position == RoleEnum.MANAGER.ToString() &&
+        //     staff.User.IsActive == true &&
+        //     !staff.ProjectStaffs.Any(ps => 
+        //         ps.Project.IsActive == true && 
+        //         ps.Project.Status != EnumProjectStatus.FINISHED.ToString());
         var staffs = repo.GetWithCount(
-            filter: advanceFilter,
-            orderBy: null,
-            "User",
-            filter.PageNumber,
-            filter.PageSize);
+            filter: filter.GetManagerExpressions(),
+            orderBy: filter.GetOrder(),
+            includeProperties: "User",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize);
         var response = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
         return (response, staffs.Count);
     }
