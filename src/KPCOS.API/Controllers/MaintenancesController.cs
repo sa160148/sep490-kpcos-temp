@@ -161,6 +161,16 @@ namespace KPCOS.API.Controllers
             )]
             GetAllMaintenanceRequestFilterRequest request)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+            {
+                throw new UnauthorizedAccessException("Customer chưa đăng nhập");
+            }
+            var userId = Guid.Parse(userIdClaim);
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            request.UserId = userId;
+            request.Role = role;
+
             var result = await _maintenanceService.GetMaintenanceRequestsAsync(request);
             return new PagedApiResponse<GetAllMaintenanceRequestResponse>(
             result.data, 
