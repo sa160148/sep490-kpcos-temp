@@ -5,24 +5,20 @@ namespace KPCOS.BusinessLayer.DTOs.Request.Projects;
 
 public class ProjectRequest
 {
-    [Required(ErrorMessage = "can not let customer name null")]
     [DefaultValue("customer")]
-    public string CustomerName { get; set; }
+    public string? CustomerName { get; set; }
 
     [DefaultValue("note")]
-    public string Note { get; set; }
+    public string? Note { get; set; }
 
-    [Required(ErrorMessage = "can not let address null")]
     [DefaultValue("address")]
-    public string Address { get; set; }
+    public string? Address { get; set; }
 
-    [Required(ErrorMessage = "can not let phone null")]
     [DefaultValue("0123456789")]
-    public string Phone { get; set; }
+    public string? Phone { get; set; }
 
-    [Required(ErrorMessage = "can not let email null")]
     [DefaultValue("root@gmail.com")]
-    public string Email { get; set; }
+    public string? Email { get; set; }
 
     [Required(ErrorMessage = "can not let area null")]
     [DefaultValue(100)]
