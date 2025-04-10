@@ -113,12 +113,9 @@ public class MapperProfile : Profile
             ;
 
         CreateMap<ProjectRequest, Project>()
-            .ForMember(dest => dest.Name,
-                opt => 
-                    opt.MapFrom(cust => cust.CustomerName + " project"))
             .ForMember(dest => dest.Note,
-                opt => opt.MapFrom(cust => cust.Note ?? ""))
-                ;
+                opt => opt.MapFrom(src => src.Note ?? ""))
+            ;
         CreateMap<Project, ProjectResponse>()
             .ForMember(dest => dest.Staff, 
                 opt => opt.MapFrom(src => new List<StaffResponse>()));

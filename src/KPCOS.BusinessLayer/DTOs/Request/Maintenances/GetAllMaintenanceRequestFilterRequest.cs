@@ -2,6 +2,7 @@ using System;
 using System.Linq.Expressions;
 using KPCOS.Common.Pagination;
 using KPCOS.DataAccessLayer.Entities;
+using KPCOS.DataAccessLayer.Enums;
 using LinqKit;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Maintenances;
@@ -19,6 +20,8 @@ public class GetAllMaintenanceRequestFilterRequest : PaginationRequest<Maintenan
     public bool? IsPaid { get; set; }
     public DateOnly? EstimateAt { get; set; }
     public int? Duration { get; set; }
+    public Guid? UserId { get; set; }
+    public string? Role { get; set; }
     
     public override Expression<Func<MaintenanceRequest, bool>> GetExpressions()
     {
@@ -69,6 +72,14 @@ public class GetAllMaintenanceRequestFilterRequest : PaginationRequest<Maintenan
         if (Duration != null)
         {
             predicate = predicate.And(x => x.MaintenanceRequestTasks.Count() == Duration);
+        }
+
+        if (UserId != null && Role != null)
+        {
+            if (Role == RoleEnum.CUSTOMER.ToString())
+            {
+                predicate = predicate.And(x => x.Customer.UserId == UserId);
+            }
         }
 
         return predicate;

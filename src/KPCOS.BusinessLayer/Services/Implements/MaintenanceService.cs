@@ -191,7 +191,7 @@ public class MaintenanceService : IMaintenanceService
         {
             Id = Guid.NewGuid(),
             Name = isPostProjectMaintenance 
-                ? $"{request.Name} - bảo trì/bảo dưỡng sau dự án"
+                ? $"Bảo trì/bảo dưỡng hồ cá koi cho {request.Name} - bảo trì/bảo dưỡng sau dự án"
                 : request.Name,
             Area = request.Area ?? 0,
             Depth = request.Depth ?? 0,
@@ -275,10 +275,9 @@ public class MaintenanceService : IMaintenanceService
     public async Task<(IEnumerable<GetAllMaintenanceRequestResponse> data, int total)> GetMaintenanceRequestsAsync(GetAllMaintenanceRequestFilterRequest request)
     {
         var repository = _unitOfWork.Repository<MaintenanceRequest>();
-        var filterExpression = request.GetExpressions();
         
         var (requests, total) = repository.GetWithCount(
-            filter: filterExpression,
+            filter: request.GetExpressions(),
             includeProperties: "MaintenancePackage,Customer,Customer.User,MaintenanceRequestTasks,MaintenanceRequestTasks.Staff,MaintenanceRequestTasks.Staff.User,MaintenanceRequestTasks.MaintenanceStaffs,MaintenanceRequestTasks.MaintenanceStaffs.Staff,MaintenanceRequestTasks.MaintenanceStaffs.Staff.User",
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
@@ -312,10 +311,9 @@ public class MaintenanceService : IMaintenanceService
     public async Task<(IEnumerable<GetAllMaintenanceItemResponse> data, int total)> GetAllMaintenanceItemAsync(GetAllMaintenanceItemFilterRequest request)
     {
         var repository = _unitOfWork.Repository<MaintenanceItem>();
-        var filterExpression = request.GetExpressions();
         
         var (items, total) = repository.GetWithCount(
-            filter: filterExpression,
+            filter: request.GetExpressions(),
             orderBy: request.GetOrder(),
             pageIndex: request.PageNumber,
             pageSize: request.PageSize
@@ -467,6 +465,12 @@ public class MaintenanceService : IMaintenanceService
         if (level1Task.ParentId != null)
         {
             throw new BadRequestException("Nhân viên chỉ có thể được phân công trực tiếp cho công việc bảo trì cấp 1");
+        }
+        
+        // Validate task is not in DONE status
+        if (level1Task.Status == EnumMaintenanceRequestTaskStatus.DONE.ToString())
+        {
+            throw new BadRequestException("Không thể phân công nhân viên cho công việc bảo trì đã hoàn thành (DONE)");
         }
         
         // Validate staff position is CONSTRUCTOR
