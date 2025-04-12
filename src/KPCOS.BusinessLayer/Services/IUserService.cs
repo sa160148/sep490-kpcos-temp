@@ -1,4 +1,5 @@
 ﻿using KPCOS.BusinessLayer.DTOs.Request;
+using KPCOS.BusinessLayer.DTOs.Request.Users;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.Common.Pagination;
@@ -15,12 +16,13 @@ public interface IUserService
     /// </summary>
     /// <param name="filter">Bộ lọc phân trang</param>
     /// <returns>Danh sách nhân viên</returns>
-    Task<IEnumerable<StaffResponse>> GetsStaffAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsStaffAsync(
+        GetAllStaffRequest filter);
     Task<int> CountStaffAsync();
     
     Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter);
     
-    Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(GetAllStaffRequest filter);
     Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter);
     Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter);
 

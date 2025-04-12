@@ -456,6 +456,14 @@ namespace KPCOS.API.Controllers
         /// <para>DESIGNING -> Assign Manager -> DESIGNING</para>
         /// <para>DESIGNING -> Assign Designer -> DESIGNING</para>
         /// <para>CONSTRUCTING -> Assign Constructor -> CONSTRUCTING</para>
+        /// <para>Position-specific Rules:</para>
+        /// <list type="bullet">
+        ///     <item><description>Consultant: Can be assigned to multiple projects simultaneously (one consultant per project)</description></item>
+        ///     <item><description>Designer: Cannot be assigned if they have any DESIGNING projects (one designer per project)</description></item>
+        ///     <item><description>Manager: Cannot be assigned if they have any non-FINISHED projects (one manager per project)</description></item>
+        ///     <item><description>Constructor: Cannot be assigned if they have any CONSTRUCTING projects (multiple constructors allowed per project)</description></item>
+        ///     <item><description>Administrator: Cannot be assigned to any project</description></item>
+        /// </list>
         /// </remarks>
         [HttpPost("{id}/assignconsultant")]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
