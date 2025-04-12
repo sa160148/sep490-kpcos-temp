@@ -191,9 +191,9 @@ namespace KPCOS.API.Controllers
         
         // [CustomAuthorize("ADMINISTRATOR")]
         [HttpGet("consultant")]
-        public async Task<PagedApiResponse<StaffResponse>> GetConsultant ([FromQuery] PaginationFilter filter)
+        public async Task<PagedApiResponse<StaffResponse>> GetConsultant ([FromQuery] GetAllStaffRequest filter)
         {
-            
+            // filter.Position = RoleEnum.CONSULTANT.ToString();
             var response = await userService.GetsConsultantAsync(filter);
             return new PagedApiResponse<StaffResponse>(response.Data, filter.PageNumber, filter.PageSize, response.TotalRecords);
         }
