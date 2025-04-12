@@ -93,27 +93,54 @@ public class MaintenanceService : IMaintenanceService
         // Validate required fields
         if (request.MaintenancePackageId == null)
         {
-            throw new BadRequestException("Gói bảo trì không được để trống");
-        }
-        
-        if (string.IsNullOrEmpty(request.Name))
-        {
-            throw new BadRequestException("Tên yêu cầu bảo trì không được để trống");
+            throw new BadRequestException("Gói bảo trì/bảo dưỡng không được để trống");
         }
         
         if (request.Area == null || request.Depth == null)
         {
-            throw new BadRequestException("Diện tích và độ sâu hồ cá không được để trống");
-        }
-        
-        if (string.IsNullOrEmpty(request.Address))
-        {
-            throw new BadRequestException("Địa chỉ thực hiện bảo trì không được để trống");
+            throw new BadRequestException("Diện tích và độ sâu hồ cá koi không được để trống");
         }
         
         if (request.Type == null)
         {
-            throw new BadRequestException("Loại bảo trì không được để trống");
+            throw new BadRequestException("Loại bảo trì/bảo dưỡng không được để trống");
+        }
+        
+        // Get customer information for auto-generation if needed
+        var customer = await _unitOfWork.Repository<Customer>()
+            .SingleOrDefaultAsync(x => x.UserId == customerId);
+        
+        if (customer == null)
+        {
+            throw new NotFoundException($"Không tìm thấy khách hàng với ID {customerId}");
+        }
+        
+        // Auto-generate name if not provided
+        if (string.IsNullOrEmpty(request.Name))
+        {
+            // Get the customer's full name from the User entity
+            var customerUser = await _unitOfWork.Repository<User>()
+                .FindAsync(customerId);
+                
+            string customerName = customerUser?.FullName ?? "Khách hàng";
+            
+            // Get the package name for the request name
+            var packageInfo = await _unitOfWork.Repository<MaintenancePackage>()
+                .FindAsync(request.MaintenancePackageId.Value);
+                
+            string packageName = packageInfo?.Name ?? "Gói bảo trì/bảo dưỡng hồ cá koi";
+            
+            // Generate name using customer name and package
+            request.Name = $"Yêu cầu bảo trì/bảo dưỡng hồ cá cho {customerName} - {packageName}";
+        }
+        
+        // Auto-generate address if not provided
+        if (string.IsNullOrEmpty(request.Address))
+        {
+            // Use customer's address if available
+            request.Address = !string.IsNullOrEmpty(customer.Address) 
+                ? customer.Address 
+                : "Địa chỉ sẽ được cập nhật sau";
         }
         
         // Set duration based on request and validate if needed
@@ -125,7 +152,7 @@ public class MaintenanceService : IMaintenanceService
         if (request.Type.Equals(EnumMaintenanceRequestType.UNSCHEDULED.ToString(), StringComparison.OrdinalIgnoreCase) 
             && duration > 2)
         {
-            throw new BadRequestException("Bảo trì không định kỳ (UNSCHEDULED) không thể có quá 2 lần bảo trì");
+            throw new BadRequestException("Bảo trì/bảo dưỡng không định kỳ (UNSCHEDULED) không thể có quá 2 lần bảo trì");
         }
         
         // Verify maintenance package exists
@@ -134,7 +161,7 @@ public class MaintenanceService : IMaintenanceService
         
         if (maintenancePackage == null)
         {
-            throw new NotFoundException($"Không tìm thấy gói bảo trì với ID {request.MaintenancePackageId}");
+            throw new NotFoundException($"Không tìm thấy gói bảo trì/bảo dưỡng với ID {request.MaintenancePackageId}");
         }
 
         // Get maintenance package items associated with the package
@@ -147,7 +174,7 @@ public class MaintenanceService : IMaintenanceService
         // Make sure the package has maintenance items
         if (!maintenancePackageItems.Any())
         {
-            throw new NotFoundException($"Gói bảo trì với ID {request.MaintenancePackageId} không có hạng mục bảo trì nào đang hoạt động");
+            throw new NotFoundException($"Gói bảo trì/bảo dưỡng với ID {request.MaintenancePackageId} không có hạng mục bảo trì/bảo dưỡng nào đang hoạt động");
         }
 
         // Calculate the total value
@@ -176,14 +203,6 @@ public class MaintenanceService : IMaintenanceService
                 request.Depth.Value, 
                 duration, 
                 maintenancePackage);
-        }
-
-        var customer = await _unitOfWork.Repository<Customer>()
-            .SingleOrDefaultAsync(x => x.UserId == customerId);
-        
-        if (customer == null)
-        {
-            throw new NotFoundException($"Không tìm thấy khách hàng với ID {customerId}");
         }
 
         // Create new maintenance request
@@ -216,16 +235,24 @@ public class MaintenanceService : IMaintenanceService
             var httpClient = _httpClientFactory.CreateClient();
             
             // Calculate maintenance dates (avoiding weekends and holidays)
-            // Using the updated utility function that respects milestone days and adds end-of-month dates
+            // For both SCHEDULED and UNSCHEDULED maintenance using the same utility function
             var maintenanceDates = await GlobalUtility.GetMaintenanceDatesAsync(
                 request.EstimateAt.Value, 
                 duration, 
                 httpClient);
             
-            // Create tasks for each date
+            // GetMaintenanceDatesAsync may add an extra end-of-month date
+            // We need to limit the dates to match the requested duration
+            if (maintenanceDates.Count > duration)
+            {
+                // Take only the first N dates where N is the requested duration
+                maintenanceDates = maintenanceDates.Take(duration).ToList();
+            }
+            
+            // Create a Level 1 task for each date in maintenanceDates
             foreach (var date in maintenanceDates)
             {
-                // Create parent task (Level 1)
+                // Create a single parent task (Level 1) for each date
                 var parentTask = new MaintenanceRequestTask
                 {
                     Id = Guid.NewGuid(),
@@ -240,7 +267,7 @@ public class MaintenanceService : IMaintenanceService
                 
                 await _unitOfWork.Repository<MaintenanceRequestTask>().AddAsync(parentTask, false);
                 
-                // Create child tasks (Level 2) for each maintenance item
+                // Create Level 2 tasks for each maintenance item under this Level 1 task
                 foreach (var packageItem in maintenancePackageItems)
                 {
                     var maintenanceItem = packageItem.MaintenanceItem;
