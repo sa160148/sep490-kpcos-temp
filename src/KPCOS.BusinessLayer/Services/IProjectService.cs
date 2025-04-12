@@ -115,7 +115,7 @@ public interface IProjectService
     /// <para>Position-specific Rules:</para>
     /// <list type="bullet">
     ///     <item>
-    ///         <description>Consultant: Cannot be assigned if they have any PROCESSING projects</description>
+    ///         <description>Consultant: Can be assigned to multiple projects simultaneously</description>
     ///     </item>
     ///     <item>
     ///         <description>Designer: Cannot be assigned if they have any DESIGNING projects</description>
@@ -148,7 +148,7 @@ public interface IProjectService
     /// Thrown when:
     /// <list type="bullet">
     ///     <item><description>Staff position doesn't match project status</description></item>
-    ///     <item><description>Staff already has restricted project status</description></item>
+    ///     <item><description>Staff already has restricted project status (except for Consultants)</description></item>
     ///     <item><description>Position already exists in project (for unique positions)</description></item>
     ///     <item><description>Administrator attempts to be assigned</description></item>
     /// </list>
