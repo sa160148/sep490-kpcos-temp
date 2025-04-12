@@ -103,4 +103,12 @@ public class GetAllStaffRequest : PaginationRequest<Staff>
                 );
         return predicate;
     }
+
+    public Expression<Func<Staff, bool>> GetConsultantExpressions()
+    {
+        var predicate = PredicateBuilder.New<Staff>(true);
+        predicate = predicate.And(staff => 
+            staff.Position == RoleEnum.CONSULTANT.ToString());
+        return predicate;
+    }
 }
