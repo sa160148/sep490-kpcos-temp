@@ -863,6 +863,22 @@ public class ProjectService(
         return staff;
     }
 
+    /// <summary>
+    /// Validates if the staff position matches the required project status for assignment
+    /// </summary>
+    /// <param name="project">The project to assign staff to</param>
+    /// <param name="staff">The staff member being assigned</param>
+    /// <returns>Task indicating completion</returns>
+    /// <remarks>
+    /// <para>Each staff position can only be assigned to a project in a specific status:</para>
+    /// <list type="bullet">
+    ///     <item><description>Consultant: Only for REQUESTING projects, changes status to PROCESSING</description></item>
+    ///     <item><description>Designer: Only for DESIGNING projects</description></item>
+    ///     <item><description>Manager: Only for DESIGNING projects</description></item>
+    ///     <item><description>Constructor: Only for CONSTRUCTING projects</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="BadRequestException">Thrown when position cannot be assigned to project or status mismatch</exception>
     private Task ValidateProjectStatusForStaffAssignment(
         Project project, 
         Staff staff)
@@ -954,7 +970,7 @@ public class ProjectService(
     /// <summary>
     /// Validate the staff with userId is available to assign to the project.
     /// <para>With validation rules for each position as: </para>
-    /// <para>CONSULTANT: only for project when other projects have any status but not PROCESSING</para>
+    /// <para>CONSULTANT: can be assigned to multiple projects simultaneously</para>
     /// <para>DESIGNER: only for project when other projects have any status but not DESIGNING</para>
     /// <para>CONSTRUCTOR: only for project when other projectss have any status but not CONSTRUCTING</para>
     /// <para>MANAGER: possible when other projects that have status FINISHED, any have status is not FINISHED can not assign</para>
@@ -966,13 +982,13 @@ public class ProjectService(
     /// <exception cref="BadRequestException"></exception>
     private async Task<bool> IsNotInAnyProject(Guid userId)
     {
-        var staffQuery = unitOfWork.Repository<Staff>().Get()
-            .Include(s => s.User)
-            .Include(s => s.ProjectStaffs)
-                .ThenInclude(ps => ps.Project)
-            .Where(s => s.UserId == userId);
+        var staffQuery = unitOfWork.Repository<Staff>()
+            .Get(
+                filter: s => s.UserId == userId, 
+                includeProperties: "User,ProjectStaffs.Project")
+            .SingleOrDefault();
 
-        var staff = await staffQuery.SingleOrDefaultAsync() 
+        var staff = staffQuery 
             ?? throw new NotFoundException("Staff không tồn tại");
 
         var position = staff.Position.ToUpper();
@@ -1001,7 +1017,9 @@ public class ProjectService(
         // Check specific status restrictions for each role
         var statusRestrictions = new Dictionary<string, string>
         {
-            [RoleEnum.CONSULTANT.ToString()] = EnumProjectStatus.PROCESSING.ToString(),
+            // Removing CONSULTANT restriction as per new requirements
+            // [RoleEnum.CONSULTANT.ToString()] = EnumProjectStatus.PROCESSING.ToString(),
+            // Consultants can now be assigned to multiple projects with PROCESSING status
             [RoleEnum.DESIGNER.ToString()] = EnumProjectStatus.DESIGNING.ToString(),
             [RoleEnum.CONSTRUCTOR.ToString()] = EnumProjectStatus.CONSTRUCTING.ToString()
         };
@@ -1016,7 +1034,6 @@ public class ProjectService(
             {
                 var errorMessages = new Dictionary<string, string>
                 {
-                    [RoleEnum.CONSULTANT.ToString()] = $"Consultant {staff.User.Email} đang có dự án đang xử lý",
                     [RoleEnum.DESIGNER.ToString()] = $"Designer {staff.User.Email} đang có dự án đang thiết kế",
                     [RoleEnum.CONSTRUCTOR.ToString()] = $"Constructor {staff.User.Email} đang có dự án đang thi công"
                 };
@@ -1032,8 +1049,18 @@ public class ProjectService(
     /// Validates if staff with specific positions (Consultant, Designer, Manager) already exists in the project
     /// </summary>
     /// <param name="projectId">Project ID to check</param>
-    /// <param name="staffId">Staff ID being assigned but this is actually is UserId in table staff</param>
-    /// <exception cref="BadRequestException">Thrown when duplicate position found</exception>
+    /// <param name="userId">Staff ID being assigned (actually the UserId in the Staff table)</param>
+    /// <remarks>
+    /// <para>Enforces the following uniqueness rules:</para>
+    /// <list type="bullet">
+    ///     <item><description>Consultant: Only one allowed per project</description></item>
+    ///     <item><description>Designer: Only one allowed per project</description></item>
+    ///     <item><description>Manager: Only one allowed per project</description></item>
+    /// </list>
+    /// <para>Constructor and other positions are not checked for uniqueness (multiple allowed)</para>
+    /// </remarks>
+    /// <exception cref="NotFoundException">Thrown when staff not found</exception>
+    /// <exception cref="BadRequestException">Thrown when duplicate position found in project</exception>
     private async Task ValidateUniquePositionInProject(
         Guid projectId, 
         Guid userId)
@@ -1094,9 +1121,11 @@ public class ProjectService(
     public async Task<IsDesignExitByProjectResponse> IsDesign3DConfirmedAsync(Guid id)
     {
         var expression = PredicateBuilder.New<Design>();
-        expression = expression.And(design => design.Status == EnumDesignStatus.CONFIRMED.ToString());
-        expression = expression.And(design => design.ProjectId == id);
-        expression = expression.And(design => design.Type == "3D");
+        expression = expression.And(
+            design => design.Status == EnumDesignStatus.CONFIRMED.ToString() &&
+            design.ProjectId == id &&
+            design.Type == "3D"
+        );
         
         // Check if any designs match the criteria instead of trying to get a single one
         var exists = unitOfWork.Repository<Design>()
