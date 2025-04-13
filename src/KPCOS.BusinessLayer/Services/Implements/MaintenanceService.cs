@@ -18,8 +18,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
 using System.Linq.Expressions;
+using KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues;
 using LinqKit;
 using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
+using KPCOS.BusinessLayer.DTOs.Response.MaintenanceRequestIssues;
 
 namespace KPCOS.BusinessLayer.Services.Implements;
 
@@ -1281,5 +1283,198 @@ public class MaintenanceService : IMaintenanceService
     {
         return await _unitOfWork.Repository<MaintenanceRequestTask>()
             .FindAsync(id);
+    }
+    
+    /// <summary>
+    /// Tạo vấn đề mới cho yêu cầu bảo trì
+    /// </summary>
+    /// <param name="request">Thông tin vấn đề bảo trì cần tạo</param>
+    /// <returns>ID của vấn đề bảo trì đã tạo</returns>
+    /// <exception cref="NotFoundException">Ném ra khi không tìm thấy yêu cầu bảo trì hoặc nhân viên với ID được cung cấp</exception>
+    /// <exception cref="BadRequestException">Ném ra khi dữ liệu đầu vào không hợp lệ</exception>
+    public async Task CreateMaintenanceRequestIssueAsync(CommandMaintenanceRequestIssueRequest request)
+    {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(request.Cause))
+        {
+            throw new BadRequestException("Lý do không được để trống");
+        }
+        
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            throw new BadRequestException("Mô tả vấn đề không được để trống");
+        }
+        
+        if (request.MaintenanceRequestId == null || request.MaintenanceRequestId == Guid.Empty)
+        {
+            throw new BadRequestException("ID yêu cầu bảo trì không được để trống");
+        }
+        
+        if (!request.EstimateAt.HasValue)
+        {
+            throw new BadRequestException("Ngày dự kiến không được để trống");
+        }
+        
+        // Validate that the maintenance request exists
+        var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
+            .Get(
+                filter: mr => mr.Id == request.MaintenanceRequestId.Value,
+                includeProperties: "MaintenanceRequestTasks"
+            )
+            .SingleOrDefault();
+            
+        if (maintenanceRequest == null)
+        {
+            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {request.MaintenanceRequestId}");
+        }
+        
+        // Validate that the maintenance request is not in DONE status
+        if (maintenanceRequest.Status == EnumMaintenanceRequestStatus.DONE.ToString())
+        {
+            throw new BadRequestException("Không thể tạo vấn đề cho yêu cầu bảo trì đã hoàn thành");
+        }
+        
+        // Check if there are any maintenance tasks
+        if (maintenanceRequest.MaintenanceRequestTasks.Any())
+        {
+            // Find the last scheduled maintenance task
+            var lastTask = maintenanceRequest.MaintenanceRequestTasks
+                .OrderByDescending(t => t.EstimateAt)
+                .FirstOrDefault();
+                
+            if (lastTask != null && lastTask.EstimateAt.HasValue)
+            {
+                // Check if current time is before the last task's estimated date
+                var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                if (currentDate.CompareTo(lastTask.EstimateAt.Value) < 0)
+                {
+                    throw new BadRequestException("Không thể tạo vấn đề trước khi hoàn thành tất cả các công việc bảo trì");
+                }
+            }
+            
+            // Check if the estimate date conflicts with any existing maintenance task
+            if (request.EstimateAt.HasValue)
+            {
+                var conflictingTask = maintenanceRequest.MaintenanceRequestTasks
+                    .FirstOrDefault(t => t.EstimateAt.HasValue && t.EstimateAt.Value.Equals(request.EstimateAt.Value));
+                    
+                if (conflictingTask != null)
+                {
+                    throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} trùng với công việc bảo trì đã có. Vui lòng chọn ngày khác");
+                }
+            }
+        }
+        
+        // Validate staff if provided
+        if (request.StaffId != null && request.StaffId != Guid.Empty)
+        {
+            var staff = await _unitOfWork.Repository<Staff>().FindAsync(request.StaffId.Value);
+            if (staff == null)
+            {
+                throw new NotFoundException($"Không tìm thấy nhân viên với ID {request.StaffId}");
+            }
+        }
+        
+        // Check if the estimate date is a weekend or holiday and normalize for database compatibility
+        if (request.EstimateAt.HasValue)
+        {
+            var estimateDate = request.EstimateAt.Value;
+            
+            if (GlobalUtility.IsWeekend(estimateDate))
+            {
+                // Get the next working day
+                estimateDate = GlobalUtility.GetNextWorkingDay(estimateDate);
+                request.EstimateAt = estimateDate;
+            }
+        }
+        
+        // Use AutoMapper to create the entity from the request
+        var maintenanceRequestIssue = _mapper.Map<MaintenanceRequestIssue>(request);
+        
+        // Database will handle ID, CreatedAt, UpdatedAt, and IsActive fields automatically
+        
+        // Generate name if not provided
+        if (string.IsNullOrWhiteSpace(maintenanceRequestIssue.Name))
+        {
+            if (!string.IsNullOrWhiteSpace(request.Cause))
+            {
+                maintenanceRequestIssue.Name = $"Vấn đề: {(request.Cause.Length > 30 ? request.Cause.Substring(0, 30) + "..." : request.Cause)}";
+            }
+            else
+            {
+                maintenanceRequestIssue.Name = $"Vấn đề: {(request.Description.Length > 30 ? request.Description.Substring(0, 30) + "..." : request.Description)}";
+            }
+        }
+        
+        // Set default status if not provided
+        if (string.IsNullOrWhiteSpace(maintenanceRequestIssue.Status))
+        {
+            maintenanceRequestIssue.Status = EnumMaintenanceRequestIssueStatus.OPENING.ToString();
+        }
+        
+        // Add to database
+        await _unitOfWork.Repository<MaintenanceRequestIssue>().AddAsync(maintenanceRequestIssue, false);
+        await _unitOfWork.SaveChangesAsync();
+    }
+    
+    /// <summary>
+    /// Cập nhật thông tin vấn đề bảo trì
+    /// </summary>
+    /// <param name="request">Thông tin cập nhật của vấn đề bảo trì</param>
+    /// <returns>ID của vấn đề bảo trì đã cập nhật</returns>
+    /// <exception cref="NotFoundException">Ném ra khi không tìm thấy vấn đề bảo trì với ID được cung cấp</exception>
+    public async Task UpdateMaintenanceRequestIssueAsync(CommandMaintenanceRequestIssueRequest request)
+    {
+        throw new NotImplementedException("Phương thức này chưa được triển khai");
+    }
+    
+    /// <summary>
+    /// Lấy danh sách vấn đề bảo trì theo bộ lọc
+    /// </summary>
+    /// <param name="request">Bộ lọc để tìm kiếm vấn đề bảo trì</param>
+    /// <returns>Danh sách vấn đề bảo trì phù hợp với bộ lọc</returns>
+    public async Task<(IEnumerable<GetAllMaintenanceRequestIssueResponse> data, int total)> GetMaintenanceRequestIssuesAsync(
+        GetAllMaintenanceRequestIssueFilterRequest request)
+    {
+        // Get data with pagination
+        var result = _unitOfWork.Repository<MaintenanceRequestIssue>().GetWithCount(
+            filter: request.GetExpressions(),
+            orderBy: request.GetOrder(),
+            includeProperties: "Staff,Staff.User,MaintenanceRequest,MaintenanceRequest.MaintenancePackage",
+            pageIndex: request.PageNumber,
+            pageSize: request.PageSize
+        );
+        
+        // Map to response DTOs
+        var mappedData = _mapper.Map<IEnumerable<GetAllMaintenanceRequestIssueResponse>>(result.Data);
+        
+        return (mappedData, result.Count);
+    }
+    
+    /// <summary>
+    /// Lấy thông tin chi tiết của một vấn đề bảo trì theo ID
+    /// </summary>
+    /// <param name="id">ID của vấn đề bảo trì cần lấy thông tin</param>
+    /// <returns>Thông tin chi tiết của vấn đề bảo trì</returns>
+    /// <exception cref="NotFoundException">Ném ra khi không tìm thấy vấn đề bảo trì với ID được cung cấp</exception>
+    public async Task<GetAllMaintenanceRequestIssueResponse> GetMaintenanceRequestIssueAsync(Guid id)
+    {
+        // Get the maintenance request issue with related entities using include properties
+        var maintenanceRequestIssue = _unitOfWork.Repository<MaintenanceRequestIssue>()
+            .Get(
+                filter: x => x.Id == id,
+                includeProperties: "Staff,Staff.User,MaintenanceRequest,MaintenanceRequest.MaintenancePackage,MaintenanceRequest.Customer"
+            )
+            .FirstOrDefault();
+            
+        if (maintenanceRequestIssue == null)
+        {
+            throw new NotFoundException($"Không tìm thấy vấn đề bảo trì với ID {id}");
+        }
+        
+        // Map to response DTO
+        var response = _mapper.Map<GetAllMaintenanceRequestIssueResponse>(maintenanceRequestIssue);
+        
+        return response;
     }
 }

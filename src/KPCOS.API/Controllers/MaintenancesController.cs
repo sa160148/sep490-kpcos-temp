@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Users;
+using KPCOS.BusinessLayer.DTOs.Response.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
+using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -461,6 +464,87 @@ namespace KPCOS.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("issue")]
+        [SwaggerOperation(
+            Summary = "Tạo yêu cầu bảo trì mới cho maintenance request issue",
+            Description = "Tạo yêu cầu bảo trì mới cho vmaintenance request issue với các thông tin cần có như tên, mô tả.",
+            OperationId = "CreateMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+            )]
+        public async Task<ApiResult> CreateMaintenanceRequestIssueAsync(
+            [FromBody]
+            CommandMaintenanceRequestIssueRequest request)
+        {
+            await _maintenanceService.CreateMaintenanceRequestIssueAsync(request);
+            return Ok();
+        }
 
+        [HttpPut("issue/{id}")]
+        [SwaggerOperation(
+            Summary = "Cập nhật trạng thái maintenance request issue",
+            Description = "Cập nhật trạng thái vấn đề dự án với các thông tin chi tiết như tên, địa chỉ, loại bảo trì, và ngày dự kiến.",
+            OperationId = "UpdateMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+            )]
+        public async Task<ApiResult> UpdateMaintenanceRequestIssueAsync(
+            [FromBody]
+            CommandMaintenanceRequestIssueRequest request,
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu bảo trì vấn đề cần cập nhật",
+                Required = true
+            )]
+            Guid id)
+        {
+            if (request.Id == Guid.Empty)
+            {
+                throw new BadRequestException("Id không được để trống");
+            }
+            await _maintenanceService.UpdateMaintenanceRequestIssueAsync(request);
+            return Ok();
+        }
+
+        [HttpGet("issue")]
+        [SwaggerOperation(
+            Summary = "Lấy danh sách yêu cầu bảo trì vấn đề",
+            Description = "Lấy danh sách yêu cầu bảo trì vấn đề với các thông tin chi tiết.",
+            OperationId = "GetMaintenanceRequestIssues",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<PagedApiResponse<GetAllMaintenanceRequestIssueResponse>> GetMaintenanceRequestIssuesAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Các tham số lọc bao gồm Search, IsActive, Status, IsPaid, CustomerId, Type, MaintenancePackageId, PageNumber, PageSize, SortColumn, và SortDir",
+                Required = false
+            )]
+            GetAllMaintenanceRequestIssueFilterRequest request
+        )
+        {
+            var result = await _maintenanceService.GetMaintenanceRequestIssuesAsync(request);
+            return new PagedApiResponse<GetAllMaintenanceRequestIssueResponse>(
+                result.data, 
+                request.PageNumber, 
+                request.PageSize, 
+                result.total);
+        }
+
+        [HttpGet("issue/{id}")]
+        [SwaggerOperation(
+            Summary = "Lấy chi tiết yêu cầu bảo trì vấn đề",
+            Description = "Lấy chi tiết yêu cầu bảo trì vấn đề với các thông tin chi tiết.",
+            OperationId = "GetMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult<GetAllMaintenanceRequestIssueResponse>> GetMaintenanceRequestIssueAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu bảo trì vấn đề cần lấy chi tiết",
+                Required = true
+            )]
+            Guid id)
+        {
+            var result = await _maintenanceService.GetMaintenanceRequestIssueAsync(id);
+            return Ok(result);
     }
+}
 }
