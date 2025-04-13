@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using KPCOS.BusinessLayer.DTOs.Request;
 using KPCOS.BusinessLayer.DTOs.Response;
 using KPCOS.DataAccessLayer.Entities;
@@ -32,7 +32,9 @@ using KPCOS.BusinessLayer.DTOs.Request.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.Feedbacks;
 using KPCOS.BusinessLayer.DTOs.Response.Blogs;
 using KPCOS.BusinessLayer.DTOs.Request.Blogs;
+using KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Promotions;
+using KPCOS.BusinessLayer.DTOs.Response.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Promotions;
 
 namespace KPCOS.BusinessLayer.Helpers;
@@ -435,5 +437,14 @@ public class MapperProfile : Profile
             .ForMember(dest => dest.DeadlineAt, opt => opt.MapFrom(src => 
                 src.DeadlineAt.HasValue ? GlobalUtility.NormalizeDateTime(src.DeadlineAt, false) : null))
                 ;
+                
+        // Maintenance Request Issue mappings
+        CreateMap<MaintenanceRequestIssue, GetAllMaintenanceRequestIssueResponse>()
+            .ForMember(dest => dest.Staff, opt => opt.MapFrom(src => src.Staff))
+            .ForMember(dest => dest.MaintenanceRequest, opt => opt.MapFrom(src => src.MaintenanceRequest))
+            ;
+            
+        CreateMap<CommandMaintenanceRequestIssueRequest, MaintenanceRequestIssue>()
+            ;
     }
 }

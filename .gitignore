@@ -951,3 +951,7 @@ $RECYCLE.BIN/
 /docs/
 # Cursor editor directory
 .cursor/
+
+# Windsurf rules
+.windsurfrules
+.windsurfrules.md
