@@ -137,25 +137,25 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         return (response, staffs.Count);
     }
 
-    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter)
+    public async Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(GetAllStaffRequest filter)
     {
-        var repo = unitOfWork.Repository<Staff>();
-        Expression<Func<Staff, bool>> advanceFilter = staff => 
-            staff.Position == RoleEnum.CONSTRUCTOR.ToString() &&
-            staff.User.IsActive == true &&
-            // Constructor should not be in any project that is not finished
-            !staff.ProjectStaffs.Any(ps => 
-                ps.Project.IsActive == true &&
-                ps.Project.Status != EnumProjectStatus.FINISHED.ToString()) &&
-            // Constructor should not be in any maintenance request task (level 1) that is not done
-            !staff.MaintenanceStaffs.Any(ms => 
-                ms.MaintenanceRequestTask.ParentId == null && // Level 1 tasks (parent is null)
-                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString());
+        // var repo = unitOfWork.Repository<Staff>();
+        // Expression<Func<Staff, bool>> advanceFilter = staff => 
+        //     staff.Position == RoleEnum.CONSTRUCTOR.ToString() &&
+        //     staff.User.IsActive == true &&
+        //     // Constructor should not be in any project that is not finished
+        //     !staff.ProjectStaffs.Any(ps => 
+        //         ps.Project.IsActive == true &&
+        //         ps.Project.Status != EnumProjectStatus.FINISHED.ToString()) &&
+        //     // Constructor should not be in any maintenance request task (level 1) that is not done
+        //     !staff.MaintenanceStaffs.Any(ms => 
+        //         ms.MaintenanceRequestTask.ParentId == null && // Level 1 tasks (parent is null)
+        //         ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString());
             
-        var staffs = repo.GetWithCount(
-            filter: advanceFilter,
-            orderBy: null,
-            "User",
+        var staffs = unitOfWork.Repository<Staff>().GetWithCount(
+            filter: filter.GetConstructorExpressions(),
+            orderBy: filter.GetOrder(),
+            includeProperties: "User",
             filter.PageNumber,
             filter.PageSize);
         var response = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);

@@ -99,7 +99,12 @@ public class GetAllStaffRequest : PaginationRequest<Staff>
             // Constructor should not be in any maintenance request task (level 1) that is not done
             !staff.MaintenanceStaffs.Any(ms => 
                 ms.MaintenanceRequestTask.ParentId == null && // Level 1 tasks (parent is null)
-                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString())
+                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString()) &&
+            // Constructor should not be assigned to any maintenance request issue that is not DONE or CANCELLED
+            !staff.MaintenanceRequestIssues.Any(mri => 
+                mri.IsActive == true &&
+                mri.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() &&
+                mri.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString())
                 );
         return predicate;
     }

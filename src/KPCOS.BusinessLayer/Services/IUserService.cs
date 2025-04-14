@@ -24,7 +24,7 @@ public interface IUserService
     
     Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(GetAllStaffRequest filter);
     Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter);
-    Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> data, int total)> GetsConstructorAsync(GetAllStaffRequest filter);
 
     /// <summary>
     /// Lấy thông tin chi tiết người dùng theo ID
