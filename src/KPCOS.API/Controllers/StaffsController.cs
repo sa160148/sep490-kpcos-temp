@@ -179,7 +179,7 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(PagedApiResponse<StaffResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
         [HttpGet("constructor")]
-        public async Task<PagedApiResponse<StaffResponse>> GetAllConstructors([FromQuery] PaginationFilter filter)
+        public async Task<PagedApiResponse<StaffResponse>> GetAllConstructors([FromQuery] GetAllStaffRequest filter)
         {
             var response = await userService.GetsConstructorAsync(filter);
             return new PagedApiResponse<StaffResponse>(
