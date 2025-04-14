@@ -532,9 +532,9 @@ public class MaintenanceService : IMaintenanceService
         // Check if staff is already assigned to active level 1 tasks from other maintenance requests
         var activeTasksFromOtherRequests = allStaffAssignments
             .Where(ms => 
-                ms.MaintenanceRequestTask.ParentId == null && // Level 1 task
-                ms.MaintenanceRequestTask.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() && // Not DONE
-                ms.MaintenanceRequestTask.MaintenanceRequestId != level1Task.MaintenanceRequestId // Different maintenance request
+                ms.MaintenanceRequestTask?.ParentId == null && // Level 1 task
+                ms.MaintenanceRequestTask?.Status != EnumMaintenanceRequestTaskStatus.DONE.ToString() && // Not DONE
+                ms.MaintenanceRequestTask?.MaintenanceRequestId != level1Task.MaintenanceRequestId // Different maintenance request
             )
             .ToList();
             
@@ -551,11 +551,25 @@ public class MaintenanceService : IMaintenanceService
             throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì cấp 1 từ một yêu cầu bảo trì khác. Task IDs: {conflictingTasksMessage}");
         }
         
+        // Check if staff is assigned to any active maintenance request issues
+        var isStaffAssignedToIssues = await _unitOfWork.Repository<MaintenanceRequestIssue>()
+            .Where(issue => 
+                issue.StaffId == staff.Id && 
+                issue.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() &&
+                issue.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString() &&
+                issue.IsActive == true)
+            .AnyAsync();
+        
+        if (isStaffAssignedToIssues)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề bảo trì/bảo dưỡng đang hoạt động");
+        }
+        
         // Check if staff is assigned to any projects in CONSTRUCTING status
         var hasConstructingProjects = await _unitOfWork.Repository<ProjectStaff>()
             .Where(ps => ps.StaffId == staff.Id && ps.Project.Status == EnumProjectStatus.CONSTRUCTING.ToString())
             .AnyAsync();
-                
+        
         if (hasConstructingProjects)
         {
             throw new BadRequestException($"Nhân viên {staff.User?.FullName} đang tham gia các dự án đang trong giai đoạn thi công (CONSTRUCTING). Nhân viên chỉ có thể được phân công khi không còn tham gia dự án đang thi công.");
@@ -658,6 +672,27 @@ public class MaintenanceService : IMaintenanceService
         if (!isStaffAssignedToParent)
         {
             throw new BadRequestException($"Nhân viên {staff.User?.FullName} phải được phân công cho công việc bảo trì cấp 1 (công việc cha) trước khi được phân công cho công việc cấp 2 (công việc con)");
+        }
+
+        // Validate task is not in DONE status
+        if (maintenanceRequestTask.Status == EnumMaintenanceRequestTaskStatus.DONE.ToString())
+        {
+            throw new BadRequestException("Không thể phân công nhân viên cho công việc bảo trì đã hoàn thành (DONE)");
+        }
+        
+        // Check if staff is assigned to any active maintenance request issues
+        var isStaffAssignedToIssues = await _unitOfWork.Repository<MaintenanceRequestIssue>()
+            .Where(issue => 
+                issue.StaffId == staff.Id && 
+                issue.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() &&
+                issue.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString() &&
+                issue.IsActive == true &&
+                issue.MaintenanceRequestId != maintenanceRequestTask.MaintenanceRequestId)
+            .AnyAsync();
+        
+        if (isStaffAssignedToIssues)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề bảo trì/bảo dưỡng đang hoạt động");
         }
         
         // Update the task with the assigned staff ID
@@ -1043,6 +1078,21 @@ public class MaintenanceService : IMaintenanceService
         if (isStaffAssignedToOtherTask)
         {
             throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các công việc bảo trì khác đang hoạt động");
+        }
+        
+        // Check if staff is assigned to any active maintenance request issues
+        var isStaffAssignedToIssues = await _unitOfWork.Repository<MaintenanceRequestIssue>()
+            .Where(issue => 
+                issue.StaffId == staff.Id && 
+                issue.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() &&
+                issue.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString() &&
+                issue.IsActive == true &&
+                issue.MaintenanceRequestId != maintenanceRequestId)
+            .AnyAsync();
+        
+        if (isStaffAssignedToIssues)
+        {
+            throw new BadRequestException($"Nhân viên {staff.User?.FullName} đã được phân công cho các vấn đề bảo trì/bảo dưỡng đang hoạt động");
         }
         
         // Check for valid assignment to level 1 tasks from other maintenance requests
@@ -1474,6 +1524,13 @@ public class MaintenanceService : IMaintenanceService
             await HotResolveIssueAsync(maintenanceRequestIssue, request, currentStatus);
         }
         else if (!string.IsNullOrEmpty(request.Status) && 
+                request.Status.Equals(EnumMaintenanceRequestIssueStatus.DONE.ToString(), StringComparison.OrdinalIgnoreCase) &&
+                currentStatus == EnumMaintenanceRequestIssueStatus.PREVIEWING.ToString())
+        {
+            // Case 7: Confirm issue as done (PREVIEWING -> DONE)
+            await ConfirmIssueAsDoneAsync(maintenanceRequestIssue, request);
+        }
+        else if (!string.IsNullOrEmpty(request.Status) && 
                 request.Status.Equals(EnumMaintenanceRequestIssueStatus.CANCELLED.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             // Case 6: Cancel maintenance request issue
@@ -1481,7 +1538,7 @@ public class MaintenanceService : IMaintenanceService
         }
         else
         {
-            // Case 5: Normal update (No status change)
+            // Case 5: Normal update (No status change) - can include solution, cause, etc.
             await NormalUpdateIssueAsync(maintenanceRequestIssue, request);
         }
 
@@ -1498,6 +1555,11 @@ public class MaintenanceService : IMaintenanceService
         if (currentStatus != EnumMaintenanceRequestIssueStatus.OPENING.ToString())
         {
             throw new BadRequestException($"Không thể phân công nhân viên khi vấn đề đang ở trạng thái {currentStatus}. Vấn đề phải ở trạng thái OPENING.");
+        }
+        
+        if (!request.StaffId.HasValue || request.StaffId == Guid.Empty)
+        {
+            throw new BadRequestException("ID nhân viên không hợp lệ hoặc không được cung cấp.");
         }
         
         // Verify that the staff exists
@@ -1518,8 +1580,8 @@ public class MaintenanceService : IMaintenanceService
         var projectStaffRepo = _unitOfWork.Repository<ProjectStaff>();
         var unfinishedProjects = _unitOfWork.Repository<Project>()
             .Get(
-                filter: p => (p.Status != EnumProjectStatus.FINISHED.ToString() || 
-                            p.Status != EnumProjectStatus.CANCELLED.ToString()) && 
+                filter: p => p.Status != EnumProjectStatus.FINISHED.ToString() && 
+                            p.Status != EnumProjectStatus.CANCELLED.ToString() && 
                             p.IsActive == true &&
                             p.ProjectStaffs.Any(ps => ps.StaffId == staff.Id),
                 includeProperties: "ProjectStaffs"
@@ -1551,9 +1613,9 @@ public class MaintenanceService : IMaintenanceService
         var activeMaintenanceIssues = _unitOfWork.Repository<MaintenanceRequestIssue>()
             .Get(
                 filter: i => i.StaffId == staff.Id && 
-                           i.Id != issue.Id &&
-                           (i.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() || 
-                            i.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString()),
+                            i.Id != issue.Id &&
+                            i.Status != EnumMaintenanceRequestIssueStatus.DONE.ToString() && 
+                            i.Status != EnumMaintenanceRequestIssueStatus.CANCELLED.ToString(),
                 includeProperties: "MaintenanceRequest"
             )
             .ToList();
@@ -1565,7 +1627,7 @@ public class MaintenanceService : IMaintenanceService
         }
         
         // Update staff ID and status
-        issue.StaffId = request.StaffId;
+        issue.StaffId = staff.Id;  // Use staff.Id instead of request.StaffId
         issue.Status = EnumMaintenanceRequestIssueStatus.PROCESSING.ToString();
     }
 
@@ -1583,6 +1645,12 @@ public class MaintenanceService : IMaintenanceService
         // Update confirm image and status
         issue.ConfirmImage = request.ConfirmImage;
         issue.Status = EnumMaintenanceRequestIssueStatus.PREVIEWING.ToString();
+        
+        // Also update solution if provided 
+        if (!string.IsNullOrEmpty(request.Solution))
+        {
+            issue.Solution = request.Solution;
+        }
     }
 
     /// <summary>
@@ -1616,22 +1684,22 @@ public class MaintenanceService : IMaintenanceService
         // Update solution and status
         issue.Solution = request.Solution;
         issue.Status = EnumMaintenanceRequestIssueStatus.DONE.ToString();
-        issue.ActualAt = DateOnly.FromDateTime(DateTime.Now);
+        issue.ActualAt = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
     }
 
     /// <summary>
-    /// Trường hợp 5: Cập nhật thông thường, chỉ cập nhật issueImage hoặc description hoặc cause, các giá trị khác bỏ qua
+    /// Trường hợp 5: Cập nhật thông thường, chỉ cập nhật issueImage, description, cause, hoặc solution, các giá trị khác bỏ qua
     /// </summary>
     private async Task NormalUpdateIssueAsync(MaintenanceRequestIssue issue, CommandMaintenanceRequestIssueRequest request)
     {
-        // Create list of properties to include in normal update
+        // Create list of properties to exclude in normal update
         var excludeProperties = new List<string>
         {
-            "Id", "StaffId", "ConfirmImage", "Reason", "Solution", "Status", 
+            "Id", "StaffId", "ConfirmImage", "Status", 
             "ActualAt", "CreatedAt", "UpdatedAt", "MaintenanceRequestId"
         };
         
-        // Use ReflectionUtil to update only the allowed properties
+        // Use ReflectionUtil to update only the allowed properties (including solution, cause, description, issueImage)
         ReflectionUtil.UpdateProperties(request, issue, excludeProperties);
     }
 
@@ -1647,6 +1715,63 @@ public class MaintenanceService : IMaintenanceService
         if (!string.IsNullOrEmpty(request.Reason))
         {
             issue.Reason = request.Reason;
+        }
+    }
+    
+    /// <summary>
+    /// Trường hợp 7: Xác nhận hoàn thành, khi status có giá trị DONE và trạng thái hiện tại là PREVIEWING thì chuyển trạng thái thành DONE, các giá trị khác bỏ qua
+    /// </summary>
+    private async Task ConfirmIssueAsDoneAsync(MaintenanceRequestIssue issue, CommandMaintenanceRequestIssueRequest request)
+    {
+        // Update status to DONE
+        issue.Status = EnumMaintenanceRequestIssueStatus.DONE.ToString();
+        issue.ActualAt = DateOnly.FromDateTime(GlobalUtility.GetCurrentSEATime());
+        
+        // If solution is provided, update it
+        if (!string.IsNullOrEmpty(request.Solution))
+        {
+            issue.Solution = request.Solution;
+        }
+        
+        // Check if all issues for this maintenance request are done
+        var maintenanceRequestIssueRepo = _unitOfWork.Repository<MaintenanceRequestIssue>();
+        var maintenanceRequestTaskRepo = _unitOfWork.Repository<MaintenanceRequestTask>();
+        var maintenanceRequestRepo = _unitOfWork.Repository<MaintenanceRequest>();
+        
+        // Get the parent maintenance request
+        var maintenanceRequest = await maintenanceRequestRepo.FindAsync(issue.MaintenanceRequestId);
+        if (maintenanceRequest == null)
+        {
+            return; // Should not happen, but just in case
+        }
+        
+        // Get all issues for this maintenance request
+        var allIssues = maintenanceRequestIssueRepo.Get(
+            filter: i => i.MaintenanceRequestId == issue.MaintenanceRequestId && i.IsActive == true,
+            includeProperties: ""
+        ).ToList();
+        
+        // Get all tasks for this maintenance request
+        var allTasks = maintenanceRequestTaskRepo.Get(
+            filter: t => t.MaintenanceRequestId == issue.MaintenanceRequestId,
+            includeProperties: ""
+        ).ToList();
+        
+        // Check if all issues are DONE or CANCELLED
+        bool allIssuesDone = allIssues.All(i => 
+            i.Status == EnumMaintenanceRequestIssueStatus.DONE.ToString() || 
+            i.Status == EnumMaintenanceRequestIssueStatus.CANCELLED.ToString());
+            
+        // Check if all tasks are DONE
+        bool allTasksDone = !allTasks.Any() || allTasks.All(t => 
+            t.Status == EnumMaintenanceRequestTaskStatus.DONE.ToString());
+        
+        // If all issues and tasks are done, update the maintenance request status to DONE
+        if (allIssuesDone && allTasksDone && 
+            maintenanceRequest.Status != EnumMaintenanceRequestStatus.DONE.ToString())
+        {
+            maintenanceRequest.Status = EnumMaintenanceRequestStatus.DONE.ToString();
+            await maintenanceRequestRepo.UpdateAsync(maintenanceRequest);
         }
     }
 

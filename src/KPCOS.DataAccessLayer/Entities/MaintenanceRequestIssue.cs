@@ -19,7 +19,7 @@ public class MaintenanceRequestIssue
     public DateTime? UpdatedAt { get; set; }
     public bool? IsActive { get; set; }
     public Guid? StaffId { get; set; }
-    public Guid? MaintenanceRequestId { get; set; }
+    public Guid MaintenanceRequestId { get; set; }
     public virtual Staff? Staff { get; set; }
-    public virtual MaintenanceRequest? MaintenanceRequest { get; set; }
+    public virtual MaintenanceRequest MaintenanceRequest { get; set; } = null!;
 }
