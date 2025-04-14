@@ -13,7 +13,6 @@ public class CommandMaintenanceRequestIssueRequest
     public string? Status { get; set; }
     public string? IssueImage { get; set; }
     public string? ConfirmImage { get; set; }
-    public string? Type { get; set; }
     public bool? IsActive { get; set; }
     public DateOnly? EstimateAt { get; set; }
     public DateOnly? ActualAt { get; set; } 
