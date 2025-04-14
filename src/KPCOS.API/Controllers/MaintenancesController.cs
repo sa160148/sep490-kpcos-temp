@@ -512,7 +512,7 @@ namespace KPCOS.API.Controllers
         /// <param name="id">ID của vấn đề bảo trì/bảo dưỡng cần cập nhật</param>
         /// <returns>Thông báo thành công nếu cập nhật vấn đề bảo trì/bảo dưỡng thành công</returns>
         /// <remarks>
-        /// API này cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường. Có 6 trường hợp cập nhật:
+        /// API này cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường. Có 7 trường hợp cập nhật:
         /// 
         /// **1. Phân công nhân viên (OPENING → PROCESSING)**
         /// - Khi staffId có giá trị, hệ thống sẽ chuyển trạng thái từ OPENING thành PROCESSING
@@ -533,7 +533,7 @@ namespace KPCOS.API.Controllers
         /// - Các trường khác sẽ được bỏ qua
         /// 
         /// **5. Cập nhật thông thường (Không thay đổi trạng thái)**
-        /// - Chỉ cập nhật issueImage, description hoặc cause
+        /// - Chỉ cập nhật issueImage, description hoặc cause, solution
         /// - Trạng thái không thay đổi
         /// - Các trường khác sẽ được bỏ qua
         /// 
@@ -543,54 +543,52 @@ namespace KPCOS.API.Controllers
         /// - Hệ thống sẽ cập nhật trạng thái thành CANCELLED
         /// - Trường reason là tùy chọn để giải thích lý do hủy
         /// 
+        /// **7. Xác nhận hoàn thành (PREVIEWING → DONE)**
+        /// - Khi status có giá trị DONE và trạng thái hiện tại là PREVIEWING thì chuyển trạng thái thành DONE. Hệ thống sẽ tự động kiểm tra tất cả các vấn đề và công việc bảo trì thuộc cùng yêu cầu bảo trì, nếu tất cả đã hoàn thành thì yêu cầu bảo trì sẽ được cập nhật thành trạng thái DONE.
+        /// 
         /// **Lưu ý:** Mỗi trạng thái chỉ có thể chuyển đổi theo quy tắc được định nghĩa. Nếu trạng thái hiện tại không phù hợp, API sẽ trả về lỗi.
         /// 
-        /// **Ví dụ 1: Phân công nhân viên (OPENING → PROCESSING)**
+        /// **Ví dụ 1: Administrator phân công nhân viên (OPENING -> PROCESSING):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "staffId": "a8b4c7e9-5f12-4d36-8b7a-1c3e9d2f8e0a"
         /// }
         /// ```
         /// 
-        /// **Ví dụ 2: Tải lên ảnh xác nhận (PROCESSING → PREVIEWING)**
+        /// **Ví dụ 2: Constructor tải lên ảnh xác nhận (PROCESSING -> PREVIEWING):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-        ///   "confirmImage": "https://example.com/images/pond_cleaning_completed.jpg"
+        ///   "confirmImage": "https://upload.wikimedia.org/wikipedia/commons/1/17/Wallacepond.jpg"
         /// }
         /// ```
         /// 
-        /// **Ví dụ 3: Từ chối ảnh xác nhận (PREVIEWING → PROCESSING)**
+        /// **Ví dụ 3: Administrator từ chối ảnh xác nhận (PREVIEWING -> PROCESSING):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "reason": "Ảnh không rõ nét, không thể xác nhận việc vệ sinh hồ cá đã hoàn thành. Vui lòng chụp lại ảnh toàn cảnh hồ sau khi làm sạch."
         /// }
         /// ```
         /// 
-        /// **Ví dụ 4: Giải quyết nhanh (Bất kỳ trạng thái nào ngoại trừ CANCELLED → DONE)**
+        /// **Ví dụ 4: Administrator giải quyết nhanh (Bất kỳ trạng thái nào ngoại trừ CANCELLED -> DONE):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "solution": "Hướng dẫn khách hàng tự vệ sinh bộ lọc: (1) Tắt hệ thống lọc, (2) Tháo rời bộ lọc, (3) Rửa sạch bằng nước, (4) Lắp lại và kiểm tra. Khách hàng đã thực hiện thành công và hồ cá đã hoạt động bình thường."
         /// }
         /// ```
         /// 
-        /// **Ví dụ 5: Cập nhật thông thường (Không thay đổi trạng thái)**
+        /// **Ví dụ 5: Administrator hoặc Customer cập nhật thông thường (Không thay đổi trạng thái):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "description": "Nước hồ cá Koi có màu xanh đục và có mùi. Đã kiểm tra các thông số nước và phát hiện tảo phát triển quá mức.",
-        ///   "cause": "Hệ thống lọc sinh học hoạt động không hiệu quả và thiếu bảo trì định kỳ",
-        ///   "issueImage": "https://example.com/images/koi_pond_algae_bloom.jpg"
+        ///   "cause": "Hệ thống lọc hoạt động không hiệu quả và thiếu bảo trì định kỳ",
+        ///   "solution": "Thực hiện bảo trì định kỳ hệ thống lọc và kiểm tra lại các thông số nước hồ cá Koi.",
+        ///   "issueImage": "https://upload.wikimedia.org/wikipedia/commons/1/17/Wallacepond.jpg"
         /// }
         /// ```
         /// 
-        /// **Ví dụ 6: Hủy vấn đề (Bất kỳ trạng thái → CANCELLED)**
+        /// **Ví dụ 6: Administrator hoặc Customer hủy vấn đề (Bất kỳ trạng thái → CANCELLED):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "status": "CANCELLED"
         /// }
         /// ```
@@ -598,22 +596,29 @@ namespace KPCOS.API.Controllers
         /// **Hoặc với lý do (tùy chọn):**
         /// ```json
         /// {
-        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///   "status": "CANCELLED",
         ///   "reason": "Khách hàng đã đổi lịch vệ sinh hồ cá sang tháng sau do đang cải tạo khu vực xung quanh hồ."
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 7: Administrator xác nhận hoàn thành (PREVIEWING -> DONE):**
+        /// ```json
+        /// {
+        ///   "status": "DONE"
         /// }
         /// ```
         /// </remarks>
         [HttpPut("issue/{id}")]
         [SwaggerOperation(
             Summary = "Cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường",
-            Description = "Cập nhật trạng thái vấn đề bảo trì/bảo dưỡng bất thường với các thông tin chi tiết. Có 6 trường hợp cập nhật:\n\n" +
+            Description = "Cập nhật trạng thái vấn đề bảo trì/bảo dưỡng bất thường với các thông tin chi tiết. Có 7 trường hợp cập nhật:\n\n" +
                           "1. Phân công nhân viên: Khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
                           "2. Tải lên ảnh xác nhận: Khi confirmImage có giá trị thì chuyển trạng thái từ PROCESSING thành PREVIEWING, các giá trị khác bỏ qua.\n\n" +
                           "3. Từ chối ảnh xác nhận: Khi reason có giá trị thì chuyển trạng thái từ PREVIEWING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
                           "4. Giải quyết nhanh: Khi solution có giá trị và staffId, confirmImage, reason đều null thì chuyển trạng thái thành DONE từ bất kỳ trạng thái nào ngoại trừ CANCELLED, các giá trị khác bỏ qua.\n\n" +
-                          "5. Cập nhật thông thường: Chỉ cập nhật issueImage hoặc description hoặc cause, các giá trị khác bỏ qua.\n\n" +
+                          "5. Cập nhật thông thường: Chỉ cập nhật issueImage, description, cause hoặc solution, các giá trị khác bỏ qua.\n\n" +
                           "6. Hủy vấn đề: Khi status có giá trị CANCELLED thì cập nhật trạng thái thành CANCELLED, các giá trị khác bỏ qua.\n\n" +
+                          "7. Xác nhận hoàn thành: Khi status có giá trị DONE và trạng thái hiện tại là PREVIEWING thì chuyển trạng thái thành DONE. Hệ thống sẽ tự động kiểm tra tất cả các vấn đề và công việc bảo trì thuộc cùng yêu cầu bảo trì, nếu tất cả đã hoàn thành thì yêu cầu bảo trì sẽ được cập nhật thành trạng thái DONE.\n\n" +
                           "**Lưu ý: Mỗi trạng thái chỉ có thể chuyển đổi theo quy tắc được định nghĩa. Nếu trạng thái hiện tại không phù hợp, API sẽ trả về lỗi.**\n\n" +
                           "**Ví dụ 1 - Phân công nhân viên (OPENING -> PROCESSING):**\n" +
                           "```json\n" +
@@ -626,7 +631,7 @@ namespace KPCOS.API.Controllers
                           "```json\n" +
                           "{\n" +
                           "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
-                          "  \"confirmImage\": \"https://example.com/image.jpg\"\n" +
+                          "  \"confirmImage\": \"https://upload.wikimedia.org/wikipedia/commons/1/17/Wallacepond.jpg\"\n" +
                           "}\n" +
                           "```\n\n" +
                           "**Ví dụ 3 - Từ chối ảnh xác nhận (PREVIEWING -> PROCESSING):**\n" +
@@ -649,7 +654,7 @@ namespace KPCOS.API.Controllers
                           "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
                           "  \"description\": \"Hồ cá bị rò rỉ ở góc phía Bắc\",\n" +
                           "  \"cause\": \"Keo silicone bị lão hóa\",\n" +
-                          "  \"issueImage\": \"https://example.com/issue.jpg\"\n" +
+                          "  \"issueImage\": \"https://upload.wikimedia.org/wikipedia/commons/1/17/Wallacepond.jpg\"\n" +
                           "}\n" +
                           "```\n\n" +
                           "**Ví dụ 6 - Hủy vấn đề (Any status -> CANCELLED):**\n" +
@@ -658,6 +663,14 @@ namespace KPCOS.API.Controllers
                           "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
                           "  \"status\": \"CANCELLED\",\n" +
                           "  \"reason\": \"Khách hàng đã tự khắc phục sự cố\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 7 - Xác nhận hoàn thành (PREVIEWING -> DONE):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"status\": \"DONE\",\n" +
+                          "  \"solution\": \"Đã thay thế bộ lọc và kiểm tra hệ thống tuần hoàn nước hoạt động bình thường\"\n" +
                           "}\n" +
                           "```",
             OperationId = "UpdateMaintenanceRequestIssue",
