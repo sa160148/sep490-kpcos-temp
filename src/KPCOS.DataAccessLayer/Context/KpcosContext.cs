@@ -79,6 +79,7 @@ public partial class KpcosContext : DbContext
     
     public virtual DbSet<MaintenanceStaff> MaintenanceStaffs { get; set; }
 
+    public virtual DbSet<MaintenanceRequestIssue> MaintenanceRequestIssues { get; set; }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseNpgsql(GlobalUtility.GetConnectionString());
@@ -1383,6 +1384,70 @@ public partial class KpcosContext : DbContext
                 .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("blog_staff_id_fkey");
+        });
+
+        modelBuilder.Entity<MaintenanceRequestIssue>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("maintenance_request_issue_pkey");
+
+            entity.ToTable("maintenance_request_issue");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .HasColumnName("description");
+            entity.Property(e => e.Cause)
+                .HasMaxLength(255)
+                .HasColumnName("cause");
+            entity.Property(e => e.Solution)
+                .HasMaxLength(255)
+                .HasColumnName("solution");
+            entity.Property(e => e.Reason)
+                .HasMaxLength(255)
+                .HasColumnName("reason");
+            entity.Property(e => e.IssueImage)
+                .HasMaxLength(255)
+                .HasColumnName("issue_image");
+            entity.Property(e => e.ConfirmImage)
+                .HasMaxLength(255)
+                .HasColumnName("confirm_image");
+            entity.Property(e => e.ActualAt)
+                .HasColumnName("actual_at");
+            entity.Property(e => e.EstimateAt)
+                .HasColumnName("estimate_at");
+            entity.Property(e => e.Status)
+                .HasMaxLength(255)
+                .HasColumnName("status");
+            entity.Property(e => e.StaffId)
+                .HasColumnName("staff_id");
+            entity.Property(e => e.MaintenanceRequestId)
+                .HasColumnName("maintenance_request_id");
+
+            entity.HasOne(d => d.Staff)
+                .WithMany(p => p.MaintenanceRequestIssues)
+                .HasForeignKey(d => d.StaffId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("maintenance_request_issue_staff_id_fkey");
+
+            entity.HasOne(d => d.MaintenanceRequest)
+                .WithMany(p => p.MaintenanceRequestIssues)
+                .HasForeignKey(d => d.MaintenanceRequestId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("maintenance_request_issue_maintenance_request_id_fkey");
         });
 
         OnModelCreatingPartial(modelBuilder);

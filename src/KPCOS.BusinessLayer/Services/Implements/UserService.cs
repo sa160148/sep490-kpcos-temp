@@ -66,42 +66,37 @@ public class UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserSer
         return await unitOfWork.Repository<Staff>().Get().CountAsync();
     }
 
-    public async Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter)
+    public async Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(
+        GetAllStaffRequest filter)
     {
-        var repo = unitOfWork.Repository<Staff>();
+        var staffs = unitOfWork.Repository<Staff>()
+        .GetWithCount(
+            filter: filter.GetConsultantExpressions(),
+            orderBy: filter.GetOrder(),
+            includeProperties: "User",
+            pageIndex: filter.PageNumber,
+            pageSize: filter.PageSize);
+
         // get all consultant not have in  process project
-        var pageData = await repo.Get()
-            .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
-                            !staff.ProjectStaffs.
-                                Any(ps => ps.Project.IsActive == true && 
-                                          ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
-            .Include("User")
-            .Skip((filter.PageNumber - 1) * filter.PageSize)
-            .Take(filter.PageSize)
-            .ToListAsync();
+        // var pageData = await repo.Get()
+        //     .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
+        //                     !staff.ProjectStaffs.
+        //                         Any(ps => ps.Project.IsActive == true && 
+        //                                   ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
+        //     .Include("User")
+        //     .Skip((filter.PageNumber - 1) * filter.PageSize)
+        //     .Take(filter.PageSize)
+        //     .ToListAsync();
+        // var totalRecords = await repo.Get()
+        //     .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
+        //                     !staff.ProjectStaffs.
+        //                         Any(ps => ps.Project.IsActive == true && 
+        //                                   ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
+        //     .CountAsync();
 
-
-        var totalRecords = await repo.Get()
-            .Where(staff => staff.Position == RoleEnum.CONSULTANT.ToString() &&
-                            !staff.ProjectStaffs.
-                                Any(ps => ps.Project.IsActive == true && 
-                                          ps.Project.Status == EnumProjectStatus.PROCESSING.ToString())) 
-            .CountAsync();
-       
+        var data = mapper.Map<IEnumerable<StaffResponse>>(staffs.Data);
         
-        var data = pageData.Select(staff => new StaffResponse
-        {
-            Id = staff.User.Id,
-            FullName = staff.User.FullName,
-            Email = staff.User.Email,
-            Phone = staff.User.Phone,
-            Position = staff.Position,
-            Avatar = staff.User.Avatar
-           
-        });
-        
-        
-        return (data, totalRecords);
+        return (data, staffs.Count);
     }
 
     public async Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(GetAllStaffRequest filter)

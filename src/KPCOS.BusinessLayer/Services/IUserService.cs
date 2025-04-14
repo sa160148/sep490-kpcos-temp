@@ -20,7 +20,7 @@ public interface IUserService
         GetAllStaffRequest filter);
     Task<int> CountStaffAsync();
     
-    Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(PaginationFilter filter);
+    Task<(IEnumerable<StaffResponse> Data, int TotalRecords)> GetsConsultantAsync(GetAllStaffRequest filter);
     
     Task<(IEnumerable<StaffResponse> data, int total)> GetsManagerAsync(GetAllStaffRequest filter);
     Task<(IEnumerable<StaffResponse> data, int total)> GetsDesignerAsync(PaginationFilter filter);

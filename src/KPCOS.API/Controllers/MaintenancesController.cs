@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Request.Users;
+using KPCOS.BusinessLayer.DTOs.Response.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Maintenances;
 using KPCOS.BusinessLayer.DTOs.Response.Users;
 using KPCOS.BusinessLayer.Services;
+using KPCOS.Common.Exceptions;
 using KPCOS.WebFramework.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -461,6 +464,112 @@ namespace KPCOS.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Tạo bảo trì/bảo dưỡng bất thường mới cho yêu cầu bảo trì/bảo dưỡng
+        /// </summary>
+        /// <param name="request">Thông tin bảo trì/bảo dưỡng bất thường cần tạo</param>
+        /// <returns>Thông báo thành công nếu tạo bảo trì/bảo dưỡng bất thường thành công</returns>
+        /// <remarks>
+        /// API này tạo một bảo trì/bảo dưỡng bất thường mới cho yêu cầu bảo trì/bảo dưỡng với các thông tin cần thiết.
+        /// - Yêu cầu bắt buộc: Tên (Name), Mô tả (Description), ID yêu cầu bảo trì/bảo dưỡng (MaintenanceRequestId), Ngày dự kiến (EstimateAt)
+        /// - Nguyên nhân (Cause) là tùy chọn
+        /// - Trạng thái (Status) mặc định là OPENING
+        /// - Ngày dự kiến phải nằm trong khoảng thời gian giữa công việc bảo trì/bảo dưỡng đầu tiên và cuối cùng
+        /// - Ngày dự kiến không được trùng với các công việc bảo trì/bảo dưỡng hiện có
+        /// - Ngày dự kiến không rơi vào ngày cuối tuần (sẽ được tự động chuyển sang ngày làm việc tiếp theo)
+        /// - Không thể tạo bảo trì/bảo dưỡng bất thường cho yêu cầu bảo trì/bảo dưỡng đã hoàn thành (DONE)
+        /// 
+        /// Mẫu yêu cầu:
+        /// 
+        ///     {
+        ///         "maintenanceRequestId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///         "cause": "Máy bơm nước bị kẹt và phát ra tiếng ồn bất thường",
+        ///         "description": "Khi bật máy bơm, có tiếng ồn lớn và nước không được bơm lên. Máy bơm có thể bị kẹt do cặn bẩn hoặc rong rêu trong hồ.",
+        ///         "estimateAt": "2025-04-17",
+        ///         "name": "Kiểm tra máy bơm nước",
+        ///         "issueImage": "https://example.com/images/pump_issue.jpg"
+        ///     }
+        /// </remarks>
+        [HttpPost("issue")]
+        [SwaggerOperation(
+            Summary = "Tạo bảo trì/bảo dưỡng bất thường mới cho yêu cầu bảo trì/bảo dưỡng",
+            Description = "Tạo bảo trì/bảo dưỡng bất thường mới cho yêu cầu bảo trì/bảo dưỡng với các thông tin cần thiết như nguyên nhân, mô tả và ngày dự kiến xử lý.",
+            OperationId = "CreateMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult> CreateMaintenanceRequestIssueAsync(
+            [FromBody]
+            CommandMaintenanceRequestIssueRequest request)
+        {
+            await _maintenanceService.CreateMaintenanceRequestIssueAsync(request);
+            return Ok();
+        }
 
+        [HttpPut("issue/{id}")]
+        [SwaggerOperation(
+            Summary = "Cập nhật trạng thái maintenance request issue",
+            Description = "Cập nhật trạng thái ảo trì/bảo dưỡng bất thường với các thông tin chi tiết như tên, địa chỉ, loại bảo trì, và ngày dự kiến.",
+            OperationId = "UpdateMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+            )]
+        public async Task<ApiResult> UpdateMaintenanceRequestIssueAsync(
+            [FromBody]
+            CommandMaintenanceRequestIssueRequest request,
+            [FromRoute]
+            [SwaggerParameter(
+                Description = "ID của yêu cầu ảo trì/bảo dưỡng bất thường cần cập nhật",
+                Required = true
+            )]
+            Guid id)
+        {
+            if (request.Id == Guid.Empty)
+            {
+                throw new BadRequestException("Id không được để trống");
+            }
+            await _maintenanceService.UpdateMaintenanceRequestIssueAsync(request);
+            return Ok();
+        }
+
+        [HttpGet("issue")]
+        [SwaggerOperation(
+            Summary = "Lấy danh sách yêu cầu bảo trì vảo trì/bảo dưỡng bất thường",
+            Description = "Lấy danh sách yêu cầu bảo trì vảo trì/bảo dưỡng bất thường với các thông tin chi tiết.",
+            OperationId = "GetMaintenanceRequestIssues",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<PagedApiResponse<GetAllMaintenanceRequestIssueResponse>> GetMaintenanceRequestIssuesAsync(
+            [FromQuery]
+            [SwaggerParameter(
+                Description = "Các tham số lọc bao gồm Search, IsActive, Status, IsPaid, CustomerId, Type, MaintenancePackageId, PageNumber, PageSize, SortColumn, và SortDir",
+                Required = false
+            )]
+            GetAllMaintenanceRequestIssueFilterRequest request
+        )
+        {
+            var result = await _maintenanceService.GetMaintenanceRequestIssuesAsync(request);
+            return new PagedApiResponse<GetAllMaintenanceRequestIssueResponse>(
+                result.data, 
+                request.PageNumber, 
+                request.PageSize, 
+                result.total);
+        }
+
+        [HttpGet("issue/{id}")]
+        [SwaggerOperation(
+            Summary = "Lấy chi tiết yêu cầu ảo trì/bảo dưỡng bất thường",
+            Description = "Lấy chi tiết yêu cầu ảo trì/bảo dưỡng bất thường với các thông tin chi tiết.",
+            OperationId = "GetMaintenanceRequestIssue",
+            Tags = new[] { "Maintenances" }
+        )]
+        public async Task<ApiResult<GetAllMaintenanceRequestIssueResponse>> GetMaintenanceRequestIssueAsync(
+            [SwaggerParameter(
+                Description = "ID của yêu cầu ảo trì/bảo dưỡng bất thường cần lấy chi tiết",
+                Required = true
+            )]
+            Guid id)
+        {
+            var result = await _maintenanceService.GetMaintenanceRequestIssueAsync(id);
+            return Ok(result);
     }
+}
 }
