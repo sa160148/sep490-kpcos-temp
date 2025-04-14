@@ -24,9 +24,9 @@ public class GetAllMaintenanceRequestIssueResponse
     public bool? IsActive { get; set; }
     
     // Navigation properties for related entities
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    /*[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]*/
     public GetAllStaffResponse? Staff { get; set; }
     
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    /*[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]*/
     public GetMaintenanceRequestResponse? MaintenanceRequest { get; set; }
 }

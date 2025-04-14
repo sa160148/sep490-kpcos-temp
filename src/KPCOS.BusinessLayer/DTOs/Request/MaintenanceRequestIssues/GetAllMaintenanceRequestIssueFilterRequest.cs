@@ -7,11 +7,11 @@ namespace KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues
 {
     public class GetAllMaintenanceRequestIssueFilterRequest : PaginationRequest<MaintenanceRequestIssue>
     {
-        public Guid? Id { get; set; }
         public string? Search { get; set; }
         public string? Status { get; set; }
         public bool? IsActive { get; set; }
         public Guid? MaintenanceRequestId { get; set; }
+        public Guid? Id { get; set; }
         public override Expression<Func<MaintenanceRequestIssue, bool>> GetExpressions()
         {
             var predicate = PredicateBuilder.New<MaintenanceRequestIssue>(true);

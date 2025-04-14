@@ -1295,25 +1295,27 @@ public class MaintenanceService : IMaintenanceService
     public async Task CreateMaintenanceRequestIssueAsync(CommandMaintenanceRequestIssueRequest request)
     {
         // Validate required fields
-        if (string.IsNullOrWhiteSpace(request.Cause))
+        if (string.IsNullOrWhiteSpace(request.Name))
         {
-            throw new BadRequestException("Lý do không được để trống");
+            throw new BadRequestException("Tên yêu cầu bảo trì/bảo dưỡng bất thường không được để trống");
         }
         
         if (string.IsNullOrWhiteSpace(request.Description))
         {
-            throw new BadRequestException("Mô tả vấn đề không được để trống");
+            throw new BadRequestException("Mô tả bảo trì/bảo dưỡng bất thường không được để trống");
         }
         
         if (request.MaintenanceRequestId == null || request.MaintenanceRequestId == Guid.Empty)
         {
-            throw new BadRequestException("ID yêu cầu bảo trì không được để trống");
+            throw new BadRequestException("ID yêu cầu bảo trì/bảo dưỡng không được để trống");
         }
         
         if (!request.EstimateAt.HasValue)
         {
             throw new BadRequestException("Ngày dự kiến không được để trống");
         }
+        
+        // Cause is now optional
         
         // Validate that the maintenance request exists
         var maintenanceRequest = _unitOfWork.Repository<MaintenanceRequest>()
@@ -1325,42 +1327,52 @@ public class MaintenanceService : IMaintenanceService
             
         if (maintenanceRequest == null)
         {
-            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì với ID {request.MaintenanceRequestId}");
+            throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì/bảo dưỡng với ID {request.MaintenanceRequestId}");
         }
         
         // Validate that the maintenance request is not in DONE status
         if (maintenanceRequest.Status == EnumMaintenanceRequestStatus.DONE.ToString())
         {
-            throw new BadRequestException("Không thể tạo vấn đề cho yêu cầu bảo trì đã hoàn thành");
+            throw new BadRequestException("Không thể tạo bảo trì/bảo dưỡng bất thường cho yêu cầu bảo trì/bảo dưỡng đã hoàn thành");
         }
         
         // Check if there are any maintenance tasks
         if (maintenanceRequest.MaintenanceRequestTasks.Any())
         {
-            // Find the last scheduled maintenance task
-            var lastTask = maintenanceRequest.MaintenanceRequestTasks
-                .OrderByDescending(t => t.EstimateAt)
-                .FirstOrDefault();
+            // Get the first and last maintenance tasks by estimated date
+            var orderedTasks = maintenanceRequest.MaintenanceRequestTasks
+                .Where(t => t.EstimateAt.HasValue)
+                .OrderBy(t => t.EstimateAt)
+                .ToList();
                 
-            if (lastTask != null && lastTask.EstimateAt.HasValue)
+            if (orderedTasks.Any() && request.EstimateAt.HasValue)
             {
-                // Check if current time is before the last task's estimated date
-                var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
-                if (currentDate.CompareTo(lastTask.EstimateAt.Value) < 0)
+                var firstTask = orderedTasks.First();
+                var lastTask = orderedTasks.Last();
+                
+                // Validate that the estimate date is within the range of maintenance tasks
+                if (firstTask.EstimateAt.HasValue && lastTask.EstimateAt.HasValue)
                 {
-                    throw new BadRequestException("Không thể tạo vấn đề trước khi hoàn thành tất cả các công việc bảo trì");
+                    // Check if estimate date is before the first task
+                    if (request.EstimateAt.Value.CompareTo(firstTask.EstimateAt.Value) < 0)
+                    {
+                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể trước ngày công việc bảo trì/bảo dưỡng đầu tiên ({firstTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
+                    }
+                    
+                    // Check if estimate date is after the last task
+                    if (request.EstimateAt.Value.CompareTo(lastTask.EstimateAt.Value) > 0)
+                    {
+                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể sau ngày công việc bảo trì/bảo dưỡng cuối cùng ({lastTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
+                    }
                 }
-            }
-            
-            // Check if the estimate date conflicts with any existing maintenance task
-            if (request.EstimateAt.HasValue)
-            {
+                
+                // Check if the estimate date conflicts with any existing maintenance task
                 var conflictingTask = maintenanceRequest.MaintenanceRequestTasks
                     .FirstOrDefault(t => t.EstimateAt.HasValue && t.EstimateAt.Value.Equals(request.EstimateAt.Value));
                     
                 if (conflictingTask != null)
                 {
-                    throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} trùng với công việc bảo trì đã có. Vui lòng chọn ngày khác");
+                    throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} trùng với công việc bảo trì/bảo dưỡng đã có. Vui lòng chọn ngày khác");
                 }
             }
         }
