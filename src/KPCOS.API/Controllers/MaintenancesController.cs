@@ -505,19 +505,174 @@ namespace KPCOS.API.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường
+        /// </summary>
+        /// <param name="request">Thông tin cập nhật của vấn đề bảo trì/bảo dưỡng</param>
+        /// <param name="id">ID của vấn đề bảo trì/bảo dưỡng cần cập nhật</param>
+        /// <returns>Thông báo thành công nếu cập nhật vấn đề bảo trì/bảo dưỡng thành công</returns>
+        /// <remarks>
+        /// API này cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường. Có 6 trường hợp cập nhật:
+        /// 
+        /// **1. Phân công nhân viên (OPENING → PROCESSING)**
+        /// - Khi staffId có giá trị, hệ thống sẽ chuyển trạng thái từ OPENING thành PROCESSING
+        /// - Các trường khác sẽ được bỏ qua
+        /// 
+        /// **2. Tải lên ảnh xác nhận (PROCESSING → PREVIEWING)**
+        /// - Khi confirmImage có giá trị, hệ thống sẽ chuyển trạng thái từ PROCESSING thành PREVIEWING
+        /// - Các trường khác sẽ được bỏ qua
+        /// 
+        /// **3. Từ chối ảnh xác nhận (PREVIEWING → PROCESSING)**
+        /// - Khi reason có giá trị, hệ thống sẽ chuyển trạng thái từ PREVIEWING thành PROCESSING
+        /// - Các trường khác sẽ được bỏ qua
+        /// 
+        /// **4. Giải quyết nhanh (Bất kỳ trạng thái nào ngoại trừ CANCELLED → DONE)**
+        /// - Khi solution có giá trị và staffId, confirmImage, reason đều không có giá trị
+        /// - Dùng cho các trường hợp khách hàng có thể tự thực hiện bảo trì/bảo dưỡng theo hướng dẫn
+        /// - Hệ thống sẽ chuyển trạng thái thành DONE từ bất kỳ trạng thái nào ngoại trừ CANCELLED
+        /// - Các trường khác sẽ được bỏ qua
+        /// 
+        /// **5. Cập nhật thông thường (Không thay đổi trạng thái)**
+        /// - Chỉ cập nhật issueImage, description hoặc cause
+        /// - Trạng thái không thay đổi
+        /// - Các trường khác sẽ được bỏ qua
+        /// 
+        /// **6. Hủy vấn đề (Bất kỳ trạng thái → CANCELLED)**
+        /// - Khi status có giá trị CANCELLED
+        /// - Dùng khi khách hàng muốn hủy vấn đề bảo trì/bảo dưỡng
+        /// - Hệ thống sẽ cập nhật trạng thái thành CANCELLED
+        /// - Trường reason là tùy chọn để giải thích lý do hủy
+        /// 
+        /// **Lưu ý:** Mỗi trạng thái chỉ có thể chuyển đổi theo quy tắc được định nghĩa. Nếu trạng thái hiện tại không phù hợp, API sẽ trả về lỗi.
+        /// 
+        /// **Ví dụ 1: Phân công nhân viên (OPENING → PROCESSING)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "staffId": "a8b4c7e9-5f12-4d36-8b7a-1c3e9d2f8e0a"
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 2: Tải lên ảnh xác nhận (PROCESSING → PREVIEWING)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "confirmImage": "https://example.com/images/pond_cleaning_completed.jpg"
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 3: Từ chối ảnh xác nhận (PREVIEWING → PROCESSING)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "reason": "Ảnh không rõ nét, không thể xác nhận việc vệ sinh hồ cá đã hoàn thành. Vui lòng chụp lại ảnh toàn cảnh hồ sau khi làm sạch."
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 4: Giải quyết nhanh (Bất kỳ trạng thái nào ngoại trừ CANCELLED → DONE)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "solution": "Hướng dẫn khách hàng tự vệ sinh bộ lọc: (1) Tắt hệ thống lọc, (2) Tháo rời bộ lọc, (3) Rửa sạch bằng nước, (4) Lắp lại và kiểm tra. Khách hàng đã thực hiện thành công và hồ cá đã hoạt động bình thường."
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 5: Cập nhật thông thường (Không thay đổi trạng thái)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "description": "Nước hồ cá Koi có màu xanh đục và có mùi. Đã kiểm tra các thông số nước và phát hiện tảo phát triển quá mức.",
+        ///   "cause": "Hệ thống lọc sinh học hoạt động không hiệu quả và thiếu bảo trì định kỳ",
+        ///   "issueImage": "https://example.com/images/koi_pond_algae_bloom.jpg"
+        /// }
+        /// ```
+        /// 
+        /// **Ví dụ 6: Hủy vấn đề (Bất kỳ trạng thái → CANCELLED)**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "status": "CANCELLED"
+        /// }
+        /// ```
+        /// 
+        /// **Hoặc với lý do (tùy chọn):**
+        /// ```json
+        /// {
+        ///   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        ///   "status": "CANCELLED",
+        ///   "reason": "Khách hàng đã đổi lịch vệ sinh hồ cá sang tháng sau do đang cải tạo khu vực xung quanh hồ."
+        /// }
+        /// ```
+        /// </remarks>
         [HttpPut("issue/{id}")]
         [SwaggerOperation(
-            Summary = "Cập nhật trạng thái maintenance request issue",
-            Description = "Cập nhật trạng thái ảo trì/bảo dưỡng bất thường với các thông tin chi tiết như tên, địa chỉ, loại bảo trì, và ngày dự kiến.",
+            Summary = "Cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường",
+            Description = "Cập nhật trạng thái vấn đề bảo trì/bảo dưỡng bất thường với các thông tin chi tiết. Có 6 trường hợp cập nhật:\n\n" +
+                          "1. Phân công nhân viên: Khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
+                          "2. Tải lên ảnh xác nhận: Khi confirmImage có giá trị thì chuyển trạng thái từ PROCESSING thành PREVIEWING, các giá trị khác bỏ qua.\n\n" +
+                          "3. Từ chối ảnh xác nhận: Khi reason có giá trị thì chuyển trạng thái từ PREVIEWING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
+                          "4. Giải quyết nhanh: Khi solution có giá trị và staffId, confirmImage, reason đều null thì chuyển trạng thái thành DONE từ bất kỳ trạng thái nào ngoại trừ CANCELLED, các giá trị khác bỏ qua.\n\n" +
+                          "5. Cập nhật thông thường: Chỉ cập nhật issueImage hoặc description hoặc cause, các giá trị khác bỏ qua.\n\n" +
+                          "6. Hủy vấn đề: Khi status có giá trị CANCELLED thì cập nhật trạng thái thành CANCELLED, các giá trị khác bỏ qua.\n\n" +
+                          "**Lưu ý: Mỗi trạng thái chỉ có thể chuyển đổi theo quy tắc được định nghĩa. Nếu trạng thái hiện tại không phù hợp, API sẽ trả về lỗi.**\n\n" +
+                          "**Ví dụ 1 - Phân công nhân viên (OPENING -> PROCESSING):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"staffId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 2 - Tải lên ảnh xác nhận (PROCESSING -> PREVIEWING):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"confirmImage\": \"https://example.com/image.jpg\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 3 - Từ chối ảnh xác nhận (PREVIEWING -> PROCESSING):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"reason\": \"Ảnh không rõ nét, vui lòng chụp lại\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 4 - Giải quyết nhanh (Any status except CANCELLED -> DONE):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"solution\": \"Đã sửa chữa ống nước bị rò rỉ và thay thế van điều khiển\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 5 - Cập nhật thông thường (No status change):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"description\": \"Hồ cá bị rò rỉ ở góc phía Bắc\",\n" +
+                          "  \"cause\": \"Keo silicone bị lão hóa\",\n" +
+                          "  \"issueImage\": \"https://example.com/issue.jpg\"\n" +
+                          "}\n" +
+                          "```\n\n" +
+                          "**Ví dụ 6 - Hủy vấn đề (Any status -> CANCELLED):**\n" +
+                          "```json\n" +
+                          "{\n" +
+                          "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
+                          "  \"status\": \"CANCELLED\",\n" +
+                          "  \"reason\": \"Khách hàng đã tự khắc phục sự cố\"\n" +
+                          "}\n" +
+                          "```",
             OperationId = "UpdateMaintenanceRequestIssue",
             Tags = new[] { "Maintenances" }
             )]
         public async Task<ApiResult> UpdateMaintenanceRequestIssueAsync(
             [FromBody]
+            [SwaggerParameter(
+                Description = "Thông tin cập nhật cho vấn đề bảo trì/bảo dưỡng bất thường dựa trên một trong năm trường hợp",
+                Required = true
+            )]
             CommandMaintenanceRequestIssueRequest request,
             [FromRoute]
             [SwaggerParameter(
-                Description = "ID của yêu cầu ảo trì/bảo dưỡng bất thường cần cập nhật",
+                Description = "ID của vấn đề bảo trì/bảo dưỡng bất thường cần cập nhật",
                 Required = true
             )]
             Guid id)
@@ -526,6 +681,13 @@ namespace KPCOS.API.Controllers
             {
                 throw new BadRequestException("Id không được để trống");
             }
+            
+            // Ensure the request ID matches the route ID
+            if (request.Id != id)
+            {
+                request.Id = id;
+            }
+            
             await _maintenanceService.UpdateMaintenanceRequestIssueAsync(request);
             return Ok();
         }
