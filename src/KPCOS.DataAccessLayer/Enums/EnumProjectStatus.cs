@@ -15,4 +15,6 @@ public enum EnumProjectStatus
     CONSTRUCTING,
     [EnumMember(Value = "FINISHED")]
     FINISHED,
+    [EnumMember(Value = "CANCELLED")]
+    CANCELLED
 }

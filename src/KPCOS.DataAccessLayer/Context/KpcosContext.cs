@@ -1442,7 +1442,7 @@ public partial class KpcosContext : DbContext
                 .HasForeignKey(d => d.StaffId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("maintenance_request_issue_staff_id_fkey");
-
+    
             entity.HasOne(d => d.MaintenanceRequest)
                 .WithMany(p => p.MaintenanceRequestIssues)
                 .HasForeignKey(d => d.MaintenanceRequestId)
