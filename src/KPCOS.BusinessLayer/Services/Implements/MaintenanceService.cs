@@ -1557,6 +1557,13 @@ public class MaintenanceService : IMaintenanceService
             throw new BadRequestException($"Không thể phân công nhân viên khi vấn đề đang ở trạng thái {currentStatus}. Vấn đề phải ở trạng thái OPENING.");
         }
         
+        // Check if the issue's status is DONE or CANCELLED (additional check for safety)
+        if (issue.Status == EnumMaintenanceRequestIssueStatus.DONE.ToString() || 
+            issue.Status == EnumMaintenanceRequestIssueStatus.CANCELLED.ToString())
+        {
+            throw new BadRequestException($"Không thể phân công nhân viên cho vấn đề bảo trì/bảo dưỡng đã hoàn thành hoặc đã hủy.");
+        }
+        
         if (!request.StaffId.HasValue || request.StaffId == Guid.Empty)
         {
             throw new BadRequestException("ID nhân viên không hợp lệ hoặc không được cung cấp.");
