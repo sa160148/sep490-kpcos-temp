@@ -8,14 +8,20 @@ namespace KPCOS.BusinessLayer.DTOs.Request.Contracts;
 public class GetAllContractFilterRequest : PaginationRequest<Contract>
 {
     public string? Status { get; set; }
+    public string? Code { get; set; }
 
     public Guid? ProjectId { get; set; }
     public override Expression<Func<Contract, bool>> GetExpressions()
     {
         var contractQueryExpression = PredicateBuilder.New<Contract>(true);
+        if (!string.IsNullOrEmpty(Code))
+        {
+            contractQueryExpression.And(c => c.Code.Contains(Code));
+        }
         if (!string.IsNullOrEmpty(Status))
         {
-            contractQueryExpression.And(c => c.Status == Status);
+            var statuses = Status.Split(',').ToList();
+            contractQueryExpression.And(c => statuses.Contains(c.Status));
         }
         if (ProjectId.HasValue)
         {
