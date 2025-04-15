@@ -53,12 +53,18 @@ public class QuotationService : IQuotationService
         if (templateConstruction == null) {
             throw new BadRequestException("Mẫu công trình không tồn tại");
         }
+        // find the max version of quotation
+        int version = await repoQuotation.Get()
+            .Where(q => q.ProjectId == request.ProjectId && q.Idtemplate == request.TemplateConstructionId)
+            .Select(q => q.Version)
+            .DefaultIfEmpty(0)
+            .MaxAsync();
         var quotation = new Quotation
         {
             Id = Guid.NewGuid(),
             ProjectId = request.ProjectId,
             Idtemplate = request.TemplateConstructionId,
-            Version = await repoQuotation.Get().Where(q => q.ProjectId == request.ProjectId).CountAsync() + 1,
+            Version = version,
             Status = EnumQuotationStatus.OPEN.ToString(),
             TotalPrice = 0,
             PromotionId = request.PromotionId ?? null
@@ -256,19 +262,23 @@ public class QuotationService : IQuotationService
             throw new BadRequestException("Báo giá không thể chỉnh sửa");
         }
         
-        var oldQuotationServices = await repoQuotationService.Get().Where(qs => qs.QuotationId == id).ToListAsync();
-        var oldQuotationEquipments = await repoQuotationEquiment.Get().Where(qe => qe.QuotationId == id).ToListAsync();
-        
-        foreach (var oldQuotationService in oldQuotationServices)
+        quotation.Status = EnumQuotationStatus.CANCELLED.ToString();
+        // write new quotation with current version
+       // find the max version of quotation
+      
+        var quotationNew = new Quotation
         {
-            await repoQuotationService.RemoveAsync(oldQuotationService, false);
-        }
-        
-        foreach (var oldQuotationEquipment in oldQuotationEquipments)
-        {
-            await repoQuotationEquiment.RemoveAsync(oldQuotationEquipment, false);
-        }
-        
+            Id = Guid.NewGuid(),
+            ProjectId = request.ProjectId,
+            Idtemplate = request.TemplateConstructionId,
+            Version = quotation.Version,
+            Status = EnumQuotationStatus.OPEN.ToString(),
+            TotalPrice = 0,
+            PromotionId = request.PromotionId ?? null
+        };
+        await repoQuotation.AddAsync(quotationNew, false);
+     
+
         int totalPrice = 0;
         
         foreach (var service in request.Services)
@@ -282,7 +292,7 @@ public class QuotationService : IQuotationService
             var quotationService = new QuotationDetail
             {
                 // Id = Guid.NewGuid(),
-                QuotationId = quotation.Id,
+                QuotationId = quotationNew.Id,
                 ServiceId = service.Id,
                 Quantity = service.Quantity,
                 Price =  serviceRaw.Price,
@@ -292,6 +302,7 @@ public class QuotationService : IQuotationService
             totalPrice += serviceRaw.Price * service.Quantity;
             await repoQuotationService.AddAsync(quotationService,false);
         }
+        
         foreach (var equipment in request.Equipments)
         {
             var equipmentRaw = await repoEquiment.Get().Where(e => e.Id == equipment.Id).FirstOrDefaultAsync();
@@ -301,7 +312,7 @@ public class QuotationService : IQuotationService
             var quotationEquipment = new QuotationEquipment
             {
                 Id = Guid.NewGuid(),
-                QuotationId = quotation.Id,
+                QuotationId = quotationNew.Id,
                 EquipmentId = equipment.Id,
                 Quantity = equipment.Quantity,
                 Price =  equipment.Price,
@@ -312,16 +323,7 @@ public class QuotationService : IQuotationService
             await repoQuotationEquiment.AddAsync(quotationEquipment,false);
         }
         
-        if (request.PromotionId.HasValue) {
-            var promotion = await _unitOfWork.Repository<Promotion>().FindAsync(request.PromotionId.Value);
-            if (promotion == null) {
-                throw new BadRequestException("Khuyến mãi không tồn tại");
-            }
-            quotation.PromotionId = request.PromotionId.Value;
-        }
-        
         quotation.TotalPrice = totalPrice;
-        quotation.Status = EnumQuotationStatus.OPEN.ToString();
         await _unitOfWork.SaveChangesAsync();
     }
 }
