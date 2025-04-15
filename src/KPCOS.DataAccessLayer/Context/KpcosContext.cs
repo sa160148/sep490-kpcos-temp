@@ -301,6 +301,7 @@ public partial class KpcosContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("name");
             entity.Property(e => e.Note).HasColumnName("note");
+            entity.Property(e => e.Code).HasColumnName("code");
             entity.Property(e => e.ProjectId).HasColumnName("project_id");
             entity.Property(e => e.QuotationId).HasColumnName("quotation_id");
             entity.Property(e => e.Status)

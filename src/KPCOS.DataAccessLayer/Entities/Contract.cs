@@ -19,6 +19,8 @@ public partial class Contract
     public string Url { get; set; } = null!;
 
     public string? Note { get; set; }
+    
+    public string? Code { get; set; }
 
     public Guid QuotationId { get; set; }
 

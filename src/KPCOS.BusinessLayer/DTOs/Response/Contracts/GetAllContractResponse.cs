@@ -11,6 +11,8 @@ public class GetAllContractResponse
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Status { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Code { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? CustomerName { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? ContractValue { get; set; }
