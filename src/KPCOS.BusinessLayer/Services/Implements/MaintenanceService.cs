@@ -1518,7 +1518,8 @@ public class MaintenanceService : IMaintenanceService
         else if (!string.IsNullOrEmpty(request.Solution) && 
                 !request.StaffId.HasValue && 
                 string.IsNullOrEmpty(request.ConfirmImage) && 
-                string.IsNullOrEmpty(request.Reason))
+                string.IsNullOrEmpty(request.Reason) &&
+                string.IsNullOrEmpty(request.Cause))
         {
             // Case 4: Hot resolve (Any status except CANCELLED -> DONE)
             await HotResolveIssueAsync(maintenanceRequestIssue, request, currentStatus);
