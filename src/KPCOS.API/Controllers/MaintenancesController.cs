@@ -721,6 +721,13 @@ namespace KPCOS.API.Controllers
             GetAllMaintenanceRequestIssueFilterRequest request
         )
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userId != null && role != null)
+            {
+                request.UserId = Guid.Parse(userId);
+                request.Role = role;
+            }
             var result = await _maintenanceService.GetMaintenanceRequestIssuesAsync(request);
             return new PagedApiResponse<GetAllMaintenanceRequestIssueResponse>(
                 result.data, 
