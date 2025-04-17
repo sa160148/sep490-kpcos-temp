@@ -1518,7 +1518,8 @@ public class MaintenanceService : IMaintenanceService
         else if (!string.IsNullOrEmpty(request.Solution) && 
                 !request.StaffId.HasValue && 
                 string.IsNullOrEmpty(request.ConfirmImage) && 
-                string.IsNullOrEmpty(request.Reason))
+                string.IsNullOrEmpty(request.Reason) &&
+                string.IsNullOrEmpty(request.Cause))
         {
             // Case 4: Hot resolve (Any status except CANCELLED -> DONE)
             await HotResolveIssueAsync(maintenanceRequestIssue, request, currentStatus);
@@ -1555,6 +1556,13 @@ public class MaintenanceService : IMaintenanceService
         if (currentStatus != EnumMaintenanceRequestIssueStatus.OPENING.ToString())
         {
             throw new BadRequestException($"Không thể phân công nhân viên khi vấn đề đang ở trạng thái {currentStatus}. Vấn đề phải ở trạng thái OPENING.");
+        }
+        
+        // Check if the issue's status is DONE or CANCELLED (additional check for safety)
+        if (issue.Status == EnumMaintenanceRequestIssueStatus.DONE.ToString() || 
+            issue.Status == EnumMaintenanceRequestIssueStatus.CANCELLED.ToString())
+        {
+            throw new BadRequestException($"Không thể phân công nhân viên cho vấn đề bảo trì/bảo dưỡng đã hoàn thành hoặc đã hủy.");
         }
         
         if (!request.StaffId.HasValue || request.StaffId == Guid.Empty)

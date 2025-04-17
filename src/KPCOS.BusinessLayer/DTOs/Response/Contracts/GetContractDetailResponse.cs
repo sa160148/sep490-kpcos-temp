@@ -15,6 +15,7 @@ public class GetContractDetailResponse
     public string Url { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Note { get; set; }
+    public string? Code { get; set; }
     public Guid QuotationId { get; set; }
     public Guid ProjectId { get; set; }
     public string? Status { get; set; } = default;
