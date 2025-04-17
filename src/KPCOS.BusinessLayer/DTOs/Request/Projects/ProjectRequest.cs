@@ -22,11 +22,11 @@ public class ProjectRequest
 
     [Required(ErrorMessage = "can not let area null")]
     [DefaultValue(100)]
-    public float Area { get; set; }
+    public double Area { get; set; }
 
     [Required(ErrorMessage = "can not let depth null")]
     [DefaultValue(100)]
-    public float Depth { get; set; }
+    public double Depth { get; set; }
 
     [DefaultValue("5ca78687-26db-40ed-99d0-685dff2b7e3e")]
     public Guid? PackageId { get; set; }
