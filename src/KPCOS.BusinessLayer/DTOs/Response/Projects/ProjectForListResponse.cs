@@ -24,9 +24,9 @@ public class ProjectForListResponse
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Phone { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public float? Area { get; set; }
+    public double? Area { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public float? Depth { get; set; }
+    public double? Depth { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Status { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
