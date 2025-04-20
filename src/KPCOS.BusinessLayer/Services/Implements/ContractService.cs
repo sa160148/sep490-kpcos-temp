@@ -63,8 +63,8 @@ public class ContractService : IContractService
     }
 
     /// <summary>
-    /// Reject a contract, set status to Cancelled
-    /// <para>Can not reject a contract if the otp exited in firestore have IsActive = true</para>
+    /// Reject a contract, set status to Cancelled and remove related payment batches and construction items
+    /// <para>Can not reject a contract if the otp exited in firestore have IsActive = true or contract status is ACTIVE</para>
     /// </summary>
     /// <param name="contractId">guid</param>
     /// <exception cref="NotFoundException">Hợp đồng không tồn tại</exception>
@@ -73,6 +73,20 @@ public class ContractService : IContractService
     {
         var repo = _unitOfWork.Repository<Contract>();
         var contract = await repo.FindAsync(contractId) ?? throw new NotFoundException("Hợp đồng không tồn tại");
+        
+        // Check if contract is already active - can't reject an active contract
+        if (contract.Status == EnumContractStatus.ACTIVE.ToString())
+        {
+            throw new BadRequestException("Hợp đồng đã được kích hoạt, không thể hủy");
+        }
+        
+        // Check if contract is already cancelled
+        if (contract.Status == EnumContractStatus.CANCELLED.ToString())
+        {
+            throw new BadRequestException("Hợp đồng đã bị hủy trước đó");
+        }
+        
+        // Check if contract OTP is active in Firebase
         var isContractOtpInFirestore = await _firebaseService.IsContractOtpInFirestore(contractId.ToString());
         if (isContractOtpInFirestore)
         {
@@ -82,8 +96,33 @@ public class ContractService : IContractService
                 throw new BadRequestException("Hợp đồng đã được xác nhận, không thể hủy");
             }
         }
+        
+        // Get related payment batches and delete them
+        var paymentBatchRepo = _unitOfWork.Repository<PaymentBatch>();
+        var paymentBatches = paymentBatchRepo.Get(
+            filter: pb => pb.ContractId == contractId,
+            includeProperties: "")
+            .ToList();
+            
+        paymentBatchRepo.RemoveRange(paymentBatches);
+        
+        // Get and delete level 1 construction items with IsPayment=true for the project
+        var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
+        var paymentItems = constructionItemRepo.Get(
+            filter: item => item.ProjectId == contract.ProjectId && 
+                          item.IsPayment == true && 
+                          item.ParentId == null,
+            includeProperties: "")
+            .ToList();
+        
+        constructionItemRepo.RemoveRange(paymentItems);
+        
+        // Set contract status to CANCELLED
         contract.Status = EnumContractStatus.CANCELLED.ToString();
-        await repo.UpdateAsync(contract);
+        await repo.UpdateAsync(contract, false);
+        
+        // Save all changes
+        await _unitOfWork.SaveChangesAsync();
     }
     
     //cài lên firebase
@@ -136,6 +175,21 @@ public class ContractService : IContractService
             throw new BadRequestException("Báo giá chưa được duyệt");
         }
         
+        // Check if any other contract for this project has ACTIVE or PROCESSING status
+        var contractRepo = _unitOfWork.Repository<Contract>();
+        var existingActiveContract = contractRepo.Get(
+            filter: c => c.ProjectId == request.ProjectId && 
+                        (c.Status == EnumContractStatus.ACTIVE.ToString() || 
+                         c.Status == EnumContractStatus.PROCESSING.ToString()),
+            includeProperties: "")
+            .FirstOrDefault();
+            
+        if (existingActiveContract != null)
+        {
+            var statusName = existingActiveContract.Status == EnumContractStatus.ACTIVE.ToString() ? "hoạt động" : "đang xử lý";
+            throw new BadRequestException($"Dự án này đã có hợp đồng {statusName}. Chỉ được phép có một hợp đồng hoạt động hoặc đang xử lý cho mỗi dự án.");
+        }
+        
         var repo = _unitOfWork.Repository<Contract>();
         var contract = _mapper.Map<Contract>(request);
         
@@ -173,6 +227,8 @@ public class ContractService : IContractService
         }
         
         contract.Id = Guid.NewGuid();
+        // Set initial status to PROCESSING
+        contract.Status = EnumContractStatus.PROCESSING.ToString();
         
         // Get level 1 construction items with IsPayment=true for the project, ordered by EstimateAt
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
