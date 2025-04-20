@@ -106,16 +106,14 @@ public class ContractService : IContractService
             
         paymentBatchRepo.RemoveRange(paymentBatches);
         
-        // Get and delete level 1 construction items with IsPayment=true for the project
+        // Get all construction items for the project and delete them
         var constructionItemRepo = _unitOfWork.Repository<ConstructionItem>();
-        var paymentItems = constructionItemRepo.Get(
-            filter: item => item.ProjectId == contract.ProjectId && 
-                          item.IsPayment == true && 
-                          item.ParentId == null,
+        var constructionItems = constructionItemRepo.Get(
+            filter: item => item.ProjectId == contract.ProjectId,
             includeProperties: "")
             .ToList();
         
-        constructionItemRepo.RemoveRange(paymentItems);
+        constructionItemRepo.RemoveRange(constructionItems);
         
         // Set contract status to CANCELLED
         contract.Status = EnumContractStatus.CANCELLED.ToString();
