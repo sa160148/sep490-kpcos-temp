@@ -54,11 +54,12 @@ public class QuotationService : IQuotationService
             throw new BadRequestException("Mẫu công trình không tồn tại");
         }
         // find the max version of quotation
-        int version = await repoQuotation.Get()
+        var versions = await repoQuotation.Get()
             .Where(q => q.ProjectId == request.ProjectId && q.Idtemplate == request.TemplateConstructionId)
             .Select(q => q.Version)
-            .DefaultIfEmpty(0)
-            .MaxAsync();
+            .ToListAsync();
+
+        int version = versions.DefaultIfEmpty(0).Max();
         var quotation = new Quotation
         {
             Id = Guid.NewGuid(),
