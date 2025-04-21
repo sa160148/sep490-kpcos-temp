@@ -59,7 +59,7 @@ public class QuotationService : IQuotationService
             .Select(q => q.Version)
             .ToListAsync();
 
-        int version = versions.DefaultIfEmpty(0).Max();
+        int version = versions.Count > 0 ? versions.Max() + 1 : 1;
         var quotation = new Quotation
         {
             Id = Guid.NewGuid(),
