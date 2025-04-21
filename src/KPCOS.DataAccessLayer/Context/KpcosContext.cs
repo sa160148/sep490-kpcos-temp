@@ -1181,7 +1181,7 @@ public partial class KpcosContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.Avatar)
                 .HasMaxLength(255)
-                .HasDefaultValueSql("'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaotZTcu1CLMGOJMDl-f_LYBECs7tqwhgpXA&s'::character varying")
+                .HasDefaultValueSql("'https://avatar.iran.liara.run/public/boy'::character varying")
                 .HasColumnName("avatar");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("timezone('Asia/Bangkok'::text, now())")

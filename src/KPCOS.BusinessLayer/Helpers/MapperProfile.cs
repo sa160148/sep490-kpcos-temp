@@ -36,6 +36,7 @@ using KPCOS.BusinessLayer.DTOs.Request.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Request.Promotions;
 using KPCOS.BusinessLayer.DTOs.Response.MaintenanceRequestIssues;
 using KPCOS.BusinessLayer.DTOs.Response.Promotions;
+using KPCOS.Common.Constants;
 
 namespace KPCOS.BusinessLayer.Helpers;
 
@@ -69,7 +70,10 @@ public class MapperProfile : Profile
     public MapperProfile()
     {
         CreateMap<AuthRequest, User>();
-        CreateMap<SignupRequest, User>();
+        CreateMap<SignupRequest, User>()
+            .ForMember(dest => dest.Avatar, 
+            opt => opt.MapFrom(src => src.Gender == nameof(EnumGender.MALE) ? ImageConstant.DefaultUserMaleImageUrl : ImageConstant.DefaultUserFemaleImageUrl))
+        ;
         CreateMap<User, UserResponse>();
         CreateMap<Staff, GetAllStaffResponse>()
             .ForMember(dest => dest.Avatar, 

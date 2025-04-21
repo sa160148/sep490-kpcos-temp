@@ -1,4 +1,6 @@
-﻿namespace KPCOS.DataAccessLayer.Entities;
+﻿using KPCOS.Common.Constants;
+
+namespace KPCOS.DataAccessLayer.Entities;
 
 public partial class User
 {
@@ -18,7 +20,7 @@ public partial class User
 
     public string Phone { get; set; } = null!;
 
-    public string? Avatar { get; set; }
+    public string? Avatar { get; set; } /*= ImageConstant.DefaultUserMaleImageUrl;*/
 
     public string? Status { get; set; }
 
