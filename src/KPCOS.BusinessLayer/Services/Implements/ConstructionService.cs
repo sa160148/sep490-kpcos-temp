@@ -975,26 +975,26 @@ public class ConstructionService : IConstructionServices
         var constructionTask = await constructionTaskRepo.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
         if (constructionTask == null)
         {
-            throw new NotFoundException("Construction task not found");
+            throw new NotFoundException("Không tìm thấy công việc thi công");
         }
 
         // Check if the task is in OPENING status
         if (constructionTask.Status != EnumConstructionTaskStatus.OPENING.ToString())
         {
-            throw new BadRequestException("Cannot delete a task that is not in OPENING status");
+            throw new BadRequestException("Không thể xóa công việc thi công khác trạng thái ĐANG MỞ");
         }
 
         // Check if the task is assigned to a staff member
         if (constructionTask.StaffId != null)
         {
-            throw new BadRequestException("Cannot delete a task that is assigned to a staff member");
+            throw new BadRequestException("Không thể xóa công việc thi công đã được phân công cho nhân viên");
         }
 
         // Get the associated level 2 construction item
         var constructionItemLv2 = await constructionItemRepo.FirstOrDefaultAsync(x => x.Id == constructionTask.ConstructionItemId);
         if (constructionItemLv2 == null)
         {
-            throw new NotFoundException("Associated construction item not found");
+            throw new NotFoundException("Không tìm thấy hạng mục thi công liên quan");
         }
 
         // Delete the construction task
