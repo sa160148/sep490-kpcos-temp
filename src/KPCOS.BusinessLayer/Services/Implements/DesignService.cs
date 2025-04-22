@@ -277,11 +277,22 @@ public class DesignService : IDesignService
             image.DesignId = clonedDesign.Id;
         }
         design.Status = EnumDesignStatus.PREVIEWING.ToString();
-        clonedDesign.Version = design.Version + 1;
+        
+        // Get the highest version number for designs with the same project ID and type
+        var designRepo = _unitOfWork.Repository<Design>();
+        var projectDesigns = designRepo.Get(
+            filter: d => d.ProjectId == design.ProjectId && d.Type == design.Type
+        );
+            
+        var latestVersion = projectDesigns.Any() 
+            ? projectDesigns.Max(d => d.Version) 
+            : 0;
+            
+        clonedDesign.Version = latestVersion + 1;
         clonedDesign.ProjectId = design.ProjectId;
         
-        await _unitOfWork.Repository<Design>().AddAsync(clonedDesign, false);
-        await _unitOfWork.Repository<Design>().UpdateAsync(design, false);
+        await designRepo.AddAsync(clonedDesign, false);
+        await designRepo.UpdateAsync(design, false);
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -308,9 +319,7 @@ public class DesignService : IDesignService
             {
                 Id = Guid.NewGuid(),
                 DesignId = design.Id,
-                ImageUrl = imageRequest.ImageUrl,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                ImageUrl = imageRequest.ImageUrl
             };
             await designImageRepo.AddAsync(image, false);
         }
