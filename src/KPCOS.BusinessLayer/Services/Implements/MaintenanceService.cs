@@ -1395,6 +1395,9 @@ public class MaintenanceService : IMaintenanceService
             }
         }
         
+        //Hot handle set null for EstimateAt
+        request.EstimateAt = null;
+
         // Use AutoMapper to create the entity from the request
         var maintenanceRequestIssue = _mapper.Map<MaintenanceRequestIssue>(request);
         
