@@ -471,9 +471,12 @@ namespace KPCOS.API.Controllers
         /// <returns>Thông báo thành công nếu tạo bảo trì/bảo dưỡng bất thường thành công</returns>
         /// <remarks>
         /// API này tạo một bảo trì/bảo dưỡng bất thường mới cho yêu cầu bảo trì/bảo dưỡng với các thông tin cần thiết.
-        /// - Yêu cầu bắt buộc: Tên (Name), Mô tả (Description), ID yêu cầu bảo trì/bảo dưỡng (MaintenanceRequestId)
-        /// - Nguyên nhân (Cause) và Ngày dự kiến (EstimateAt) là tùy chọn
+        /// - Yêu cầu bắt buộc: Tên (Name), Mô tả (Description), ID yêu cầu bảo trì/bảo dưỡng (MaintenanceRequestId), Ngày dự kiến (EstimateAt)
+        /// - Nguyên nhân (Cause) là tùy chọn
         /// - Trạng thái (Status) mặc định là OPENING
+        /// - Ngày dự kiến phải nằm trong khoảng thời gian giữa công việc bảo trì/bảo dưỡng đầu tiên và cuối cùng
+        /// - Ngày dự kiến không được trùng với các công việc bảo trì/bảo dưỡng hiện có
+        /// - Ngày dự kiến không rơi vào ngày cuối tuần (sẽ được tự động chuyển sang ngày làm việc tiếp theo)
         /// - Không thể tạo bảo trì/bảo dưỡng bất thường cho yêu cầu bảo trì/bảo dưỡng đã hoàn thành (DONE)
         /// 
         /// Mẫu yêu cầu:
@@ -482,6 +485,7 @@ namespace KPCOS.API.Controllers
         ///         "maintenanceRequestId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         ///         "cause": "Máy bơm nước bị kẹt và phát ra tiếng ồn bất thường",
         ///         "description": "Khi bật máy bơm, có tiếng ồn lớn và nước không được bơm lên. Máy bơm có thể bị kẹt do cặn bẩn hoặc rong rêu trong hồ.",
+        ///         "estimateAt": "2025-04-17",
         ///         "name": "Kiểm tra máy bơm nước",
         ///         "issueImage": "https://example.com/images/pump_issue.jpg"
         ///     }
@@ -512,12 +516,6 @@ namespace KPCOS.API.Controllers
         /// 
         /// **1. Phân công nhân viên (OPENING → PROCESSING)**
         /// - Khi staffId có giá trị, hệ thống sẽ chuyển trạng thái từ OPENING thành PROCESSING
-        /// - **Yêu cầu phải cung cấp EstimateAt (ngày dự kiến) khi phân công nhân viên**
-        /// - EstimateAt sẽ được kiểm tra và không được:
-        ///   - Rơi vào ngày cuối tuần (sẽ bị từ chối)
-        ///   - Trước ngày công việc bảo trì đầu tiên
-        ///   - Sau ngày công việc bảo trì cuối cùng
-        ///   - Trùng với ngày của công việc bảo trì khác
         /// - Các trường khác sẽ được bỏ qua
         /// 
         /// **2. Tải lên ảnh xác nhận (PROCESSING → PREVIEWING)**
@@ -553,8 +551,7 @@ namespace KPCOS.API.Controllers
         /// **Ví dụ 1: Administrator phân công nhân viên (OPENING -> PROCESSING):**
         /// ```json
         /// {
-        ///   "staffId": "a8b4c7e9-5f12-4d36-8b7a-1c3e9d2f8e0a",
-        ///   "estimateAt": "2025-04-17"
+        ///   "staffId": "a8b4c7e9-5f12-4d36-8b7a-1c3e9d2f8e0a"
         /// }
         /// ```
         /// 
@@ -615,7 +612,7 @@ namespace KPCOS.API.Controllers
         [SwaggerOperation(
             Summary = "Cập nhật thông tin và trạng thái vấn đề bảo trì/bảo dưỡng bất thường",
             Description = "Cập nhật trạng thái vấn đề bảo trì/bảo dưỡng bất thường với các thông tin chi tiết. Có 7 trường hợp cập nhật:\n\n" +
-                          "1. Phân công nhân viên: Khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, yêu cầu phải cung cấp EstimateAt, các giá trị khác bỏ qua. EstimateAt sẽ được kiểm tra các ràng buộc như không rơi vào cuối tuần, nằm trong khoảng thời gian của các công việc hiện có.\n\n" +
+                          "1. Phân công nhân viên: Khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
                           "2. Tải lên ảnh xác nhận: Khi confirmImage có giá trị thì chuyển trạng thái từ PROCESSING thành PREVIEWING, các giá trị khác bỏ qua.\n\n" +
                           "3. Từ chối ảnh xác nhận: Khi reason có giá trị thì chuyển trạng thái từ PREVIEWING thành PROCESSING, các giá trị khác bỏ qua.\n\n" +
                           "4. Giải quyết nhanh: Khi solution có giá trị và staffId, confirmImage, reason đều null thì chuyển trạng thái thành DONE từ bất kỳ trạng thái nào ngoại trừ CANCELLED, các giá trị khác bỏ qua.\n\n" +
@@ -627,8 +624,7 @@ namespace KPCOS.API.Controllers
                           "```json\n" +
                           "{\n" +
                           "  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
-                          "  \"staffId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n" +
-                          "  \"estimateAt\": \"2025-04-17\"\n" +
+                          "  \"staffId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n" +
                           "}\n" +
                           "```\n\n" +
                           "**Ví dụ 2 - Tải lên ảnh xác nhận (PROCESSING -> PREVIEWING):**\n" +

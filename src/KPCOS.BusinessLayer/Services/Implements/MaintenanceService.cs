@@ -212,7 +212,7 @@ public class MaintenanceService : IMaintenanceService
         {
             Id = Guid.NewGuid(),
             Name = isPostProjectMaintenance 
-                ? $"Bảo trì/bảo dưỡng hồ cá koi cho {request.Name} - bảo dưỡng sau dự án"
+                ? $"Bảo trì/bảo dưỡng hồ cá koi cho {request.Name} - bảo trì/bảo dưỡng sau dự án"
                 : request.Name,
             Area = request.Area ?? 0,
             Depth = request.Depth ?? 0,
@@ -1336,7 +1336,7 @@ public class MaintenanceService : IMaintenanceService
     }
     
     /// <summary>
-    /// Tạo vấn đề bảo trì mới cho yêu cầu bảo trì
+    /// Tạo vấn đề mới cho yêu cầu bảo trì
     /// </summary>
     /// <param name="request">Thông tin vấn đề bảo trì cần tạo</param>
     /// <returns>ID của vấn đề bảo trì đã tạo</returns>
@@ -1360,7 +1360,10 @@ public class MaintenanceService : IMaintenanceService
             throw new BadRequestException("ID yêu cầu bảo trì/bảo dưỡng không được để trống");
         }
         
-        // EstimateAt is no longer required
+        if (!request.EstimateAt.HasValue)
+        {
+            throw new BadRequestException("Ngày dự kiến không được để trống");
+        }
         
         // Cause is now optional
         
@@ -1383,7 +1386,46 @@ public class MaintenanceService : IMaintenanceService
             throw new BadRequestException("Không thể tạo bảo trì/bảo dưỡng bất thường cho yêu cầu bảo trì/bảo dưỡng đã hoàn thành");
         }
         
-        // EstimateAt validations are removed since it's not required anymore
+        // Check if there are any maintenance tasks
+        if (maintenanceRequest.MaintenanceRequestTasks.Any())
+        {
+            // Get the first and last maintenance tasks by estimated date
+            var orderedTasks = maintenanceRequest.MaintenanceRequestTasks
+                .Where(t => t.EstimateAt.HasValue)
+                .OrderBy(t => t.EstimateAt)
+                .ToList();
+                
+            if (orderedTasks.Any() && request.EstimateAt.HasValue)
+            {
+                var firstTask = orderedTasks.First();
+                var lastTask = orderedTasks.Last();
+                
+                // Validate that the estimate date is within the range of maintenance tasks
+                if (firstTask.EstimateAt.HasValue && lastTask.EstimateAt.HasValue)
+                {
+                    // Check if estimate date is before the first task
+                    if (request.EstimateAt.Value.CompareTo(firstTask.EstimateAt.Value) < 0)
+                    {
+                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể trước ngày công việc bảo trì/bảo dưỡng đầu tiên ({firstTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
+                    }
+                    
+                    // Check if estimate date is after the last task
+                    if (request.EstimateAt.Value.CompareTo(lastTask.EstimateAt.Value) > 0)
+                    {
+                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể sau ngày công việc bảo trì/bảo dưỡng cuối cùng ({lastTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
+                    }
+                }
+                
+                // Check if the estimate date conflicts with any existing maintenance task
+                var conflictingTask = maintenanceRequest.MaintenanceRequestTasks
+                    .FirstOrDefault(t => t.EstimateAt.HasValue && t.EstimateAt.Value.Equals(request.EstimateAt.Value));
+                    
+                if (conflictingTask != null)
+                {
+                    throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} trùng với công việc bảo trì/bảo dưỡng đã có. Vui lòng chọn ngày khác");
+                }
+            }
+        }
         
         // Validate staff if provided
         if (request.StaffId != null && request.StaffId != Guid.Empty)
@@ -1392,6 +1434,19 @@ public class MaintenanceService : IMaintenanceService
             if (staff == null)
             {
                 throw new NotFoundException($"Không tìm thấy nhân viên với ID {request.StaffId}");
+            }
+        }
+        
+        // Check if the estimate date is a weekend or holiday and normalize for database compatibility
+        if (request.EstimateAt.HasValue)
+        {
+            var estimateDate = request.EstimateAt.Value;
+            
+            if (GlobalUtility.IsWeekend(estimateDate))
+            {
+                // Get the next working day
+                estimateDate = GlobalUtility.GetNextWorkingDay(estimateDate);
+                request.EstimateAt = estimateDate;
             }
         }
         
@@ -1448,66 +1503,6 @@ public class MaintenanceService : IMaintenanceService
         if (request.StaffId.HasValue && request.StaffId != Guid.Empty)
         {
             // Case 1: Assign staff (OPENING -> PROCESSING)
-            // EstimateAt is required when assigning staff
-            if (!request.EstimateAt.HasValue)
-            {
-                throw new BadRequestException("Ngày dự kiến không được để trống khi phân công nhân viên");
-            }
-            
-            // Get associated maintenance request to validate the estimate date
-            var maintenanceRequest = await _unitOfWork.Repository<MaintenanceRequest>()
-                .FirstOrDefaultAsync(mr => mr.Id == maintenanceRequestIssue.MaintenanceRequestId);
-            
-            if (maintenanceRequest == null)
-            {
-                throw new NotFoundException($"Không tìm thấy yêu cầu bảo trì/bảo dưỡng với ID {maintenanceRequestIssue.MaintenanceRequestId}");
-            }
-            
-            // Check if there are any maintenance tasks to validate the date range
-            var maintenanceRequestTasks = _unitOfWork.Repository<MaintenanceRequestTask>()
-                .Get(
-                    filter: t => t.MaintenanceRequestId == maintenanceRequest.Id && t.EstimateAt.HasValue,
-                    orderBy: q => q.OrderBy(t => t.EstimateAt)
-                )
-                .ToList();
-                
-            if (maintenanceRequestTasks.Any())
-            {
-                var firstTask = maintenanceRequestTasks.First();
-                var lastTask = maintenanceRequestTasks.Last();
-                
-                // Validate that the estimate date is within the range of maintenance tasks
-                if (firstTask.EstimateAt.HasValue && lastTask.EstimateAt.HasValue)
-                {
-                    // Check if estimate date is before the first task
-                    if (request.EstimateAt.Value.CompareTo(firstTask.EstimateAt.Value) < 0)
-                    {
-                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể trước ngày công việc bảo trì/bảo dưỡng đầu tiên ({firstTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
-                    }
-                    
-                    // Check if estimate date is after the last task
-                    if (request.EstimateAt.Value.CompareTo(lastTask.EstimateAt.Value) > 0)
-                    {
-                        throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} không thể sau ngày công việc bảo trì/bảo dưỡng cuối cùng ({lastTask.EstimateAt.Value.ToString("dd/MM/yyyy")})");
-                    }
-                }
-                
-                // Check if the estimate date conflicts with any existing maintenance task
-                var conflictingTask = maintenanceRequestTasks
-                    .FirstOrDefault(t => t.EstimateAt.HasValue && t.EstimateAt.Value.Equals(request.EstimateAt.Value));
-                    
-                if (conflictingTask != null)
-                {
-                    throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} trùng với công việc bảo trì/bảo dưỡng đã có. Vui lòng chọn ngày khác");
-                }
-            }
-            
-            // Check if the estimate date is a weekend
-            if (GlobalUtility.IsWeekend(request.EstimateAt.Value))
-            {
-                throw new BadRequestException($"Ngày dự kiến {request.EstimateAt.Value.ToString("dd/MM/yyyy")} rơi vào cuối tuần. Vui lòng chọn ngày trong tuần.");
-            }
-            
             await AssignStaffToIssueAsync(maintenanceRequestIssue, request, currentStatus);
         }
         else if (!string.IsNullOrEmpty(request.ConfirmImage))
@@ -1551,10 +1546,9 @@ public class MaintenanceService : IMaintenanceService
         // Save changes
         await maintenanceRequestIssueRepo.UpdateAsync(maintenanceRequestIssue);
     }
-    
+
     /// <summary>
-    /// Trường hợp 1: Phân công nhân viên, khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, các giá trị khác bỏ qua.
-    /// Yêu cầu EstimateAt khi phân công nhân viên.
+    /// Trường hợp 1: Phân công nhân viên, khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING, các giá trị khác bỏ qua
     /// </summary>
     private async Task AssignStaffToIssueAsync(MaintenanceRequestIssue issue, CommandMaintenanceRequestIssueRequest request, string currentStatus)
     {
@@ -1640,10 +1634,9 @@ public class MaintenanceService : IMaintenanceService
             throw new BadRequestException($"Nhân viên đang được phân công vào (các) vấn đề bảo trì khác chưa hoàn thành. Vui lòng chọn nhân viên khác.");
         }
         
-        // Update staff ID, status, and EstimateAt
+        // Update staff ID and status
         issue.StaffId = staff.Id;  // Use staff.Id instead of request.StaffId
         issue.Status = EnumMaintenanceRequestIssueStatus.PROCESSING.ToString();
-        issue.EstimateAt = request.EstimateAt; // Set the EstimateAt from the request
     }
 
     /// <summary>
