@@ -90,6 +90,19 @@ public interface IMaintenanceService
     /// <param name="request">Thông tin cập nhật của vấn đề bảo trì</param>
     /// <returns>ID của vấn đề bảo trì đã cập nhật</returns>
     /// <exception cref="NotFoundException">Ném ra khi không tìm thấy vấn đề bảo trì với ID được cung cấp</exception>
+    /// <exception cref="BadRequestException">Ném ra khi dữ liệu đầu vào không hợp lệ hoặc trạng thái chuyển đổi không hợp lệ</exception>
+    /// <remarks>
+    /// Hàm này sẽ xử lý nhiều trường hợp cập nhật khác nhau dựa trên dữ liệu đầu vào:
+    /// 1. Phân công nhân viên: Khi staffId có giá trị thì chuyển trạng thái từ OPENING thành PROCESSING. Bắt buộc phải cung cấp EstimateAt khi phân công nhân viên.
+    ///    EstimateAt sẽ được kiểm tra và không được: rơi vào ngày cuối tuần, trước ngày công việc bảo trì đầu tiên, sau ngày công việc bảo trì cuối cùng, 
+    ///    hoặc trùng với ngày của công việc bảo trì khác.
+    /// 2. Tải lên ảnh xác nhận: Khi confirmImage có giá trị thì chuyển trạng thái từ PROCESSING thành PREVIEWING.
+    /// 3. Từ chối ảnh xác nhận: Khi reason có giá trị thì chuyển trạng thái từ PREVIEWING thành PROCESSING.
+    /// 4. Giải quyết nhanh: Khi solution có giá trị và các trường khác không có thì chuyển trạng thái thành DONE.
+    /// 5. Cập nhật thông thường: Chỉ cập nhật các thông tin cơ bản mà không thay đổi trạng thái.
+    /// 6. Hủy vấn đề: Khi status có giá trị CANCELLED thì cập nhật trạng thái thành CANCELLED.
+    /// 7. Xác nhận hoàn thành: Khi status có giá trị DONE và trạng thái hiện tại là PREVIEWING thì chuyển trạng thái thành DONE.
+    /// </remarks>
     Task UpdateMaintenanceRequestIssueAsync(CommandMaintenanceRequestIssueRequest request);
     
     /// <summary>
