@@ -387,6 +387,74 @@ public class ProjectService(
         return repo.Get(filter: BuildProjectFilter(filter, userId, role)).Count();
     }
 
+    /// <summary>
+    /// Generates a project name based on area, depth, and customer name
+    /// Adds a "Koi" prefix based on the project dimensions:
+    /// - MiniKoi: Small projects (area ≤ 10m²)
+    /// - KoiView: Medium-sized projects with decent depth (area ≤ 30m²)
+    /// - AquaKoi: Small depth projects (depth ≤ 1m)
+    /// - KoiFlow: Standard projects with good depth (area ≤ 100m² with depth > 1m)
+    /// - KoiBay: Large projects (area > 100m²)
+    /// - KoiDrop: Projects with extra deep construction (depth > 1.5m)
+    /// - KoiBox: Projects with specific dimensions (area around 30-40m²)
+    /// - KoiDeck: Standard projects (around 100m²)
+    /// - KoiVilla: Medium projects (20-25m²)
+    /// - KoiGarden: Projects with specific dimensions (15-20m²)
+    /// Examples: "KoiFlow Bà Nga", "MiniKoi Bé Vy"
+    /// </summary>
+    /// <param name="area">The project area in square meters</param>
+    /// <param name="depth">The project depth in meters</param>
+    /// <param name="customerName">The customer name</param>
+    /// <returns>A formatted project name</returns>
+    private string GenerateProjectName(double area, double depth, string customerName)
+    {
+        string prefix;
+
+        // Determine prefix based on area and depth
+        if (area <= 10)
+        {
+            prefix = "MiniKoi";
+        }
+        else if (area <= 25 && depth <= 1)
+        {
+            prefix = "AquaKoi";
+        }
+        else if (area <= 30)
+        {
+            prefix = "KoiView";
+        }
+        else if (area > 100)
+        {
+            prefix = "KoiBay";
+        }
+        else if (area >= 15 && area <= 20)
+        {
+            prefix = "KoiGarden";
+        }
+        else if (area >= 20 && area <= 25)
+        {
+            prefix = "KoiVilla";
+        }
+        else if (area >= 30 && area <= 40)
+        {
+            prefix = "KoiBox";
+        }
+        else if (depth > 1.5 || (area > 9 && area.ToString().Contains("9")))
+        {
+            prefix = "KoiDrop";
+        }
+        else if (area == 100)
+        {
+            prefix = "KoiDeck";
+        }
+        else
+        {
+            prefix = "KoiFlow";
+        }
+
+        return $"{prefix} {customerName}";
+    }
+
     public async Task CreateAsync(
         ProjectRequest request, 
         Guid userId)
@@ -411,7 +479,10 @@ public class ProjectService(
         project.Email = request.Email ?? customer.User.Email;
         project.Phone = request.Phone ?? customer.User.Phone;
         project.Address = request.Address ?? customer.Address;
-        project.Name = project.CustomerName + " project";
+        
+        // Generate project name based on area, depth and customer name
+        project.Name = GenerateProjectName(project.Area, project.Depth, project.CustomerName);
+        
         project.CustomerId = customer.Id;
         project.Status = EnumProjectStatus.REQUESTING.ToString();
         
@@ -461,16 +532,13 @@ public class ProjectService(
     /// <para>Uniqueness Rules:</para>
     /// <list type="bullet">
     ///     <item>
-    ///         <description>Consultant: Only one per project</description>
-    ///     </item>
+    ///         <description>Consultant: Only one per project</description></item>
     ///     <item>
-    ///         <description>Designer: Only one per project</description>
-    ///     </item>
+    ///         <description>Designer: Only one per project</description></item>
     ///     <item>
-    ///         <description>Manager: Only one per project</description>
-    ///     </item>
+    ///         <description>Manager: Only one per project</description></item>
     ///     <item>
-    ///         <description>Constructor: Multiple allowed per project</description>
+    ///         <description>Constructor: Multiple allowed per project</description></item>
     ///     </item>
     /// </list>
     /// </remarks>
