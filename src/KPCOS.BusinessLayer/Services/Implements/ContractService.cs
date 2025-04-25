@@ -167,6 +167,14 @@ public class ContractService : IContractService
         {
             throw new NotFoundException("Báo giá không tồn tại");
         }
+        var isConstructionExited = _unitOfWork.Repository<ConstructionItem>()
+            .Get(filter: item => item.ProjectId == request.ProjectId && item.IsActive == true)
+            .Any();
+        if(!isConstructionExited)
+        {
+            throw new BadRequestException("Dự án này chưa có hạng mục xây dựng. Vui lòng tạo hạng mục xây dựng trước khi tạo hợp đồng.");
+        }
+
         var quotation = await _unitOfWork.Repository<Quotation>().FindAsync(request.QuotationId);
         if(quotation.Status != EnumQuotationStatus.APPROVED.ToString())
         {
