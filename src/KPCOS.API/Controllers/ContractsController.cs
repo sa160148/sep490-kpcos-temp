@@ -41,6 +41,7 @@ public class ContractsController : BaseController
     ///    * Constructing payment batch
     ///    * Acceptance payment batch
     /// 7. Links payment batches to construction items with IsPayment=true, ordered by EstimateAt date
+    /// 8. Validate if the project has construction items, if not, throw an error
     /// 
     /// Sample request:
     /// ```json
