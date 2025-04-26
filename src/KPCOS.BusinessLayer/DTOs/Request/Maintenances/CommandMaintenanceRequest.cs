@@ -8,7 +8,7 @@ public class CommandMaintenanceRequest
     public double? Area { get; set; }
     public double? Depth { get; set; }
     public string? Address { get; set; }
-    public int? TotalValue { get; set; }
+    public decimal? TotalValue { get; set; }
     public int? MinPrice { get; set; }
     public string? Type { get; set; }
     public bool? IsPaid { get; set; }
