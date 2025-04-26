@@ -326,7 +326,7 @@ public class ContractService : IContractService
             var paymentBatchResponses = new List<GetAllPaymentBatchesResponse>();
             var activeBatches = contract.PaymentBatches
                 .Where(pb => pb.IsActive == true)
-                .OrderBy(pb => pb.CreatedAt);
+                .OrderBy(pb => pb.PaymentAt ?? DateTime.MaxValue); // Sort by PaymentAt, with null values at the end
 
             foreach (var batch in activeBatches)
             {
