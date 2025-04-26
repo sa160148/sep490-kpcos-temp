@@ -78,7 +78,7 @@ namespace KPCOS.API.Controllers
         /// - type: Loại bảo trì (SCHEDULED, UNSCHEDULED hoặc OTHER) (bắt buộc)
         /// - duration: Số lượng công việc bảo trì (tháng) (tùy chọn, mặc định là 1)
         /// - estimateAt: Ngày dự kiến bắt đầu bảo trì (tùy chọn)
-        /// - totalValue: Tổng giá trị của yêu cầu bảo trì (tùy chọn)
+        /// - totalValue: Tổng giá trị của yêu cầu bảo trì (tùy chọn, decimal)
         ///   - null: giá trị sẽ được tính tự động dựa trên diện tích, độ sâu và gói bảo trì
         ///   - 0: đánh dấu là yêu cầu bảo trì sau dự án, trạng thái sẽ là REQUESTING
         ///   - khác 0: sử dụng giá trị được cung cấp

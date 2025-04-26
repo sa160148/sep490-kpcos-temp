@@ -194,7 +194,7 @@ public class MaintenanceService : IMaintenanceService
             else
             {
                 // Use the specified total value if provided
-                totalValue = request.TotalValue.Value;
+                totalValue = (int)Math.Ceiling(request.TotalValue.Value);
             }
         }
         else
