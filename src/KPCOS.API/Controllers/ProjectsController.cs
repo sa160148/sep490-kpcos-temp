@@ -495,13 +495,24 @@ namespace KPCOS.API.Controllers
         /// <response code="500">Error</response>
         /// <response code="401">Unauthorized</response>
         [HttpGet("{id}/quotation")]
-        public async Task<PagedApiResponse<QuotationForProjectResponse>> GetQuotationsByProjectAsync(Guid id, [FromQuery] GetAllQuotationFilterRequest filter)
+        public async Task<PagedApiResponse<QuotationForProjectResponse>> GetQuotationsByProjectAsync(
+            Guid id, 
+            [FromQuery] 
+            GetAllQuotationFilterRequest filter)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userIdClaim != null && roleClaim != null)
+            {
+                filter.UserId = Guid.Parse(userIdClaim);
+                filter.Role = roleClaim;
+            }
             var quotations = await service.GetQuotationsByProjectAsync(id, filter);
-            return new PagedApiResponse<QuotationForProjectResponse>(quotations.data,
-                pageNumber: filter.PageNumber,
-                pageSize: filter.PageSize,
-                totalRecords: quotations.total);
+            return new PagedApiResponse<QuotationForProjectResponse>(
+                quotations.data,
+                filter.PageNumber,
+                filter.PageSize,
+                quotations.total);
         }
         
         /// <summary>
@@ -579,10 +590,24 @@ namespace KPCOS.API.Controllers
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        public async Task<PagedApiResponse<GetAllDesignResponse>> GetAllDesignByProjectAsync(Guid id, [FromQuery]GetAllDesignFilterRequest filter)
+        public async Task<PagedApiResponse<GetAllDesignResponse>> GetAllDesignByProjectAsync(
+            Guid id, 
+            [FromQuery]
+            GetAllDesignFilterRequest filter)
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userIdClaim != null && roleClaim != null)
+            {
+                filter.UserId = Guid.Parse(userIdClaim);
+                filter.Role = roleClaim;
+            }
             var design = await service.GetAllDesignByProjectAsync(id, filter);
-            return new PagedApiResponse<GetAllDesignResponse>(design.data, filter.PageNumber, filter.PageSize, design.total);
+            return new PagedApiResponse<GetAllDesignResponse>(
+                design.data, 
+                filter.PageNumber, 
+                filter.PageSize, 
+                design.total);
         }
         
         /// <summary>

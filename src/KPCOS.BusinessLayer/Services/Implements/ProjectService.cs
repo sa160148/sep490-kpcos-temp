@@ -730,7 +730,8 @@ public class ProjectService(
         var repo = unitOfWork.Repository<Design>();
         
         // Combine project ID filter with other filter conditions
-        var combinedFilter = filter.GetExpressions().And(d => d.ProjectId == id);
+        var combinedFilter = filter.GetExpressions();
+        combinedFilter = combinedFilter.And(d => d.ProjectId == id);
 
         // Get data with all conditions applied
         var (designs, total) = repo.GetWithCount(
