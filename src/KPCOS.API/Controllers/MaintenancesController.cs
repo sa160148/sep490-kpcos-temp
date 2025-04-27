@@ -40,6 +40,8 @@ namespace KPCOS.API.Controllers
         /// - Ngày bảo trì sẽ được tự động sắp xếp để tránh cuối tuần và ngày lễ
         /// - Giá dịch vụ được tính dựa trên diện tích, độ sâu và gói bảo trì
         /// - Có thể áp dụng giảm giá theo nhóm tháng (6 tháng và 12 tháng)
+        /// - Nếu không cung cấp tên, hệ thống sẽ tự động tạo tên theo định dạng "Yêu cầu bảo trì/bảo dưỡng hồ cá cho [Tên khách hàng] - [Tên gói bảo trì]"
+        /// - Nếu cung cấp tên, hệ thống sẽ sử dụng tên đó trực tiếp và dùng nó như là tên khách hàng trong các trường hợp đặc biệt
         /// 
         /// **Mẫu yêu cầu thông thường:**
         /// 
@@ -71,7 +73,7 @@ namespace KPCOS.API.Controllers
         /// 
         /// **Các tham số:**
         /// - maintenancePackageId: ID của gói bảo trì (bắt buộc)
-        /// - name: Tên yêu cầu bảo trì (bắt buộc)
+        /// - name: Tên yêu cầu bảo trì (tùy chọn). Nếu không cung cấp, hệ thống sẽ tự động tạo tên dựa trên tên khách hàng và tên gói bảo trì
         /// - area: Diện tích hồ/bể cá tính bằng m² (bắt buộc)
         /// - depth: Độ sâu hồ/bể cá tính bằng m (bắt buộc)
         /// - address: Địa chỉ nơi thực hiện bảo trì (bắt buộc)

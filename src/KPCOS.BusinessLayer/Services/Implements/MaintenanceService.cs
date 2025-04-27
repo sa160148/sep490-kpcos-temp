@@ -117,6 +117,18 @@ public class MaintenanceService : IMaintenanceService
             throw new NotFoundException($"Không tìm thấy khách hàng với ID {customerId}");
         }
         
+        // Get the package information for name generation if needed
+        var packageInfo = await _unitOfWork.Repository<MaintenancePackage>()
+            .FindAsync(request.MaintenancePackageId.Value);
+            
+        if (packageInfo == null)
+        {
+            throw new NotFoundException($"Không tìm thấy gói bảo trì/bảo dưỡng với ID {request.MaintenancePackageId}");
+        }
+        
+        string packageName = packageInfo.Name ?? "Gói bảo trì/bảo dưỡng hồ cá koi";
+        string customerNameForRequest;
+        
         // Auto-generate name if not provided
         if (string.IsNullOrEmpty(request.Name))
         {
@@ -124,16 +136,15 @@ public class MaintenanceService : IMaintenanceService
             var customerUser = await _unitOfWork.Repository<User>()
                 .FindAsync(customerId);
                 
-            string customerName = customerUser?.FullName ?? "Khách hàng";
-            
-            // Get the package name for the request name
-            var packageInfo = await _unitOfWork.Repository<MaintenancePackage>()
-                .FindAsync(request.MaintenancePackageId.Value);
-                
-            string packageName = packageInfo?.Name ?? "Gói bảo trì/bảo dưỡng hồ cá koi";
+            customerNameForRequest = customerUser?.FullName ?? "Khách hàng";
             
             // Generate name using customer name and package
-            request.Name = $"Yêu cầu bảo trì/bảo dưỡng hồ cá cho {customerName} - {packageName}";
+            request.Name = $"Yêu cầu bảo trì/bảo dưỡng hồ cá cho {customerNameForRequest} - {packageName}";
+        }
+        else
+        {
+            // Use provided name as the customer name portion
+            customerNameForRequest = request.Name;
         }
         
         // Auto-generate address if not provided
@@ -212,7 +223,7 @@ public class MaintenanceService : IMaintenanceService
         {
             Id = Guid.NewGuid(),
             Name = isPostProjectMaintenance 
-                ? $"Bảo trì/bảo dưỡng hồ cá koi cho {request.Name} - bảo trì/bảo dưỡng sau dự án"
+                ? $"Bảo trì/bảo dưỡng hồ cá koi cho {customerNameForRequest} - bảo trì/bảo dưỡng sau dự án"
                 : request.Name,
             Area = request.Area ?? 0,
             Depth = request.Depth ?? 0,
