@@ -73,8 +73,11 @@ public class GetAllDesignFilterRequest : PaginationRequest<Design>
             if (Role == RoleEnum.CUSTOMER.ToString())
             {
                 predicate = predicate.And(d => 
-                d.Status == EnumDesignStatus.PREVIEWING.ToString() ||
-                d.Status == EnumDesignStatus.EDITING.ToString());
+                // d.Status == EnumDesignStatus.PREVIEWING.ToString() &&
+                // d.Status == EnumDesignStatus.EDITING.ToString()
+                d.Status != EnumDesignStatus.OPENING.ToString() &&
+                d.Status != EnumDesignStatus.REJECTED.ToString()
+                );
             }
         }
         return predicate;
