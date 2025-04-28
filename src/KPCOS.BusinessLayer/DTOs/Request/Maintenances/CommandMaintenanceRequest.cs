@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace KPCOS.BusinessLayer.DTOs.Request.Maintenances;
 
@@ -13,7 +14,9 @@ public class CommandMaintenanceRequest
     public string? Type { get; set; }
     public bool? IsPaid { get; set; }
     public DateOnly? EstimateAt { get; set; }
-    public int? Duration { get; set; }
+    
+    [Range(1, int.MaxValue, ErrorMessage = "Thời gian bảo trì không được nhỏ hơn 1")]
+    public int? Duration { get; set; }    
     public Guid? MaintenancePackageId { get; set; }
     public List<Guid>? StaffIds { get; set; }
 }

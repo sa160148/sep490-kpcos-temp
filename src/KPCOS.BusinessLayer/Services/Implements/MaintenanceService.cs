@@ -145,6 +145,8 @@ public class MaintenanceService : IMaintenanceService
         {
             // Use provided name as the customer name portion
             customerNameForRequest = request.Name;
+            // Format the name with the provided name
+            request.Name = $"Bảo trì/bảo dưỡng hồ cá koi cho {customerNameForRequest}";
         }
         
         // Auto-generate address if not provided
