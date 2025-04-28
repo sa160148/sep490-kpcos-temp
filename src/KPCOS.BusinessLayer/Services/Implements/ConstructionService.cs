@@ -911,7 +911,9 @@ public class ConstructionService : IConstructionServices
         if (!string.IsNullOrWhiteSpace(request.Reason))
         {
             // Cannot update reason while image URL is null
-            if (string.IsNullOrWhiteSpace(constructionTask.ImageUrl) && string.IsNullOrWhiteSpace(request.ImageUrl))
+            if (string.IsNullOrWhiteSpace(constructionTask.ImageUrl) 
+            // && string.IsNullOrWhiteSpace(request.ImageUrl)
+            )
             {
                 throw new BadRequestException($"Không thể cập nhật lý do khi URL hình ảnh chưa được cung cấp");
             }
