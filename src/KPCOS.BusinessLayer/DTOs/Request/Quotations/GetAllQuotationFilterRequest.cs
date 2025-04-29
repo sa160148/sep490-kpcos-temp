@@ -32,7 +32,8 @@ public class GetAllQuotationFilterRequest : PaginationRequest<Quotation>
                 quotationQueryExpression.And(q => 
                 q.Status == EnumQuotationStatus.APPROVED.ToString() ||
                 q.Status == EnumQuotationStatus.PREVIEW.ToString() ||
-                q.Status == EnumQuotationStatus.CONFIRMED.ToString()
+                q.Status == EnumQuotationStatus.CONFIRMED.ToString() ||
+                q.Status == EnumQuotationStatus.UPDATING.ToString()
                 );
             }
         }
