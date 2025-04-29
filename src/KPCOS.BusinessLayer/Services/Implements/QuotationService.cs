@@ -55,7 +55,7 @@ public class QuotationService : IQuotationService
         }
         // find the max version of quotation
         var versions = await repoQuotation.Get()
-            .Where(q => q.ProjectId == request.ProjectId && q.Idtemplate == request.TemplateConstructionId)
+            .Where(q => q.ProjectId == request.ProjectId)
             .Select(q => q.Version)
             .ToListAsync();
 
