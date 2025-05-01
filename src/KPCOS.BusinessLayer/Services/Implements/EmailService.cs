@@ -9,10 +9,16 @@ namespace KPCOS.BusinessLayer.Services.Implements;
 public class EmailService : IEmailService
 {
     private readonly SmtpClient _smtpClient;
+    private readonly string _contractTemplatePath;
+    private readonly string _docTemplatePath;
+    private readonly string _logoPath;
 
     public EmailService(SmtpClient smtpClient)
     {
         _smtpClient = smtpClient;
+        _contractTemplatePath = "../../KPCOS.Common/Constants/EmailTemplates/ContractTemplate.html";
+        _docTemplatePath = "../../KPCOS.Common/Constants/EmailTemplates/DocTemplate.html";
+        _logoPath = "../../KPCOS.Common/Constants/EmailTemplates/full_logo.jpg";
     }
     
     public async Task SentMailAsync(string toEmail, string subject, string body)
@@ -35,6 +41,31 @@ public class EmailService : IEmailService
         await _smtpClient.DisconnectAsync(true);
     }
 
+    private async Task SendMailWithTemplateAsync(string toEmail, string subject, string templateContent, string logoPath)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("kpcos-noreply", "tongtbsa160148@fpt.edu.vn"));
+        message.To.Add(new MailboxAddress("Khách Hàng", toEmail));
+        message.Subject = subject;
+
+        var builder = new BodyBuilder();
+        
+        // Add the logo as a linked resource
+        var image = builder.LinkedResources.Add(logoPath);
+        image.ContentId = "logo";
+
+        // Set the HTML body
+        builder.HtmlBody = templateContent;
+
+        message.Body = builder.ToMessageBody();
+
+        await _smtpClient.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+        _smtpClient.AuthenticationMechanisms.Remove("XOAUTH2");
+        await _smtpClient.AuthenticateAsync("tongtbsa160148@fpt.edu.vn", "nuvw ortf ruve klmr");
+        await _smtpClient.SendAsync(message);
+        await _smtpClient.DisconnectAsync(true);
+    }
+
     /// <summary>
     /// Send email with OTP to verify contract.
     /// <para>Send email to user that containing OTP and ExpiresAt</para>
@@ -47,20 +78,41 @@ public class EmailService : IEmailService
         var vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(expiresAt, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
         string formattedTime = vietnamTime.ToString("dd/MM/yyyy HH:mm:ss");
         
-        string body = $"<h1>Mã OTP xác nhận hợp đồng của bạn là: {otpCode}</h1>" +
-                     $"<p>Mã OTP này sẽ hết hạn vào lúc {formattedTime} (GMT+7)</p>";
+        // Get current time in Vietnam timezone
+        var currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+        string sentTime = currentTime.ToString("dd/MM/yyyy HH:mm:ss");
+        
+        // Read the template file
+        string templateContent = await File.ReadAllTextAsync(_contractTemplatePath);
+        
+        // Replace placeholders with actual values
+        templateContent = templateContent.Replace("{OTP_CODE}", otpCode.ToString())
+                                      .Replace("{EXPIRY_TIME}", formattedTime)
+                                      .Replace("{SENT_TIME}", sentTime);
+        
         string subject = "Xác nhận hợp đồng";
-        await SentMailAsync(userEmail, subject, body);
+        await SendMailWithTemplateAsync(userEmail, subject, templateContent, _logoPath);
     }
 
     public async Task SendVerifyDocOtpAsync(string userEmail, string docName, int otpCode, DateTime expiresAt)
     {
         var vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(expiresAt, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
         string formattedTime = vietnamTime.ToString("dd/MM/yyyy HH:mm:ss");
+        
+        // Get current time in Vietnam timezone
+        var currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+        string sentTime = currentTime.ToString("dd/MM/yyyy HH:mm:ss");
 
-        string body = $"<h1>Mã OTP xác nhận tài liệu {docName} của bạn là: {otpCode}</h1>" +
-                     $"<p>Mã OTP này sẽ hết hạn vào lúc {formattedTime} (GMT+7)</p>";
+        // Read the template file
+        string templateContent = await File.ReadAllTextAsync(_docTemplatePath);
+        
+        // Replace placeholders with actual values
+        templateContent = templateContent.Replace("{DOC_NAME}", docName)
+                                      .Replace("{OTP_CODE}", otpCode.ToString())
+                                      .Replace("{EXPIRY_TIME}", formattedTime)
+                                      .Replace("{SENT_TIME}", sentTime);
+        
         string subject = "Xác nhận tài liệu";
-        await SentMailAsync(userEmail, subject, body);
+        await SendMailWithTemplateAsync(userEmail, subject, templateContent, _logoPath);
     }
 }
