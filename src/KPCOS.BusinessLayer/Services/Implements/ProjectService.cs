@@ -339,16 +339,24 @@ public class ProjectService(
     public async Task<ProjectResponse> GetAsync(Guid id)
     {
         var projectRepo = unitOfWork.Repository<Project>();
-        var project = await projectRepo.Get()
-            .Include(prj => prj.Customer)
-            .ThenInclude(cst => cst.User)
-            .Include(prj => prj.Package)
-            .ThenInclude(pack => pack.PackageDetails)
-            .ThenInclude(pd => pd.PackageItem)
-            .Include(prj => prj.ProjectStaffs)
-            .ThenInclude(ps => ps.Staff)
-            .ThenInclude(staff => staff.User)
-            .SingleOrDefaultAsync(prj => prj.Id == id);
+        var project = projectRepo.Get(
+            filter: p => p.Id == id,
+            includeProperties: "Customer.User,Package,Package.PackageDetails,Package.PackageDetails.PackageItem,ProjectStaffs.Staff,ProjectStaffs.Staff.User,Contracts"
+        )
+        .SingleOrDefault();
+
+
+
+            // .Include(prj => prj.Customer)
+            // .ThenInclude(cst => cst.User)
+            // .Include(prj => prj.Package)
+            // .ThenInclude(pack => pack.PackageDetails)
+            // .ThenInclude(pd => pd.PackageItem)
+            // .Include(prj => prj.ProjectStaffs)
+            // .ThenInclude(ps => ps.Staff)
+            // .ThenInclude(staff => staff.User)
+            // .SingleOrDefaultAsync(prj => prj.Id == id)
+            
         
         if (project is null)
         {
@@ -359,6 +367,15 @@ public class ProjectService(
         projectResult.Staff = project.ProjectStaffs
             .Select(ps => mapper.Map<StaffResponse>(ps.Staff))
             .ToList();
+
+        // Get and set contract value from active contract
+        var activeContract = project.Contracts
+            .FirstOrDefault(c => c.Status == EnumContractStatus.ACTIVE.ToString() && c.IsActive == true);
+        
+        if (activeContract != null)
+        {
+            projectResult.ContractValue = activeContract.ContractValue;
+        }
 
         return projectResult;
     }
