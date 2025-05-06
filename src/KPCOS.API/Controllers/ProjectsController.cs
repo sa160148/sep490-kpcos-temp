@@ -381,7 +381,7 @@ namespace KPCOS.API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResult<ProjectResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status500InternalServerError)]
-        [CustomAuthorize]
+        // [CustomAuthorize]
         public async Task<ApiResult<ProjectResponse>> GetAsync(Guid id)
         {
             var project = await service.GetAsync(id);
